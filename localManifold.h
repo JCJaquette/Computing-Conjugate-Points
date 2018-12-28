@@ -23,12 +23,13 @@ private:
   int dimension;
   bool stable; 	
   int subdivisionNUM ;
+  IVector U_flat_global; // TODO Replace this in how class is called
   interval xi;
   friend class boundaryValueProblem;
   friend class propagateManifold;
   
 public:
-  localManifold(localVField &pF_, interval L_, bool stable_){pF = &pF_; L=L_; stable = stable_;dimension=(*pF).A.numberOfRows();subdivisionNUM = 64;}
+  localManifold(localVField &pF_, IVector U_flat_global_,interval L_, bool stable_){pF = &pF_; U_flat_global = U_flat_global_; L=L_; stable = stable_;dimension=(*pF).A.numberOfRows();subdivisionNUM = 64;}
 
   int dim( ){return dimension;}
   IVector constructU( IVector U_flat);
@@ -51,6 +52,8 @@ public:
   bool checkIsolatingBlock( IMatrix DFU, const IVector &U); 
   
   interval ErrorEigenfunction( void);
+  
+  interval getRadius( void ){ return getMax( abs(U_flat_global));};
   
   bool checkConditions( IVector U_flat );
 };

@@ -424,7 +424,7 @@ interval localManifold::ErrorEigenfunction( void)
   lambda = lambda.right(); // This reduces wrapping effect. 
   
   interval error = lambda/(1-lambda);
-  error = error/1000;
+  error = error/10000;
   return error;
 }
 

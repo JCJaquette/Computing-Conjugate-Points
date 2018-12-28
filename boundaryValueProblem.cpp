@@ -268,32 +268,67 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   IMatrix  DG_y = -DGxy( Y_pt, Y_nbd, T, 1);
   
   
-  IVector XY_out_nbd = invDG_G(G,DG_x,DG_y);// TODO Make pt/nbd version 
+  IMatrix DG = DG_combine(G,DG_x,DG_y,X_pt, X_nbd);// TODO Make pt/nbd version // Maybe?
+  
+   
+  cout <<  " DG = " << DG << endl;
+// // //     We fix the radius of the point on the unstable manifold 
+    interval radius = sqr((*pUnstable).getRadius())*dimension/2;
+  interval x_radius_sqr = 0;
+  for(int i = 0 ; i<dimension/2;i++){x_radius_sqr += sqr(X_pt[i]+X_nbd[i]);}
+  
+  cout << " x_radius^2 = " << x_radius_sqr << endl;
+  cout << "   radius^2 = " << radius << endl;
+// // //    We replace the last term of G with point^2 - radius^2 
+  G[dimension-1] = x_radius_sqr - radius; //TODO Remove
+  
+  
+//   //TODO Delete down 
+//   IVector G_trunc(dimension-1);
+//   for (int i =0 ; i<dimension-1;i++)
+//   {
+//     G_trunc[i]=G[i];
+//   }
+//   //TODO Delete up
+
+//   IVector invDG_G = gauss(DG,G_trunc); // TODO  invDG_G -->> XY_out_nbd ;  G_trunc -->> G
+  IVector XY_out_nbd = gauss(DG,G); // TODO  invDG_G -->> XY_out_nbd ;  G_trunc -->> G
+  
+  
+  
+//   //TODO Delete down 
+// //   We put our output in the right format
+//   IVector XY_out_nbd(dimension);
+//   for (int i = 0; i < dimension;i++)
+//   {
+//     if (i<frozen)
+//       XY_out_nbd[i] = invDG_G[i];
+//     else if (i>frozen)
+//       XY_out_nbd[i] = invDG_G[i-1];
+//   }
+//   //TODO Delete up
+  
   
   
   IVector XY_out = XY_pt - XY_out_nbd;
   
 //    We don't change the coordinate we've frozen
-  XY_out[frozen]=XY_pt[frozen];
+//   XY_out[frozen]=XY_pt[frozen]; //NOTE REMOVED FROZEN
   
   
-  
+  cout << "output nbd " << XY_out_nbd << endl;
   
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)
-  
+  //TODO REMOVE FROZEN
   bool verify = 1;
   bool verify_local;
     for (int i = 0 ; i< dimension;i++)
-  {
-    if ( i != frozen)
     {
-      verify_local = subsetInterior(-XY_out_nbd[i],XY_nbd[i]);
-      if (verify_local ==0)
-	verify=0;
+        verify_local = subsetInterior(-XY_out_nbd[i],XY_nbd[i]);
+        if (verify_local ==0)
+            verify=0;
     }
-    
-  }
   
   if (verify ==1)
   {
@@ -312,7 +347,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 
 
 
-IVector boundaryValueProblem::invDG_G(IVector G, IMatrix DGX, IMatrix DGY)
+IMatrix boundaryValueProblem::DG_combine(IVector G, IMatrix DGX, IMatrix DGY, IVector X_pt, IVector X_nbd)
 {
   
 //    We create the 'frozen' version of DG i=[0,dim-1] j = [1,dim]
@@ -330,6 +365,36 @@ IVector boundaryValueProblem::invDG_G(IVector G, IMatrix DGX, IMatrix DGY)
 //   * | *  *
 //   --X -- --
     
+    
+    //TODO REMOVE FROZEN
+  IMatrix DG(dimension,dimension);
+  for (int i = 0; i< dimension;i++)
+  {
+    for (int j =0;j<dimension;j++)
+    {
+      if (j<dimension/2) // 	Add unstable
+      {
+        DG[i][j] = DGX[i][j];
+      }
+      else// 	Add stable
+      {
+        DG[i][j] = DGY[i][j-dimension/2];
+      }
+    }
+  }
+  
+//   Adds derivative from moving the point on the unstable manifold to the last row
+    for ( int i = 0 ; i< dimension; i++)
+    {
+        if (i < dimension/2)
+            DG[dimension-1][i]=2 * (X_pt[i]+X_nbd[i]);
+        else
+            DG[dimension-1][i] = 0;                
+    }
+  
+/*
+    
+    //TODO REMOVE FROZEN
   IMatrix DG(dimension-1,dimension-1);
   for (int i = 0; i< dimension-1;i++)
   {
@@ -350,45 +415,17 @@ IVector boundaryValueProblem::invDG_G(IVector G, IMatrix DGX, IMatrix DGY)
 	  DG[i][j-1] = DGY[i][j-dimension/2];
       }
     }
-  }
-//    We create a truncated G without the last term
-
-  IVector G_trunc(dimension-1);
-  for (int i =0 ; i<dimension-1;i++)
-  {
-    G_trunc[i]=G[i];
-  }
+  }*/
   
+ 
   
-//   cout << " G(X,Y) = " << G << endl;
-//   cout<< "DG = " <<DG << endl;
-  
-  
-//   cout << "  G = " << G_trunc << endl;
-//   cout << " DG^-1 = " << gaussInverseMatrix(DG) << endl;
-  
-  IVector invDG_G = gauss(DG,G_trunc);
-  
-  
-//   We put our output in the right format
-  IVector XY_out(dimension);
-  for (int i = 0; i < dimension;i++)
-  {
-    if (i<frozen)
-      XY_out[i] = invDG_G[i];
-    else if (i>frozen)
-      XY_out[i] = invDG_G[i-1];
-  }
-
-  
-  return XY_out;
+  return DG;
 }
 
 
 
 IVector boundaryValueProblem::NormBound( IVector XY,interval T)
 {
-//   NOTE: WE FIX X[frozen] AS A SINGLE NUMBER 
 
 //   We break up XY into X and Y
   
@@ -415,7 +452,6 @@ IVector boundaryValueProblem::NormBound( IVector XY,interval T)
 
 IVector boundaryValueProblem::localNormBound( IVector XY,interval T, bool STABLE )
 {
-//   NOTE: WE FIX X[frozen] AS A SINGLE NUMBER 
 
     //   We Create our solvers 
   ITaylor* solver;
