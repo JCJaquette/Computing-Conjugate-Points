@@ -4,5 +4,4 @@ From the terminal, enter
 
 then
 
-
 << plot 'plot_det.txt' with boxxyerrorbars

@@ -210,11 +210,11 @@ void test(int dimension,vector < double > All_parameters)
  
     //   Cone angle
   //   We define the box used for the boundary value problem
-//   interval initial_box =interval(-.0000001,.0000001);//n=2
-  interval initial_box =interval(-.0000001,.0000001); //n=3
+  interval initial_box =interval(-.0000001,.0000001);//n=2
+//   interval initial_box =interval(-.0000001,.0000001); //n=3
   
-//   interval L = interval(.00007); // n=2
-  interval L = interval(.00015); //n =3
+  interval L = interval(.00007); // n=2
+//   interval L = interval(.00015); //n =3
   interval scale = 0.00001;
   
   
@@ -234,7 +234,7 @@ void test(int dimension,vector < double > All_parameters)
 //     We create the local vector field object  
   localVField F_u(f,A_u,p_u);  
 //   We create the local manifold object
-  localManifold localUnstable(F_u, L, UNSTABLE);
+  localManifold localUnstable(F_u,U_flat, L, UNSTABLE);
   
 //   cout << "Dfg = " << f[p_u] << endl;
 //   cout << "Df  = " << F_u[p_u] << endl;
@@ -256,7 +256,7 @@ void test(int dimension,vector < double > All_parameters)
 //     We create the local vector field object  
   localVField F_s(f,A_s,p_s);  
 //   We create the local manifold object
-  localManifold localStable(F_s, L, STABLE);  
+  localManifold localStable(F_s,U_flat, L, STABLE);  
   
   
   bool conditions_S = localStable.checkConditions( U_flat ); 
@@ -294,7 +294,13 @@ void test(int dimension,vector < double > All_parameters)
   IVector local_guess_U = localUnstable.projectPoint(  guess_U);
   IVector local_guess_S = localStable.projectPoint(  guess_S); 
   
-  local_guess_U = scale*local_guess_U/getMax(abs(local_guess_U));
+  
+    interval radius = sqr(localUnstable.getRadius())*dimension/2;
+  interval U_radius_sqr = 0;
+  for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(local_guess_U[i]);}
+  cout << "U_radius_sqr" << U_radius_sqr << endl;
+//   local_guess_U = scale*local_guess_U/getMax(abs(local_guess_U));
+  local_guess_U = local_guess_U *sqrt(radius/U_radius_sqr);
   local_guess_S = scale*local_guess_S/getMax(abs(local_guess_S));
   frozen = getMaxIndex( abs(local_guess_U));
     
@@ -310,21 +316,23 @@ void test(int dimension,vector < double > All_parameters)
   
 
   
-  boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order ,frozen );
+  boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order ,frozen );//TODO REMOVE FROZEN
  
   T = BVP.FindTime(XY_pt,T);
+  T=(T*1.001).right(); //We inflate the time a bit
   
   
   
   
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
-  for (int i = 0 ; i<15;i++)
+  for (int i = 0 ; i<25;i++)
   {
     
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
+    cout << "XY_pt " << XY_pt << endl;
    
 
   }
@@ -339,8 +347,8 @@ void test(int dimension,vector < double > All_parameters)
     
   for (int i = 0 ; i< dimension;i++)
   {
-    if ( i != frozen)
-      XY_nbd[i] = scale * initial_box;
+//     if ( i != frozen)
+      XY_nbd[i] = scale * initial_box; //TODO REMOVE FROZEN
   }
 
 //     cout << "XY_nbd = " << XY_nbd << endl;
