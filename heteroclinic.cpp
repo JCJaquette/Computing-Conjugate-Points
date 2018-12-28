@@ -332,7 +332,7 @@ void test(int dimension,vector < double > All_parameters)
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
-    cout << "XY_pt " << XY_pt << endl;
+//     cout << "XY_pt " << XY_pt << endl;
    
 
   }
@@ -369,7 +369,7 @@ void test(int dimension,vector < double > All_parameters)
   }
     
     
- 
+
 
 // 
 //    -- We calculate the norm bounds 
@@ -377,7 +377,10 @@ void test(int dimension,vector < double > All_parameters)
 //   cout << "Norm Bounds = " << norm_bounds << endl;
   
   
-  cout << "Globalizing Manifold ... " << endl;
+  
+  
+  
+  cout << endl << "Globalizing Manifold ... " << endl;
   
   propagateManifold E_u(f_linearize, localUnstable,localStable, XY_pt,XY_nbd,order,stepsize);
       
@@ -489,7 +492,7 @@ int main(int argc, char* argv[])
 	try
 	{
 // 	  plotDemo();
-	  bool Get_Param = 1;
+	  bool Get_Param = 0;
 	  int dimension;
 	  vector < double > Input;
 	  
@@ -498,7 +501,7 @@ int main(int argc, char* argv[])
 	    dimension=4;
 	    Input.push_back(1); // a
 	    Input.push_back(.95);// b 
-	    Input.push_back(.15);// c
+	    Input.push_back(.05);// c
  	    test(4,Input);
 	  }
 	  else

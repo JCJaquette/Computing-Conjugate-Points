@@ -11,7 +11,7 @@ CAPDBINDIR = /home/jonathan/capd-5.0.59/bin/
 # setting compiler and linker flags
 CAPDFLAGS = `${CAPDBINDIR}capd-config --cflags`
 CAPDLIBS = `${CAPDBINDIR}capd-config --libs`
-CXXFLAGS += ${CAPDFLAGS} -O2 -Wall
+CXXFLAGS += ${CAPDFLAGS} -O2 -Wall -fopenmp
 
 # directory where object and dependancy files will be created
 OBJDIR = .obj/

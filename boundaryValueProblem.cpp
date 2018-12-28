@@ -271,14 +271,14 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   IMatrix DG = DG_combine(G,DG_x,DG_y,X_pt, X_nbd);// TODO Make pt/nbd version // Maybe?
   
    
-  cout <<  " DG = " << DG << endl;
+//   cout <<  " DG = " << DG << endl;
 // // //     We fix the radius of the point on the unstable manifold 
     interval radius = sqr((*pUnstable).getRadius())*dimension/2;
   interval x_radius_sqr = 0;
   for(int i = 0 ; i<dimension/2;i++){x_radius_sqr += sqr(X_pt[i]+X_nbd[i]);}
   
-  cout << " x_radius^2 = " << x_radius_sqr << endl;
-  cout << "   radius^2 = " << radius << endl;
+//   cout << " x_radius^2 = " << x_radius_sqr << endl;
+//   cout << "   radius^2 = " << radius << endl;
 // // //    We replace the last term of G with point^2 - radius^2 
   G[dimension-1] = x_radius_sqr - radius; //TODO Remove
   
@@ -316,7 +316,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 //   XY_out[frozen]=XY_pt[frozen]; //NOTE REMOVED FROZEN
   
   
-  cout << "output nbd " << XY_out_nbd << endl;
+//   cout << "output nbd " << XY_out_nbd << endl;
   
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)

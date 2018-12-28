@@ -142,6 +142,8 @@ void propagateManifold::frameDet(interval T,int grid)
   
   
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
+//   #pragma omp parallel for  
+  /// I am trying to parrelize this
   for (int i = 0 ; i<dimension/2;i++)
   {
     List_of_Trajectories[i] = computeTotalTrajectory(i,  T,  grid);

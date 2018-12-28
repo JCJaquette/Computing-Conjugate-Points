@@ -5,6 +5,9 @@
 #include <iostream>
 using namespace std;
 
+// #ifdef _OPENMP
+#include <omp.h>
+// #endif
 #include "capd/capdlib.h"
 #include "utils.h"
 #include "localVField.h"
