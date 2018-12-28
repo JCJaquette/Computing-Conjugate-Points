@@ -1,0 +1,8 @@
+From the terminal, enter
+
+<< gnuplot
+
+then
+
+
+<< plot 'plot_det.txt' with boxxyerrorbars
