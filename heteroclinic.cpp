@@ -111,7 +111,7 @@ IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interv
     x = -T;
   else
     x = T;
-  
+   
   for (int i =0;i<dimension/2;i++)
   {
     IVector local_solution = knownSolution(All_parameters[i], x);
