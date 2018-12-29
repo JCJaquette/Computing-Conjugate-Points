@@ -95,6 +95,48 @@ IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interv
   return point;
 } 
 
+IFunction constructEnergy(int dimension,  vector < double > All_parameters)
+{
+    IFunction energy;
+    if(dimension == 4)
+    {
+      
+//       U(u1)    = sqr(u1)*sqr(1-u1)/4
+//       U(u2)    = sqr(u2)*sqr(1-u2)/4
+//       U(u1,u2) = u1*(1-u1)*u2*(1-u2)/2
+        energy  = "par:a,b,c;var:u1,u2,v1,v2;fun:(sqr(v1)+sqr(v2))/2-a*sqr(u1)*sqr(1-u1)/4-b*sqr(u2)*sqr(1-u2)/4 -c*u1*(1-u1)*u2*(1-u2)/2;";
+        
+//         Make this parameter set into a function
+        energy.setParameter("a",All_parameters[0]); // a=1
+        energy.setParameter("b",All_parameters[1]); // b=1
+        energy.setParameter("c",All_parameters[2]); // c= +/- 0.1
+        
+    }
+    else if( dimension == 6) 
+    {
+//       U(u1)    = sqr(u1)*sqr(1-u1)/4
+//       U(u2)    = sqr(u2)*sqr(1-u2)/4
+//       U(u1,u2) = u1*(1-u1)*u2*(1-u2)/2
+        
+        energy  = "b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun:(sqr(v1)+sqr(v2)+sqr(v3))/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2;";
+
+//         Make this parameter set into a function        
+        energy.setParameter("b1", All_parameters[0]); // 
+        energy.setParameter("b2", All_parameters[1]); // 
+        energy.setParameter("b3", All_parameters[2]); // 
+        energy.setParameter("c12",All_parameters[3]); // 
+        energy.setParameter("c23",All_parameters[4]); // 
+    }
+    else
+    {
+        cout << " Unexpected dimension " << endl;
+        abort();
+    }
+    
+    return energy;
+}
+
+
 vector < IMap > constructFunctions( int dimension, vector < double > All_parameters)
 {
  
@@ -102,10 +144,16 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
   IMap f_minus;
   IMap f_linearize;
   
-  if (dimension == 4)
+  
+
+  if(dimension == 4)
   {
+      
+
+
     f       = "par:a,b,c;var:u1,u2,v1,v2;fun: v1, v2,  -a*u1*(u1-1/2)*(1-u1)-c*u2*(1-u2)*(u1-1/2),       -b*u2*(u2-1/2)*(1-u2)-c*u1*(1-u1)*(u2-1/2);";  
     f_minus = "par:a,b,c;var:u1,u2,v1,v2;fun:-v1,-v2,-(-a*u1*(u1-1/2)*(1-u1)-c*u2*(1-u2)*(u1-1/2)),    -(-b*u2*(u2-1/2)*(1-u2)-c*u1*(1-u1)*(u2-1/2));";  
+    
 
       
 // //  We Construct the linearized problem
@@ -132,10 +180,12 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
 //     g(u2,u3) = u3*(1-u3)*(1-2*u2)
 //     g(u3,u2) = u2*(1-u2)*(1-2*u3)      
       
-
+      
+ 
 //       f       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: v1, v2, v3, (-b1*f(u1) - c12*g(u1,u2)), (-b2*f(u2) -c12*g(u2,u1)-c23*g(u2,u3)),(-b3*f(u3)-c23*g(u3,u2));"; 
     f       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: v1, v2, v3, (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3));"; 
     f_minus        = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: -v1, -v2, -v3, -(-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), -(-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),-(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3));"; 
+    
     
 // //  We Construct the linearized problem
     
@@ -197,7 +247,17 @@ void test(int dimension,vector < double > All_parameters)
   IMap f             = functions[0];
   IMap f_minus       = functions[1];
   IMap f_linearize   = functions[2];
+  IFunction energy   = constructEnergy(dimension,  All_parameters);
 
+//   IVector pointty(4);
+//   pointty[0]=.51;
+//   pointty[1]=.49;
+//   pointty[2]=.115;
+//   pointty[3]=.2;
+//   cout << "Energy = " << energy(pointty) << endl;
+//   cout << "D Energy = " << energy.gradient(pointty) << endl;
+//   return;
+  
   int order = 20;
   int grid = 32; 
   int stepsize = 6;
@@ -210,10 +270,11 @@ void test(int dimension,vector < double > All_parameters)
  
     //   Cone angle
   //   We define the box used for the boundary value problem
-  interval initial_box =interval(-.0000001,.0000001);//n=2
+  interval initial_box =interval(-.000001,.000001);//n=2
 //   interval initial_box =interval(-.0000001,.0000001); //n=3
   
   interval L = interval(.00007); // n=2
+//   interval L = interval(.00000000007); // n=2
 //   interval L = interval(.00015); //n =3
   interval scale = 0.00001;
   
@@ -347,9 +408,11 @@ void test(int dimension,vector < double > All_parameters)
     
   for (int i = 0 ; i< dimension;i++)
   {
+      
 //     if ( i != frozen)
       XY_nbd[i] = scale * initial_box; //TODO REMOVE FROZEN
   }
+ 
 
 //     cout << "XY_nbd = " << XY_nbd << endl;
 //   cout << "Y_nbd = " << X_nbd << endl;
@@ -377,7 +440,7 @@ void test(int dimension,vector < double > All_parameters)
 //   cout << "Norm Bounds = " << norm_bounds << endl;
   
   
-  
+  return;
   
   
   cout << endl << "Globalizing Manifold ... " << endl;

@@ -335,8 +335,8 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
     SUCCESS = 1;
   }
   
-//   cout << "Domain = " << XY_nbd << endl;
-//   cout << " Image = " << -XY_out_nbd << endl;
+  cout << "Domain = " << XY_nbd << endl;
+  cout << " Image = " << -XY_out_nbd << endl;
     
      
 
