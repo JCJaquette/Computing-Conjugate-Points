@@ -1,7 +1,65 @@
  #include "boundaryValueProblem.h"
 
 
-IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) // TODO  point separated copy
+ 
+ IVector boundaryValueProblem::Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IMatrix &derivative)  
+ {
+//      we assume that coord_pt & coord_nbd are IVectors of size (dimension-1)
+//      TODO Not sure what to do about derivative!!
+     
+  //   We Create our solvers 
+  ITaylor* solver;
+  ITaylor solver_minus((*pf_minus),order);
+  ITaylor solver_plus((*pf),order);
+  
+  if (FORWARD)
+    solver = &solver_plus;
+  else
+    solver = &solver_minus;
+  ITimeMap Phi((*solver));
+  
+//   We get global (size dimension) vectors for the point and the neighborhood 
+  IVector global_pt(dimension);
+  IVector global_nbd(dimension);
+  for(int i =0;i<dimension-1;i++)
+  {
+      global_pt[i]  = coord_pt[i];
+      global_nbd[i] = coord_nbd[i];
+  }
+//   We add the last velocity which gets us on the zero-energy surface
+  global_pt[dimension-1]=(*p_energy_proj)(coord_pt);
+//   TODO Turn this into a point, and add the thick interval to the nbd
+
+//   We compute the gradient of the projection in the neighborhood of our point.
+  IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd);
+  
+//   cout << " grad = " << projection_grad <<endl;
+  
+//   We compute the local frame for this energy section
+  IMatrix A_energy(dimension,dimension);
+  for(int i = 0;i<dimension-1;i++)
+  {
+      A_energy[i][i] =1;
+      A_energy[dimension-1][i] = projection_grad[i];
+  }
+  cout << "A_energy  = " << A_energy << endl;
+  
+//   We create the set we will integrate  
+  C1Rect2Set S_XY(global_pt,A_energy,global_nbd);  
+    
+  // Forward/backwards image of our point  w/ derivatives 
+  IVector XY_new(dimension);
+
+  IMatrix monodromy_matrix(dimension,dimension);
+  XY_new = Phi(T,S_XY,monodromy_matrix); 
+  
+//   TODO Figure out how to properly compute the derivative     
+  cout << " monodromy_matrix " << monodromy_matrix << endl;
+  
+     return XY_new;
+ }
+
+IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) 
 { 
   
   //   We Create our solvers 
@@ -281,32 +339,9 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 //   cout << "   radius^2 = " << radius << endl;
 // // //    We replace the last term of G with point^2 - radius^2 
   G[dimension-1] = x_radius_sqr - radius; //TODO Remove
-  
-  
-//   //TODO Delete down 
-//   IVector G_trunc(dimension-1);
-//   for (int i =0 ; i<dimension-1;i++)
-//   {
-//     G_trunc[i]=G[i];
-//   }
-//   //TODO Delete up
 
-//   IVector invDG_G = gauss(DG,G_trunc); // TODO  invDG_G -->> XY_out_nbd ;  G_trunc -->> G
+
   IVector XY_out_nbd = gauss(DG,G); // TODO  invDG_G -->> XY_out_nbd ;  G_trunc -->> G
-  
-  
-  
-//   //TODO Delete down 
-// //   We put our output in the right format
-//   IVector XY_out_nbd(dimension);
-//   for (int i = 0; i < dimension;i++)
-//   {
-//     if (i<frozen)
-//       XY_out_nbd[i] = invDG_G[i];
-//     else if (i>frozen)
-//       XY_out_nbd[i] = invDG_G[i-1];
-//   }
-//   //TODO Delete up
   
   
   
@@ -323,13 +358,13 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   //TODO REMOVE FROZEN
   bool verify = 1;
   bool verify_local;
+  
     for (int i = 0 ; i< dimension;i++)
     {
         verify_local = subsetInterior(-XY_out_nbd[i],XY_nbd[i]);
         if (verify_local ==0)
             verify=0;
     }
-  
   if (verify ==1)
   {
     SUCCESS = 1;

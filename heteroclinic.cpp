@@ -21,7 +21,7 @@ using namespace capd::matrixAlgorithms;
 #include <ctime>
 
 
-DVector fixedPoint(int i,int dimension) // TODO Make this dimension independant
+DVector fixedPoint(int i,int dimension) 
 {
  DVector p(dimension);
  if(i==0) return p;
@@ -32,7 +32,7 @@ DVector fixedPoint(int i,int dimension) // TODO Make this dimension independant
  return p;
 }
 
-DMatrix coordinateChange(int i,int dimension, vector < double> All_parameters) // TODO Can we get rid of this function, and just deal with the interval map?
+DMatrix coordinateChange(int i,int dimension, vector < double> All_parameters) 
 {
   
   DVector p=fixedPoint(i,dimension);
@@ -122,21 +122,24 @@ IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interv
   return point;
 } 
 
-IFunction constructEnergy(int dimension,  vector < double > All_parameters)
+vector <IFunction> constructEnergy(int dimension,  vector < double > All_parameters)
 {
+    vector <IFunction> output;
     IFunction energy;
+    IFunction energy_projection;
     if(dimension == 4)
     {
       
 //       U(u1)    = sqr(u1)*sqr(1-u1)/4
 //       U(u2)    = sqr(u2)*sqr(1-u2)/4
 //       U(u1,u2) = u1*(1-u1)*u2*(1-u2)/2
-        energy  = "par:a,b,c;var:u1,u2,v1,v2;fun:(sqr(v1)+sqr(v2))/2-a*sqr(u1)*sqr(1-u1)/4-b*sqr(u2)*sqr(1-u2)/4 -c*u1*(1-u1)*u2*(1-u2)/2;";
-        
+        energy             = "par:a,b,c;var:u1,u2,v1,v2;fun:         (sqr(v1)+sqr(v2))/2-a*sqr(u1)*sqr(1-u1)/4-b*sqr(u2)*sqr(1-u2)/4 -c*u1*(1-u1)*u2*(1-u2)/2;";
+        energy_projection  = "par:a,b,c;var:u1,u2,v1   ;fun:sqrt(-2*((sqr(v1)        )/2-a*sqr(u1)*sqr(1-u1)/4-b*sqr(u2)*sqr(1-u2)/4 -c*u1*(1-u1)*u2*(1-u2)/2));";
+        /*
 //         Make this parameter set into a function
         energy.setParameter("a",All_parameters[0]); // a=1
         energy.setParameter("b",All_parameters[1]); // b=1
-        energy.setParameter("c",All_parameters[2]); // c= +/- 0.1
+        energy.setParameter("c",All_parameters[2]); // c= +/- 0.1*/
         
     }
     else if( dimension == 6) 
@@ -145,22 +148,43 @@ IFunction constructEnergy(int dimension,  vector < double > All_parameters)
 //       U(u2)    = sqr(u2)*sqr(1-u2)/4
 //       U(u1,u2) = u1*(1-u1)*u2*(1-u2)/2
         
-        energy  = "b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun:(sqr(v1)+sqr(v2)+sqr(v3))/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2;";
-
+        energy              = "b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun:         (sqr(v1)+sqr(v2)+sqr(v3))/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2;";
+        energy_projection   = "b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2   ;fun:sqrt(-2*((sqr(v1)+sqr(v2)        )/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2));";
+/*
 //         Make this parameter set into a function        
         energy.setParameter("b1", All_parameters[0]); // 
         energy.setParameter("b2", All_parameters[1]); // 
         energy.setParameter("b3", All_parameters[2]); // 
         energy.setParameter("c12",All_parameters[3]); // 
-        energy.setParameter("c23",All_parameters[4]); // 
+        energy.setParameter("c23",All_parameters[4]); // */
     }
     else
     {
         cout << " Unexpected dimension " << endl;
         abort();
     }
+    output.push_back(energy);
+    output.push_back(energy_projection);
     
-    return energy;
+    
+    for (int i = 0 ; i < 2;i++)
+  {
+      if (dimension == 4)
+      {
+        output[i].setParameter("a",All_parameters[0]); // a=1
+        output[i].setParameter("b",All_parameters[1]); // b=1
+        output[i].setParameter("c",All_parameters[2]); // c= +/- 0.1
+      }
+      else if( dimension == 6)
+      {
+        output[i].setParameter("b1", All_parameters[0]); // 
+        output[i].setParameter("b2", All_parameters[1]); // 
+        output[i].setParameter("b3", All_parameters[2]); // 
+        output[i].setParameter("c12",All_parameters[3]); // 
+        output[i].setParameter("c23",All_parameters[4]); // 
+      }
+  }
+    return output;
 }
 
 
@@ -222,12 +246,12 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
   // G(u1) = u1*(1-u1)
   // G(u2) = u2*(1-u2)
   // G(u3) = u3*(1-u3)
+    f_linearize       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3,U1,U2,U3,V1,V2,V3;fun: v1, v2, v3, (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3)),V1,V2,V3,(-b1*(3*u1*(1-u1)-1/2)-c12*u2*(1-u2))*U1-c12*(-2*(u1-1/2)*(u2-1/2))*U2,-c12*(-2*(u1-1/2)*(u2-1/2))*U1+(-b2*(3*u2*(1-u2)-1/2)-c12*u1*(1-u1)-c23*u3*(1-u3))*U2-c23*(-2*(u2-1/2)*(u3-1/2))*U3,-c23*(-2*(u2-1/2)*(u3-1/2))*U2+(-b3*(3*u3*(1-u3)-1/2)-c23*u2*(1-u2))*U3;"; 
   // H(u1,u2) = (-2*(u1-1/2)*(u2-1/2))
   // H(u2,u3) = (-2*(u2-1/2)*(u3-1/2))
     
 //     f_linearize       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3,U1,U2,U3,V1,V2,V3;fun: v1, v2, v3, (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3)),V1,V2,V3,(-b1*F(u1)-c12*G(u2))*U1-c12*H(u1,u2)*U2,-c12*H(u1,u2)*U1+(-b2*F(u2)-c12*G(u1)-c23*G(u3))*U2-c23*H(u2,u3)*U3,-c23*H(u2,u3)*U2+(-b3*F(u3)-c23*G(u2))*U3;"; 
     
-    f_linearize       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3,U1,U2,U3,V1,V2,V3;fun: v1, v2, v3, (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3)),V1,V2,V3,(-b1*(3*u1*(1-u1)-1/2)-c12*u2*(1-u2))*U1-c12*(-2*(u1-1/2)*(u2-1/2))*U2,-c12*(-2*(u1-1/2)*(u2-1/2))*U1+(-b2*(3*u2*(1-u2)-1/2)-c12*u1*(1-u1)-c23*u3*(1-u3))*U2-c23*(-2*(u2-1/2)*(u3-1/2))*U3,-c23*(-2*(u2-1/2)*(u3-1/2))*U2+(-b3*(3*u3*(1-u3)-1/2)-c23*u2*(1-u2))*U3;"; 
     
   }
   else
@@ -271,19 +295,14 @@ void test(int dimension,vector < double > All_parameters)
 
   
   vector <IMap> functions = constructFunctions(  dimension,All_parameters);
+  vector <IFunction> energy_vec   = constructEnergy(dimension,  All_parameters);
   IMap f             = functions[0];
   IMap f_minus       = functions[1];
   IMap f_linearize   = functions[2];
-  IFunction energy   = constructEnergy(dimension,  All_parameters);
-
-//   IVector pointty(4);
-//   pointty[0]=.51;
-//   pointty[1]=.49;
-//   pointty[2]=.115;
-//   pointty[3]=.2;
-//   cout << "Energy = " << energy(pointty) << endl;
-//   cout << "D Energy = " << energy.gradient(pointty) << endl;
-//   return;
+  IFunction energy   = energy_vec[0];  // Not sure if this gets used
+  IFunction energy_projection   = energy_vec[1];
+  
+  
   
   int order = 20;
   int grid = 32; 
@@ -369,7 +388,7 @@ void test(int dimension,vector < double > All_parameters)
   
   
 //   We Get our initial condition
-//   TODO Move to BVP classs
+//   TODO This thing below needs to be made into a function; consider moving to BVP classs??
   
   IVector XY_pt(dimension);  
   interval T ;
@@ -390,7 +409,7 @@ void test(int dimension,vector < double > All_parameters)
 //   local_guess_U = scale*local_guess_U/getMax(abs(local_guess_U));
   local_guess_U = local_guess_U *sqrt(radius/U_radius_sqr);
   local_guess_S = scale*local_guess_S/getMax(abs(local_guess_S));
-  frozen = getMaxIndex( abs(local_guess_U));
+  frozen = getMaxIndex( abs(local_guess_U)); // TODO Remove this, and remove frozen from BVP class
     
   for (int i = 0 ; i< dimension; i++)
   {
@@ -402,20 +421,45 @@ void test(int dimension,vector < double > All_parameters)
   cout << " Old XY_pt    = " << XY_pt << endl;  
   
   
-
+cout << endl;
   
-  boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order ,frozen );//TODO REMOVE FROZEN
+  boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,frozen );//TODO REMOVE FROZEN
  
   T = BVP.FindTime(XY_pt,T);
-//   T=(T*1.0000001).right(); //We inflate the time a bit
-  int shots = 7;
-  vector < IVector > multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
+
   
-  for (int i =0;i<shots;i++)
-  {
-    cout << " Guess " << i << " = " << multiple_guess[i] << endl;
-  }
+  
+//   BEGIN Testing integration of middle points
+  int shots = 7;
+//   We get the initial mid-points for multiple shooting
+  vector < IVector > multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
+
+//   We get a sample index, to try integrating things
+  int mid_I = floor(shots/2)-1;
+  
+//   This will be the output of the derivative ?? Not sure how this works yet
+  IMatrix middle_derivative(dimension-1,dimension-1);
+//   We get a (dimension-1) size vector, throwing the last coordinate away from our guess
+  IVector middle_start_proj(dimension-1);
+  for(int i = 0 ; i < dimension-1;i++)
+      middle_start_proj[i]= multiple_guess[mid_I][i];
+//   We project onto the zero-energy surface. 
+  multiple_guess[mid_I][dimension-1] = energy_projection(middle_start_proj);
+  
+  
+//   We get a sample neighborhood to integrate along
+  IVector coord_nbd(dimension-1);
+  for(int i = 0;i<dimension-1;i++)
+      coord_nbd[i]=scale*interval(-1,1);
+  
+//   We try to integrate the middle point
+  IVector middle_test = BVP.Integrate_point(middle_start_proj, coord_nbd ,2*T/(shots+1),1,middle_derivative);
+  cout << "Integration start = " << middle_start_proj << endl;
+  cout << "Integration end   = " << middle_test << endl;
+  
+//   cout << "derivative = " << middle_derivative << endl;
   return;
+  //   END Testing integration of middle points
   
   
   

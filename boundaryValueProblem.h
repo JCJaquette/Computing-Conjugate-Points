@@ -20,6 +20,7 @@ class boundaryValueProblem
 private:
   IMap *pf;
   IMap *pf_minus;
+  IFunction *p_energy_proj;
 
   bool SUCCESS;
   IVector verified_XY_pt;
@@ -31,9 +32,9 @@ private:
   int order;
   int frozen; 
 public:
-  boundaryValueProblem(IMap &pf_,IMap &pf_minus_, localManifold &pStable_,localManifold &pUnstable_, int order_, int frozen_){pf = &pf_;pf_minus = &pf_minus_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_; frozen = frozen_;dimension = (*pStable).dim();SUCCESS=0;}
+  boundaryValueProblem(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int frozen_){pf = &pf_;pf_minus = &pf_minus_;p_energy_proj=&p_energy_proj_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_; frozen = frozen_;dimension = (*pStable).dim();SUCCESS=0;}
 
-
+  IVector Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IMatrix &derivative) ; 
   IVector Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) ; 
   IMatrix DGxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE);  
   
