@@ -68,10 +68,37 @@ IVector knownSolution( double a, interval x)
   IVector solution(2);
   
   double rt_a_2 = sqrt(a/2);
-  solution[0] = 1/(1+exp(-rt_a_2 *x));
-  solution[1] = rt_a_2/( 2 + exp(rt_a_2 *x) + exp(-rt_a_2 *x));
+  solution[0] = 1/(1+exp(-rt_a_2 *x)); // u
+  solution[1] = rt_a_2/( 2 + exp(rt_a_2 *x) + exp(-rt_a_2 *x)); // v
   
   return solution; 
+}
+
+vector < IVector >  multipleShootingGuess( int shots, interval T ,int dimension, vector < double > All_parameters)
+{
+ vector < IVector > output;
+ 
+ vector < interval > times(shots);
+ interval time_increment = (2*T /(shots+1));
+ times[0]=-T+time_increment;
+ for(int i =1;i<shots;i++) 
+  times[i]=times[i-1]+time_increment;
+ 
+ for(int i = 0 ; i< shots ; i++)
+ {
+     IVector local_vector(dimension); 
+     for (int j = 0;j<dimension/2;j++)
+     {
+        IVector local_solution = knownSolution( All_parameters[j], times[i]);
+        local_vector[j] = local_solution[0];
+        local_vector[j+dimension/2] = local_solution[1];
+     }
+     output.push_back(local_vector);
+ }
+ 
+ cout << "Times " << times <<endl;
+ 
+ return output;
 }
 
 
@@ -380,7 +407,15 @@ void test(int dimension,vector < double > All_parameters)
   boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order ,frozen );//TODO REMOVE FROZEN
  
   T = BVP.FindTime(XY_pt,T);
-  T=(T*1.001).right(); //We inflate the time a bit
+//   T=(T*1.0000001).right(); //We inflate the time a bit
+  int shots = 7;
+  vector < IVector > multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
+  
+  for (int i =0;i<shots;i++)
+  {
+    cout << " Guess " << i << " = " << multiple_guess[i] << endl;
+  }
+  return;
   
   
   
