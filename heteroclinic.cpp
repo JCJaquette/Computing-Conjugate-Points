@@ -430,34 +430,64 @@ cout << endl;
   
   
 //   BEGIN Testing integration of middle points
-  int shots = 7;
+  int shots = 3;
 //   We get the initial mid-points for multiple shooting
   vector < IVector > multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
 
+  //   We throw away the last coordinate of each of our guesses  
+  for (int i = 0 ; i < shots ; i++)
+  {
+    IVector new_vector(dimension-1);
+    for(int j = 0 ; j < dimension-1;j++)
+      new_vector[j]= multiple_guess[i][j];
+    multiple_guess[i]=new_vector;
+  }
+    
+//     We output the energies of our guesses
+for (int i = 0 ; i < shots ; i++)
+{
+    cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
+}
+  
 //   We get a sample index, to try integrating things
   int mid_I = floor(shots/2)-1;
-  
-//   This will be the output of the derivative ?? Not sure how this works yet
-  IMatrix middle_derivative(dimension-1,dimension-1);
-//   We get a (dimension-1) size vector, throwing the last coordinate away from our guess
-  IVector middle_start_proj(dimension-1);
-  for(int i = 0 ; i < dimension-1;i++)
-      middle_start_proj[i]= multiple_guess[mid_I][i];
-//   We project onto the zero-energy surface. 
-  multiple_guess[mid_I][dimension-1] = energy_projection(middle_start_proj);
-  
   
 //   We get a sample neighborhood to integrate along
   IVector coord_nbd(dimension-1);
   for(int i = 0;i<dimension-1;i++)
-      coord_nbd[i]=scale*interval(-1,1);
-  
+      coord_nbd[i]=scale*interval(-1,1)/100;
+
+  //   This will be the output of the derivative ?? Not sure how this works yet
+  IMatrix middle_derivative;  
 //   We try to integrate the middle point
-  IVector middle_test = BVP.Integrate_point(middle_start_proj, coord_nbd ,2*T/(shots+1),1,middle_derivative);
-  cout << "Integration start = " << middle_start_proj << endl;
+  IVector middle_test;
+  BVP.Integrate_point(multiple_guess[mid_I], coord_nbd ,2*T/(shots+1),1,middle_test,middle_derivative);
+  cout << "Integration start = " << multiple_guess[mid_I] << endl;
   cout << "Integration end   = " << middle_test << endl;
+  cout << " end  Derivative = " << middle_derivative << endl;
   
-//   cout << "derivative = " << middle_derivative << endl;
+  shots = 0;
+  
+//   We make our input points and nbd 
+  vector <IVector> points(shots+2);
+  vector <IVector> neighborhoods(shots+2);
+  
+  for (int i =1;i<shots+1;i++)
+  {
+      points[i]         =multiple_guess[i-1];
+      neighborhoods[i]  = coord_nbd;
+  }
+  points[0]=local_guess_U;
+  points.back()=local_guess_S;
+  
+  neighborhoods[0]=initial_box*U_flat;
+  neighborhoods.back()=initial_box*U_flat;
+  
+  cout << "points = " << points << endl;
+  
+  BVP.NewtonStep(points, neighborhoods ,T) ;
+  
+
   return;
   //   END Testing integration of middle points
   
