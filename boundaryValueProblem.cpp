@@ -479,50 +479,26 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
       Integrate_point(points[i+1], neighborhoods[i+1] ,integration_time,FORWARD  ,forward_vector,forward_derivative);
       Integrate_point(points[i+1], neighborhoods[i+1] ,integration_time,BACKWARDS,backwards_vector,backwards_derivative);
       DG_forward[i+1] = forward_derivative;
-      DG_backwards[i] = backwards_derivative;
+      DG_backwards[i] = -backwards_derivative;
   }
   
   
-  
-  
-  
-// // // //   DEBUGGINg output
-// // //   for (int i =0;i<num_middle_points+1;i++)
-// // //   {
-// // //       cout <<"G_forward  ["<<i<<"] = "<< G_forward[i] << endl; 
-// // //       cout <<"G_backwards["<<i<<"] = "<< G_backwards[i] << endl; 
-// // //   }
-  
 
-  IVector G = Construct_G(  G_forward, G_backwards, points);
-  IMatrix DG_new =Construct_DG( DG_forward, DG_backwards, points,neighborhoods);
-  cout << " ----  G = " << G << endl;
-  cout << " ---- DG = " << DG_new << endl;  
-  
-  IMatrix  DG_x =  DGxy( X_pt, X_nbd, T, UNSTABLE);
-  IMatrix  DG_y = -DGxy( Y_pt, Y_nbd, T, STABLE);
+
+  IVector G  = Construct_G(  G_forward, G_backwards, points);
+  IMatrix DG = Construct_DG( DG_forward, DG_backwards, points,neighborhoods);
    
-  
-  
-  IMatrix DG = DG_combine(DG_x,DG_y,X_pt, X_nbd);// TODO Make pt/nbd version // Maybe?
-  
-   
-//   cout <<  " DG = " << DG << endl;  
-  
 
   IVector XY_out_nbd = gauss(DG,G); 
   
 //   TODO Reimpliment
   IVector initial_vector = Construct_Initial_Vector(points , neighborhoods);
-// cout << "initial_vector = " << initial_vector << endl;    
-// vector < IVector > output_regions = Deconstruct_Output_Vector(initial_vector);
-//   cout << "decompose = " << output_regions << endl;
 
 //   We perform the subtraction in the newton step
   IVector out_vector = initial_vector - XY_out_nbd;
   
 vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);
-//   cout << "Output = " << output_regions << endl;
+
   
 //   BEGIN
 //   cout << "output nbd " << XY_out_nbd << endl;
@@ -646,7 +622,6 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
 
 IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector <IMatrix> DG_backwards, vector <IVector> points,vector <IVector> neighborhoods)
 {
-    int num_equations = DG_forward.size();
     int num_regions = points.size();
     int num_middle_points = num_regions-2; // The number of points between our stable/unstable coordinates.
     
@@ -656,11 +631,50 @@ IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector 
     
     IMatrix DG(N,N);
     
-    for (int i = 0 ; i<num_equations ;i++)
+//     Add the DG from the unstable manifold
+    for ( int i =0;i<dimension/2;i++)  // column
     {
-        cout << " DG_for ["<<i<<"] = " << DG_forward[i] << endl;
-        cout << " DG_bac ["<<i<<"] = " << DG_backwards[i] << endl;
+        for (int j=0;j<dimension-1;j++) // row
+        {
+            DG[j][i] = DG_forward[0][j][i];
+        }
     }
+    
+    //     Add the DG from the stable manifold
+    for ( int i =0;i<dimension/2;i++)  // column
+    {
+        for (int j=0;j<dimension-1;j++) // row
+        {
+            DG[N-(dimension-1)-1+j][N-(dimension/2)+i] = DG_backwards.back()[j][i];
+        }
+    }
+    
+//  Add the middle points
+
+    for ( int i =0;i <num_middle_points;i++)
+    {
+        int point_index = i*(dimension-1);
+        for (int j =0;j<dimension-1;j++) // row
+        {
+            for (int k =0;k<dimension-1;k++) // column
+            {
+                DG[j+point_index][k+point_index+dimension/2]                =DG_backwards[i][j][k];
+                DG[j+point_index+dimension-1][k+point_index+dimension/2]    =DG_forward[i+1][j][k];
+            }
+        }
+    }
+    
+//     We add the derivative from fixing the unstable radius
+    for (int i =0;i<dimension/2; i++)
+    {
+        DG[N-1][i]=2*(points[0][i]+neighborhoods[0][i]);
+    }
+    
+//     for (int i = 0 ; i<num_equations ;i++)
+//     {
+//         cout << " DG_for ["<<i<<"] = " << DG_forward[i] << endl;
+//         cout << " DG_bac ["<<i<<"] = " << DG_backwards[i] << endl;
+//     }
     
   return DG;   
 }

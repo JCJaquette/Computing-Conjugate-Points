@@ -430,7 +430,7 @@ cout << endl;
   
   
 //   BEGIN Testing integration of middle points
-  int shots = 3;
+  int shots = 2;
 //   We get the initial mid-points for multiple shooting
   vector < IVector > multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
 
@@ -449,24 +449,25 @@ for (int i = 0 ; i < shots ; i++)
     cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
 }
   
-//   We get a sample index, to try integrating things
-  int mid_I = floor(shots/2)-1;
-  
 //   We get a sample neighborhood to integrate along
   IVector coord_nbd(dimension-1);
   for(int i = 0;i<dimension-1;i++)
       coord_nbd[i]=scale*interval(-1,1)/100;
+//   We get a sample index, to try integrating things
+  int mid_I = floor(shots/2)-1;
+//   
 
-  //   This will be the output of the derivative ?? Not sure how this works yet
-  IMatrix middle_derivative;  
-//   We try to integrate the middle point
-  IVector middle_test;
-  BVP.Integrate_point(multiple_guess[mid_I], coord_nbd ,2*T/(shots+1),1,middle_test,middle_derivative);
-  cout << "Integration start = " << multiple_guess[mid_I] << endl;
-  cout << "Integration end   = " << middle_test << endl;
-  cout << " end  Derivative = " << middle_derivative << endl;
+// 
+//   //   This will be the output of the derivative ?? Not sure how this works yet
+//   IMatrix middle_derivative;  
+// //   We try to integrate the middle point
+//   IVector middle_test;
+//   BVP.Integrate_point(multiple_guess[mid_I], coord_nbd ,2*T/(shots+1),1,middle_test,middle_derivative);
+//   cout << "Integration start = " << multiple_guess[mid_I] << endl;
+//   cout << "Integration end   = " << middle_test << endl;
+//   cout << " end  Derivative = " << middle_derivative << endl;
   
-  shots = 0;
+//   shots = 0;
   
 //   We make our input points and nbd 
   vector <IVector> points(shots+2);
@@ -485,9 +486,18 @@ for (int i = 0 ; i < shots ; i++)
   
   cout << "points = " << points << endl;
   
-  BVP.NewtonStep(points, neighborhoods ,T) ;
+  for (unsigned i = 0 ; i < points.size();i++)
+  {
+    cout << "Region["<<i<<"] = " << points[i] << endl;
+  }
   
-
+  vector < IVector > regions = BVP.NewtonStep(points, neighborhoods ,T) ;
+  
+  for (unsigned i = 0 ; i < regions.size();i++)
+  {
+    cout << "Region["<<i<<"] = " << regions[i] << endl;
+  }
+  
   return;
   //   END Testing integration of middle points
   
