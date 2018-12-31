@@ -148,8 +148,8 @@ vector <IFunction> constructEnergy(int dimension,  vector < double > All_paramet
 //       U(u2)    = sqr(u2)*sqr(1-u2)/4
 //       U(u1,u2) = u1*(1-u1)*u2*(1-u2)/2
         
-        energy              = "b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun:         (sqr(v1)+sqr(v2)+sqr(v3))/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2;";
-        energy_projection   = "b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2   ;fun:sqrt(-2*((sqr(v1)+sqr(v2)        )/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2));";
+        energy              = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun:         (sqr(v1)+sqr(v2)+sqr(v3))/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2;";
+        energy_projection   = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2   ;fun:sqrt(-2*((sqr(v1)+sqr(v2)        )/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2));";
 /*
 //         Make this parameter set into a function        
         energy.setParameter("b1", All_parameters[0]); // 
@@ -430,7 +430,7 @@ cout << endl;
   
   
 //   BEGIN Testing integration of middle points
-  int shots = 2;
+  int shots = 10;
 //   We get the initial mid-points for multiple shooting
   vector < IVector > multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
 
@@ -454,7 +454,7 @@ for (int i = 0 ; i < shots ; i++)
   for(int i = 0;i<dimension-1;i++)
       coord_nbd[i]=scale*interval(-1,1)/100;
 //   We get a sample index, to try integrating things
-  int mid_I = floor(shots/2)-1;
+//   int mid_I = floor(shots/2)-1;
 //   
 
 // 
@@ -476,13 +476,14 @@ for (int i = 0 ; i < shots ; i++)
   for (int i =1;i<shots+1;i++)
   {
       points[i]         =multiple_guess[i-1];
-      neighborhoods[i]  = coord_nbd;
+//       neighborhoods[i]  = coord_nbd;
+      neighborhoods[i]  = IVector(dimension-1);
   }
   points[0]=local_guess_U;
   points.back()=local_guess_S;
   
-  neighborhoods[0]=initial_box*U_flat;
-  neighborhoods.back()=initial_box*U_flat;
+  neighborhoods[0]    =0*U_flat;
+  neighborhoods.back()  =0*U_flat;
   
   cout << "points = " << points << endl;
   
@@ -491,18 +492,30 @@ for (int i = 0 ; i < shots ; i++)
     cout << "Region["<<i<<"] = " << points[i] << endl;
   }
   
-  vector < IVector > regions = BVP.NewtonStep(points, neighborhoods ,T) ;
-  
-  for (unsigned i = 0 ; i < regions.size();i++)
+  vector < IVector > regions;
+  for (int i = 0 ; i<30;i++)
   {
-    cout << "Region["<<i<<"] = " << regions[i] << endl;
+      regions = BVP.NewtonStep(points, neighborhoods ,T) ;
+      for (unsigned j=0;j<regions.size();j++)
+          points[j] = midVector(regions[j]);
+      cout << "New Guess " << endl;
+      for (unsigned i = 0 ; i < regions.size();i++)
+    {
+        cout << "Region["<<i<<"] = " << regions[i] << endl;
+    }
   }
+
   
-  return;
+//   for (unsigned i = 0 ; i < regions.size();i++)
+//   {
+//     cout << "Region["<<i<<"] = " << regions[i] << endl;
+//   }
+//   
+//   return;
   //   END Testing integration of middle points
   
   
-  
+  cout << "done testing " << endl;
   
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
@@ -674,7 +687,7 @@ int main(int argc, char* argv[])
 	try
 	{
 // 	  plotDemo();
-	  bool Get_Param = 0;
+	  bool Get_Param = 1;
 	  int dimension;
 	  vector < double > Input;
 	  

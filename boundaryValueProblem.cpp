@@ -47,6 +47,7 @@
   A_energy[dimension-1][dimension-1]=1;
 //   cout << "A_energy  = " << A_energy << endl;
   
+  A_energy = midVector(A_energy); //TODO Fix!!!!
 //   We create the set we will integrate  
   C1Rect2Set S_XY(global_pt,A_energy,global_nbd);  
     
@@ -488,6 +489,12 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
   IVector G  = Construct_G(  G_forward, G_backwards, points);
   IMatrix DG = Construct_DG( DG_forward, DG_backwards, points,neighborhoods);
    
+  
+  DG = midVector(DG);//TODO
+  
+  cout <<  "___ G = " << G << endl;  
+//   cout <<  "___ DG = " << DG << endl;  
+  
 
   IVector XY_out_nbd = gauss(DG,G); 
   
@@ -495,7 +502,7 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
   IVector initial_vector = Construct_Initial_Vector(points , neighborhoods);
 
 //   We perform the subtraction in the newton step
-  IVector out_vector = initial_vector - XY_out_nbd;
+  IVector out_vector = initial_vector - .1* XY_out_nbd;
   
 vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);
 
@@ -622,6 +629,7 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
 
 IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector <IMatrix> DG_backwards, vector <IVector> points,vector <IVector> neighborhoods)
 {
+    
     int num_regions = points.size();
     int num_middle_points = num_regions-2; // The number of points between our stable/unstable coordinates.
     
