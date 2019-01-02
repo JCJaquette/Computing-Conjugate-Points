@@ -316,14 +316,24 @@ void test(int dimension,vector < double > All_parameters)
  
     //   Cone angle
   //   We define the box used for the boundary value problem
-  interval initial_box =interval(-.000001,.000001);//n=2
-//   interval initial_box =interval(-.0000001,.0000001); //n=3
+  interval initial_box;
+  interval L; 
+  interval scale;
+  int shots = 12;
   
-  interval L = interval(.00007); // n=2
-//   interval L = interval(.00000000007); // n=2
-//   interval L = interval(.00015); //n =3
-  interval scale = 0.00001;
-  
+  if (dimension ==4)
+  {
+      initial_box =interval(-.000001,.000001);
+      L = interval(.00007); // n=2
+      scale = 0.00001;
+  }
+  else if (dimension ==6)
+  {
+      L = interval(.0000007); // n=3
+      scale = 0.000025;
+      initial_box =interval(-.000001,.000001);
+  }
+      
   
   IVector U_flat(dimension/2);
   for (int i =0;i<dimension/2;i++){ U_flat[i]=scale*interval(-1,1);}
@@ -394,7 +404,7 @@ void test(int dimension,vector < double > All_parameters)
   interval T ;
   int frozen;
   T = 16.3; // n=2
-  T = 17.;
+  T = 14.5; // n=2
   IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
   IVector guess_S = initialGuessGlobal(dimension, All_parameters, T, 0);
   
@@ -403,7 +413,7 @@ void test(int dimension,vector < double > All_parameters)
   
   
     interval radius = sqr(localUnstable.getRadius())*dimension/2;
-  interval U_radius_sqr = 0;
+  interval U_radius_sqr = 0;  // TODO Turn this into a function 
   for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(local_guess_U[i]);}
   cout << "U_radius_sqr" << U_radius_sqr << endl;
 //   local_guess_U = scale*local_guess_U/getMax(abs(local_guess_U));
@@ -425,29 +435,49 @@ cout << endl;
   
   boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,frozen );//TODO REMOVE FROZEN
  
+  
   T = BVP.FindTime(XY_pt,T);
 
   
-  
 //   BEGIN Testing integration of middle points
-  int shots = 10;
-//   We get the initial mid-points for multiple shooting
-  vector < IVector > multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
-
-  //   We throw away the last coordinate of each of our guesses  
-  for (int i = 0 ; i < shots ; i++)
-  {
-    IVector new_vector(dimension-1);
-    for(int j = 0 ; j < dimension-1;j++)
-      new_vector[j]= multiple_guess[i][j];
-    multiple_guess[i]=new_vector;
-  }
+  
+    //   We get the initial mid-points for multiple shooting
+    vector < IVector > multiple_guess ;
+    if (shots >0)
+        multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
     
-//     We output the energies of our guesses
-for (int i = 0 ; i < shots ; i++)
-{
-    cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
-}
+    // We output the energies of our guesses
+    for (int i = 0 ; i < shots ; i++)
+    {
+        cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
+    }
+    
+    // We go to the zero level set via the gradient 
+    for (int i = 0 ; i < shots ; i++)
+    {
+        for (int j = 0;j<15;j++)
+        {
+            interval local_energy = energy(multiple_guess[i]);
+            IVector local_grad = energy.gradient(multiple_guess[i]);
+            multiple_guess[i] -= midVector((local_energy /(local_grad*local_grad))*local_grad);
+            multiple_guess[i]=midVector(multiple_guess[i]);
+        }
+//         cout << " diff " << i << " = " << (local_energy /(local_grad*local_grad))*local_grad << endl;
+        cout << " new Energy " << i << " = " << energy(multiple_guess[i]) << endl;
+    }
+    
+    //   We throw away the last coordinate of each of our guesses  
+    for (int i = 0 ; i < shots ; i++)
+    {
+        IVector new_vector(dimension-1);
+        for(int j = 0 ; j < dimension-1;j++)
+        new_vector[j]= multiple_guess[i][j];
+        multiple_guess[i]=new_vector;
+    }
+    
+    
+    
+    
   
 //   We get a sample neighborhood to integrate along
   IVector coord_nbd(dimension-1);
@@ -492,19 +522,29 @@ for (int i = 0 ; i < shots ; i++)
     cout << "Region["<<i<<"] = " << points[i] << endl;
   }
   
+//    We do the newton method
   vector < IVector > regions;
-  for (int i = 0 ; i<30;i++)
+  for (int i = 0 ; i<1000;i++)
   {
+      cout << " ### = " << i << endl; 
+      cout << points[0] << endl;
       regions = BVP.NewtonStep(points, neighborhoods ,T) ;
       for (unsigned j=0;j<regions.size();j++)
           points[j] = midVector(regions[j]);
+      
+      
+//       U_radius_sqr = 0;  // TODO Turn this into a function 
+//       for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(points[0][i]);}      
+//       points[0] = points[0] *sqrt(radius/U_radius_sqr);
+      
       cout << "New Guess " << endl;
       for (unsigned i = 0 ; i < regions.size();i++)
     {
-        cout << "Region["<<i<<"] = " << regions[i] << endl;
+        cout << " Region["<<i<<"] = " << regions[i] << endl;
     }
   }
 
+  
   
 //   for (unsigned i = 0 ; i < regions.size();i++)
 //   {
@@ -516,10 +556,17 @@ for (int i = 0 ; i < shots ; i++)
   
   
   cout << "done testing " << endl;
+//   return;
+  
+  
+   for (unsigned i = 0 ; i < regions.size();i++)
+    {
+        cout << "Region["<<i<<"] = " << midVector(regions[i]) << endl;
+    }
   
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
-  for (int i = 0 ; i<25;i++)
+  for (int i = 0 ; i<100;i++)
   {
     
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
@@ -572,7 +619,7 @@ for (int i = 0 ; i < shots ; i++)
 //   cout << "Norm Bounds = " << norm_bounds << endl;
   
   
-  return;
+//   return;
   
   
   cout << endl << "Globalizing Manifold ... " << endl;
@@ -687,17 +734,30 @@ int main(int argc, char* argv[])
 	try
 	{
 // 	  plotDemo();
-	  bool Get_Param = 1;
+	  bool Get_Param = 0;
 	  int dimension;
 	  vector < double > Input;
 	  
 	  if (!Get_Param) 
 	  {
-	    dimension=4;
-	    Input.push_back(1); // a
-	    Input.push_back(.95);// b 
-	    Input.push_back(.05);// c
- 	    test(4,Input);
+          
+	    dimension=6;
+        if (dimension ==4)
+        {
+            Input.push_back(1); // a
+            Input.push_back(.95);// b 
+            Input.push_back(.05);// c
+            test(dimension,Input);
+        }
+        else if (dimension ==6)
+        {            
+            Input.push_back(1); // b1
+            Input.push_back(.98);// b2 
+            Input.push_back(.95);// b3
+            Input.push_back(.005);// c12
+            Input.push_back(.025);// c23
+            test(dimension,Input);
+        }
 	  }
 	  else
 	  {

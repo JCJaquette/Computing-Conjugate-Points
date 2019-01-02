@@ -57,6 +57,8 @@
   IMatrix monodromy_matrix(dimension,dimension);
   vector_out = Phi(T,S_XY,monodromy_matrix);   
   
+  
+  
 //   We pre-multiply the monodromy_matrix by the derivative of the 0-energy section chart
   monodromy_matrix = monodromy_matrix *A_energy;
 //   We get rid of the last column & row
@@ -440,6 +442,8 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
     
   interval integration_time = T/(num_middle_points+1);
   
+  cout << " integration_time = " << integration_time << endl;
+  
 //   NOTE We integrate the center point
 //   We create a list of the output from integrating forward / backwards
   vector <IVector> G_forward(points_length-1);
@@ -489,20 +493,25 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
   IVector G  = Construct_G(  G_forward, G_backwards, points);
   IMatrix DG = Construct_DG( DG_forward, DG_backwards, points,neighborhoods);
    
-  
+//   G = midVector(G);//TODO  
   DG = midVector(DG);//TODO
   
-  cout <<  "___ G = " << G << endl;  
-//   cout <<  "___ DG = " << DG << endl;  
+  cout <<  "___ G = " << G  << endl;  
+//   cout <<  "___ DG = " << DG -midVector(DG) << endl;  
   
-
+//   cout <<  "___ DG = " << DG<< endl;  
+  
+  cout <<  "___ det " << det(DG) << endl;  
+  
   IVector XY_out_nbd = gauss(DG,G); 
   
 //   TODO Reimpliment
   IVector initial_vector = Construct_Initial_Vector(points , neighborhoods);
 
 //   We perform the subtraction in the newton step
-  IVector out_vector = initial_vector - .1* XY_out_nbd;
+//   newton flow
+  interval flow_step = .01;
+  IVector out_vector = initial_vector - flow_step * XY_out_nbd; //TODO Newton Flow
   
 vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);
 
@@ -623,7 +632,13 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
 // // //    We replace the last term of G with point^2 - radius^2 
   G[N*(dimension-1)] = x_radius_sqr - radius; 
             
-    
+      for (int i = 0 ; i<N ;i++)
+    {
+//         cout << " G_for ["<<i<<"] = " << G_forward[i] << endl;
+//         cout << " G_bac ["<<i<<"] = " << G_backwards[i] << endl;
+    }  
+  
+  
     return G;   
 }
 
