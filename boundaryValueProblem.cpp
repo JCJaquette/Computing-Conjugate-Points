@@ -510,7 +510,7 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
 
 //   We perform the subtraction in the newton step
 //   newton flow
-  interval flow_step = .01;
+  interval flow_step = .015;
   IVector out_vector = initial_vector - flow_step * XY_out_nbd; //TODO Newton Flow
   
 vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);

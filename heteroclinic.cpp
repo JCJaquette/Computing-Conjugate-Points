@@ -305,13 +305,13 @@ void test(int dimension,vector < double > All_parameters)
   
   
   int order = 20;
-  int grid = 32; 
-  int stepsize = 6;
-  interval L_plus = 12;
+  int grid = 30; 
+  int stepsize = 7;
+  interval L_plus = 10;
   
  
-  bool CHECK_MANIFOLD 		= 0;
-  bool CHECK_CONNECTING_ORBIT 	= 0;
+  bool CHECK_MANIFOLD 		= 1;
+  bool CHECK_CONNECTING_ORBIT 	= 1;
 
  
     //   Cone angle
@@ -329,8 +329,12 @@ void test(int dimension,vector < double > All_parameters)
   }
   else if (dimension ==6)
   {
-      L = interval(.0000007); // n=3
-      scale = 0.000025;
+      L = interval(.000015); // n=3
+      scale = 0.000001;
+//       T = 20; // n=2
+      
+      
+      
       initial_box =interval(-.000001,.000001);
   }
       
@@ -404,7 +408,7 @@ void test(int dimension,vector < double > All_parameters)
   interval T ;
   int frozen;
   T = 16.3; // n=2
-  T = 14.5; // n=2
+  T = 20; // n=3
   IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
   IVector guess_S = initialGuessGlobal(dimension, All_parameters, T, 0);
   
@@ -524,7 +528,7 @@ cout << endl;
   
 //    We do the newton method
   vector < IVector > regions;
-  for (int i = 0 ; i<1000;i++)
+  for (int i = 0 ; i<0;i++)
   {
       cout << " ### = " << i << endl; 
       cout << points[0] << endl;
@@ -566,7 +570,7 @@ cout << endl;
   
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
-  for (int i = 0 ; i<100;i++)
+  for (int i = 0 ; i<50;i++)
   {
     
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
