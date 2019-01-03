@@ -77,14 +77,15 @@ IVector knownSolution( double a, interval x)
 vector < IVector >  multipleShootingGuess( int shots, interval T ,int dimension, vector < double > All_parameters)
 {
  vector < IVector > output;
+//  Output is of length SHOTS+1
  
- vector < interval > times(shots);
+ vector < interval > times(shots+1);
  interval time_increment = (2*T /(shots+1));
- times[0]=-T+time_increment;
- for(int i =1;i<shots;i++) 
+ times[0]=-T;
+ for(int i =1;i<shots+1;i++) 
   times[i]=times[i-1]+time_increment;
  
- for(int i = 0 ; i< shots ; i++)
+ for(int i = 0 ; i< shots+1 ; i++)
  {
      IVector local_vector(dimension); 
      for (int j = 0;j<dimension/2;j++)
@@ -319,7 +320,7 @@ void test(int dimension,vector < double > All_parameters)
   interval initial_box;
   interval L; 
   interval scale;
-  int shots = 12;
+  int shots = 3;
   
   if (dimension ==4)
   {
@@ -408,7 +409,7 @@ void test(int dimension,vector < double > All_parameters)
   interval T ;
   int frozen;
   T = 16.3; // n=2
-  T = 20; // n=3
+//   T = 20; // n=3
   IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
   IVector guess_S = initialGuessGlobal(dimension, All_parameters, T, 0);
   
@@ -450,14 +451,14 @@ cout << endl;
     if (shots >0)
         multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
     
-    // We output the energies of our guesses
-    for (int i = 0 ; i < shots ; i++)
-    {
-        cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
-    }
+//     // We output the energies of our guesses
+//     for (int i = 0 ; i < shots+1 ; i++)
+//     {
+//         cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
+//     }
     
     // We go to the zero level set via the gradient 
-    for (int i = 0 ; i < shots ; i++)
+    for (int i = 0 ; i < shots+1 ; i++)
     {
         for (int j = 0;j<15;j++)
         {
@@ -467,11 +468,11 @@ cout << endl;
             multiple_guess[i]=midVector(multiple_guess[i]);
         }
 //         cout << " diff " << i << " = " << (local_energy /(local_grad*local_grad))*local_grad << endl;
-        cout << " new Energy " << i << " = " << energy(multiple_guess[i]) << endl;
+//         cout << " new Energy " << i << " = " << energy(multiple_guess[i]) << endl;
     }
     
     //   We throw away the last coordinate of each of our guesses  
-    for (int i = 0 ; i < shots ; i++)
+    for (int i = 0 ; i < shots +1; i++)
     {
         IVector new_vector(dimension-1);
         for(int j = 0 ; j < dimension-1;j++)
@@ -483,31 +484,17 @@ cout << endl;
     
     
   
-//   We get a sample neighborhood to integrate along
-  IVector coord_nbd(dimension-1);
-  for(int i = 0;i<dimension-1;i++)
-      coord_nbd[i]=scale*interval(-1,1)/100;
-//   We get a sample index, to try integrating things
-//   int mid_I = floor(shots/2)-1;
-//   
+// //   We get a sample neighborhood to integrate along
+//   IVector coord_nbd(dimension-1);
+//   for(int i = 0;i<dimension-1;i++)
+//       coord_nbd[i]=scale*interval(-1,1)/100;
 
-// 
-//   //   This will be the output of the derivative ?? Not sure how this works yet
-//   IMatrix middle_derivative;  
-// //   We try to integrate the middle point
-//   IVector middle_test;
-//   BVP.Integrate_point(multiple_guess[mid_I], coord_nbd ,2*T/(shots+1),1,middle_test,middle_derivative);
-//   cout << "Integration start = " << multiple_guess[mid_I] << endl;
-//   cout << "Integration end   = " << middle_test << endl;
-//   cout << " end  Derivative = " << middle_derivative << endl;
-  
-//   shots = 0;
-  
+
 //   We make our input points and nbd 
-  vector <IVector> points(shots+2);
-  vector <IVector> neighborhoods(shots+2);
+  vector <IVector> points(shots+3);
+  vector <IVector> neighborhoods(shots+3);
   
-  for (int i =1;i<shots+1;i++)
+  for (int i =1;i<shots+2;i++)
   {
       points[i]         =multiple_guess[i-1];
 //       neighborhoods[i]  = coord_nbd;
@@ -519,7 +506,7 @@ cout << endl;
   neighborhoods[0]    =0*U_flat;
   neighborhoods.back()  =0*U_flat;
   
-  cout << "points = " << points << endl;
+//   cout << "points = " << points << endl;
   
   for (unsigned i = 0 ; i < points.size();i++)
   {
@@ -528,18 +515,13 @@ cout << endl;
   
 //    We do the newton method
   vector < IVector > regions;
-  for (int i = 0 ; i<0;i++)
+  for (int i = 0 ; i<2;i++)
   {
       cout << " ### = " << i << endl; 
       cout << points[0] << endl;
       regions = BVP.NewtonStep(points, neighborhoods ,T) ;
       for (unsigned j=0;j<regions.size();j++)
           points[j] = midVector(regions[j]);
-      
-      
-//       U_radius_sqr = 0;  // TODO Turn this into a function 
-//       for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(points[0][i]);}      
-//       points[0] = points[0] *sqrt(radius/U_radius_sqr);
       
       cout << "New Guess " << endl;
       for (unsigned i = 0 ; i < regions.size();i++)
@@ -548,21 +530,16 @@ cout << endl;
     }
   }
 
-  
-  
-//   for (unsigned i = 0 ; i < regions.size();i++)
-//   {
-//     cout << "Region["<<i<<"] = " << regions[i] << endl;
-//   }
+
 //   
 //   return;
   //   END Testing integration of middle points
   
   
   cout << "done testing " << endl;
-//   return;
+  return;
   
-  
+//   BEGIN 
    for (unsigned i = 0 ; i < regions.size();i++)
     {
         cout << "Region["<<i<<"] = " << midVector(regions[i]) << endl;
@@ -638,7 +615,7 @@ cout << endl;
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   
   cout <<endl <<  "Runtime = " << elapsed_secs  << endl;
-  
+//   END
 }
 
 
@@ -745,7 +722,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6;
+	    dimension=4;
         if (dimension ==4)
         {
             Input.push_back(1); // a
