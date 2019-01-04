@@ -544,6 +544,12 @@ vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);
   return output_regions;
 }
 
+IVector boundaryValueProblem::Compute_G(vector <IVector> points,interval T)
+{
+    return points[0]; //TODO  write this function
+    
+}
+
 IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,vector <IVector> neighborhoods)
 {
     
@@ -609,7 +615,7 @@ vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector
     return points_out;   
 }
 
-IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points)
+IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points) // TODO replace with "COMPUTE G" 
 {
     int N = G_forward.size();
     IVector G(N*(dimension-1)+1);
@@ -642,7 +648,7 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
     return G;   
 }
 
-IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector <IMatrix> DG_backwards, vector <IVector> points,vector <IVector> neighborhoods)
+IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector <IMatrix> DG_backwards, vector <IVector> points,vector <IVector> neighborhoods)//TODO Revise
 {
     
     int num_regions = points.size();

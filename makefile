@@ -2,7 +2,7 @@
 PROGS = heteroclinic
 
 # a list of all your units to be linked with your programs (space separated)
-OTHERS = utils eigenvalues localManifold boundaryValueProblem propagateManifold topFrame 
+OTHERS = utils ODE_functions eigenvalues localManifold boundaryValueProblem propagateManifold topFrame 
 
 # directory where capd scripts are (e.g. capd-config)
 #CAPDBINDIR = /home/jjaquette@msri.members/capd-capdDynSys-5.0.59/bin/
