@@ -56,15 +56,15 @@ IVector knownSolution( double a, interval x)
 vector < IVector >  multipleShootingGuess( int shots, interval T ,int dimension, vector < double > All_parameters)
 {
  vector < IVector > output;
-//  Output is of length SHOTS+1
+//  Output is of length SHOTS
  
- vector < interval > times(shots+1);
+ vector < interval > times(shots);
  interval time_increment = (2*T /(shots+1));
- times[0]=-T;
- for(int i =1;i<shots+1;i++) 
+ times[0]=-T+time_increment;
+ for(int i =1;i<shots;i++) 
   times[i]=times[i-1]+time_increment;
  
- for(int i = 0 ; i< shots+1 ; i++)
+ for(int i = 0 ; i< shots ; i++)
  {
      IVector local_vector(dimension); 
      for (int j = 0;j<dimension/2;j++)

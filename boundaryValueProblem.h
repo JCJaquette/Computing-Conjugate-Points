@@ -45,7 +45,8 @@ public:
   IVector NormBound( IVector XY,interval T); // TODO pt/nbd Form
   IVector localNormBound( IVector XY,interval T, bool STABLE ); // TODO pt/nbd Form
   
-  IVector Compute_G(vector <IVector> points,interval T);
+  IVector Compute_G(const vector <IVector> &points,interval T);
+  IMatrix Compute_DG(const vector <IVector> &points,const vector <IVector> &neighborhoods,interval integration_time);
   IVector Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points);
   IMatrix Construct_DG( vector <IMatrix> DG_forward, vector <IMatrix> DG_backwards, vector <IVector> points,vector <IVector> neighborhoods);
   IVector Construct_Initial_Vector(vector <IVector> points,vector <IVector> neighborhoods);
