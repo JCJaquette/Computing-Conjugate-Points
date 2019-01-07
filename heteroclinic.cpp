@@ -45,8 +45,8 @@ void test(int dimension,vector < double > All_parameters)
   int stepsize = 6;
   interval L_plus = 10;
   int manifold_subdivision = 8;
-  int shots = 1;
-  int multiple_newton_steps = 10;
+  int shots = 5;
+  int multiple_newton_steps = 25;
  
   bool CHECK_MANIFOLD 		= 0;
   bool CHECK_CONNECTING_ORBIT 	= 0;
@@ -146,7 +146,6 @@ void test(int dimension,vector < double > All_parameters)
   
   IVector XY_pt(dimension);  
   interval T ;
-  int frozen;
   if (dimension ==4 )
     T = 16.3; // n=2
   else 
@@ -168,12 +167,9 @@ void test(int dimension,vector < double > All_parameters)
   for(int i = 0 ; i<dimension/2;i++){S_radius_sqr += sqr(local_guess_S[i]);}
   cout << "U_radius" << sqrt(U_radius_sqr) << endl;
   cout << "S_radius" << sqrt(S_radius_sqr) << endl;
-//   local_guess_U = scale*local_guess_U/getMax(abs(local_guess_U));
   local_guess_U = local_guess_U *sqrt(radius_x/U_radius_sqr);
   local_guess_S = local_guess_S *sqrt(radius_y/S_radius_sqr);
-//   local_guess_S = scale*local_guess_S/getMax(abs(local_guess_S));
   
-  frozen = getMaxIndex( abs(local_guess_U)); // TODO Remove this, and remove frozen from BVP class
     
   for (int i = 0 ; i< dimension; i++)
   {
@@ -187,7 +183,7 @@ void test(int dimension,vector < double > All_parameters)
   
 cout << endl;
   
-  boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,frozen );//TODO REMOVE FROZEN
+  boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots );//TODO REMOVE FROZEN
  
   
   T = BVP.FindTime(XY_pt,T);
@@ -259,13 +255,16 @@ cout << endl;
     cout << "Region["<<i<<"] = " << points[i] << endl;
   }
   
+  interval integration_time = 2*T/(shots+1);
+  
 //    We do the newton method
   vector < IVector > regions;
   for (int i = 0 ; i<multiple_newton_steps ;i++)
   {
       cout << " ### = " << i << endl; 
       cout << points[0] << endl;
-      regions = BVP.NewtonStep(points, neighborhoods ,T) ;
+      regions = BVP.NewtonStep(points, neighborhoods ,integration_time) ;
+      integration_time = integration_time.mid();
       for (unsigned j=0;j<regions.size();j++)
           points[j] = midVector(regions[j]);
       
@@ -281,8 +280,9 @@ cout << endl;
   
   
   cout << "done testing " << endl;
-  return;
+//   return;
   
+  BVP.setMiddlePoints(0);
 //   BEGIN  do the single-shooting newton method & globalize manifold
 
   

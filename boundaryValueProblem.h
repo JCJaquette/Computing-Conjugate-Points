@@ -30,10 +30,11 @@ private:
   localManifold *pStable;
   localManifold *pUnstable;
   int dimension;
+  int num_middle_points;
   int order;
-  int frozen; 
+//   int frozen; 
 public:
-  boundaryValueProblem(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int frozen_){pf = &pf_;pf_minus = &pf_minus_;p_energy_proj=&p_energy_proj_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_; frozen = frozen_;dimension = (*pStable).dim();SUCCESS=0;}
+  boundaryValueProblem(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int num_middle_points_){pf = &pf_;pf_minus = &pf_minus_;p_energy_proj=&p_energy_proj_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_; num_middle_points = num_middle_points_;dimension = (*pStable).dim();SUCCESS=0;}
 
   void Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IVector &vector_out, IMatrix &derivative) ; 
   IVector Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) ; 
@@ -50,14 +51,16 @@ public:
   IMatrix Compute_DG(const vector <IVector> &points,const vector <IVector> &neighborhoods,interval integration_time);
   IVector Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points);
   IMatrix Construct_DG(const vector <IMatrix> &DG_forward, const vector <IMatrix> &DG_backwards,const  vector <IVector> &points, const vector <IVector> &neighborhoods,const vector < IVector> &G_forward);
-  IVector Construct_Initial_Vector(vector <IVector> points,vector <IVector> neighborhoods);
+  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods);
+  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods,interval integration_time);
   vector <IVector> Deconstruct_Output_Vector(IVector initial_vector);
   
   
   IVector NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) ;//TODO REMOVE FROZEN //TODO
-  vector <IVector> NewtonStep(vector <IVector> XY_pt, vector <IVector> XY_nbd  ,interval T);   
+  vector <IVector> NewtonStep(vector <IVector> XY_pt, vector <IVector> XY_nbd  ,interval &T);   
   bool Verify( IVector XY_pt, IVector XY_nbd  ,interval T){return 0;};// TODO Write this function 
   bool checkProof(void){return SUCCESS;};
+  void setMiddlePoints(int shots){num_middle_points = shots;};
   
   vector < IVector > breakUpXY( IVector XY);
   vector < IVector > breakUpXY_gen( IVector XY);
