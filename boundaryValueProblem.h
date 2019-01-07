@@ -30,7 +30,7 @@ private:
   localManifold *pStable;
   localManifold *pUnstable;
   int dimension;
-  int num_middle_points;
+  int num_middle_points;  // This NEEDS to be \geq 1 
   int order;
 //   int frozen; 
 public:
@@ -50,7 +50,7 @@ public:
   IVector Compute_G(const vector <IVector> &points,interval T);
   IMatrix Compute_DG(const vector <IVector> &points,const vector <IVector> &neighborhoods,interval integration_time);
   IVector Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points);
-  IMatrix Construct_DG(const vector <IMatrix> &DG_forward, const vector <IMatrix> &DG_backwards,const  vector <IVector> &points, const vector <IVector> &neighborhoods,const vector < IVector> &G_forward);
+  IMatrix Construct_DG(const vector <IMatrix> &DG_forward, const vector <IMatrix> &DG_backwards,const  vector <IVector> &points, const vector <IVector> &neighborhoods,const vector < IVector> &time_derivatives);
   IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods);
   IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods,interval integration_time);
   vector <IVector> Deconstruct_Output_Vector(IVector initial_vector);

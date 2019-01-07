@@ -33,5 +33,7 @@ IVector getColumn(const IMatrix &A, int dimension,int column);
  vector < IMatrix > blockDecompose( const IMatrix M , int dimension);
  interval getMax(const IVector &V);
  int getMaxIndex(const IVector &V);
+ void print( vector <IVector> vectors );
+ void print( vector <IMatrix> matrix_list);
   
 #endif

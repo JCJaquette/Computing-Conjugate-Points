@@ -46,9 +46,9 @@ void test(int dimension,vector < double > All_parameters)
   interval L_plus = 10;
   int manifold_subdivision = 8;
   int shots = 5;
-  int multiple_newton_steps = 25;
+  int multiple_newton_steps = 15;
  
-  bool CHECK_MANIFOLD 		= 0;
+  bool CHECK_MANIFOLD 		= 1;
   bool CHECK_CONNECTING_ORBIT 	= 0;
 
   
@@ -467,7 +467,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4;
+	    dimension=6;
         if (dimension ==4)
         {
             Input.push_back(1); // a
@@ -484,11 +484,11 @@ int main(int argc, char* argv[])
 //             Input.push_back(.005);// c12
 //             Input.push_back(.025);// c23         3 - unstable
 
-//             Input.push_back(-.015);// c12
-//             Input.push_back(.02);// c23          2 - unstable
-            
-            Input.push_back(.005);// c12
-            Input.push_back(-.025);// c23           1 - unstable
+            Input.push_back(-.015);// c12
+            Input.push_back(.02);// c23          2 - unstable
+
+//             Input.push_back(.005);// c12
+//             Input.push_back(-.025);// c23           1 - unstable
             
 //             Input.push_back(-.005);// c12
 //             Input.push_back(-.025);// c23         0 - unstable

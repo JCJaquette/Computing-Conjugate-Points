@@ -357,3 +357,23 @@ int getMaxIndex(const IVector &V)
 }
 
 
+void print( vector <IVector> vector_list )
+{
+    int length = vector_list.size();
+    for ( int i =0;i <length;i++)
+    {
+        cout << " i = " << i << "  --  ";
+        cout << vector_list[i] << endl;
+    }   
+}
+
+void print( vector <IMatrix> matrix_list)
+{
+    int length = matrix_list.size();
+    for ( int i =0;i <length;i++)
+    {
+        cout << " i = " << i << "  --  ";
+        cout << matrix_list[i] << endl;
+    }
+}
+
