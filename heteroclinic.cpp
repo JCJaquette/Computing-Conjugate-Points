@@ -41,15 +41,15 @@ void test(int dimension,vector < double > All_parameters)
   
   
   int order = 20;
-  int grid = 30; 
-  int stepsize = 7;
+  int grid = 32; 
+  int stepsize = 6;
   interval L_plus = 10;
   int manifold_subdivision = 8;
-  int shots = 6;
-  int multiple_newton_steps = 25;
+  int shots = 1;
+  int multiple_newton_steps = 10;
  
-  bool CHECK_MANIFOLD 		= 1;
-  bool CHECK_CONNECTING_ORBIT 	= 1;
+  bool CHECK_MANIFOLD 		= 0;
+  bool CHECK_CONNECTING_ORBIT 	= 0;
 
   
 
@@ -152,6 +152,7 @@ void test(int dimension,vector < double > All_parameters)
   else 
     T = 20; // n=3
     
+    
   IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
   IVector guess_S = initialGuessGlobal(dimension, All_parameters, T, 0);
   
@@ -159,13 +160,19 @@ void test(int dimension,vector < double > All_parameters)
   IVector local_guess_S = localStable.projectPoint(  guess_S); 
   
   
-    interval radius = sqr(localUnstable.getRadius())*dimension/2;
+    interval radius_x = sqr(localUnstable.getRadius())*dimension/2;
+    interval radius_y = sqr(localStable.getRadius())*dimension/2;
   interval U_radius_sqr = 0;  // TODO Turn this into a function 
+  interval S_radius_sqr = 0;  // TODO Turn this into a function 
   for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(local_guess_U[i]);}
-  cout << "U_radius_sqr" << U_radius_sqr << endl;
+  for(int i = 0 ; i<dimension/2;i++){S_radius_sqr += sqr(local_guess_S[i]);}
+  cout << "U_radius" << sqrt(U_radius_sqr) << endl;
+  cout << "S_radius" << sqrt(S_radius_sqr) << endl;
 //   local_guess_U = scale*local_guess_U/getMax(abs(local_guess_U));
-  local_guess_U = local_guess_U *sqrt(radius/U_radius_sqr);
-  local_guess_S = scale*local_guess_S/getMax(abs(local_guess_S));
+  local_guess_U = local_guess_U *sqrt(radius_x/U_radius_sqr);
+  local_guess_S = local_guess_S *sqrt(radius_y/S_radius_sqr);
+//   local_guess_S = scale*local_guess_S/getMax(abs(local_guess_S));
+  
   frozen = getMaxIndex( abs(local_guess_U)); // TODO Remove this, and remove frozen from BVP class
     
   for (int i = 0 ; i< dimension; i++)
@@ -274,7 +281,7 @@ cout << endl;
   
   
   cout << "done testing " << endl;
-//   return;
+  return;
   
 //   BEGIN  do the single-shooting newton method & globalize manifold
 
@@ -328,8 +335,8 @@ cout << endl;
     
 
 
-// 
 //    -- We calculate the norm bounds 
+// IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
 //   IVector norm_bounds = BVP.NormBound(XY,T);
 //   cout << "Norm Bounds = " << norm_bounds << endl;
   
@@ -460,7 +467,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6;
+	    dimension=4;
         if (dimension ==4)
         {
             Input.push_back(1); // a
@@ -473,8 +480,20 @@ int main(int argc, char* argv[])
             Input.push_back(1); // b1
             Input.push_back(.98);// b2 
             Input.push_back(.95);// b3
+            
+//             Input.push_back(.005);// c12
+//             Input.push_back(.025);// c23         3 - unstable
+
+//             Input.push_back(-.015);// c12
+//             Input.push_back(.02);// c23          2 - unstable
+            
             Input.push_back(.005);// c12
-            Input.push_back(-.025);// c23
+            Input.push_back(-.025);// c23           1 - unstable
+            
+//             Input.push_back(-.005);// c12
+//             Input.push_back(-.025);// c23         0 - unstable
+            
+
             test(dimension,Input);
         }
 	  }

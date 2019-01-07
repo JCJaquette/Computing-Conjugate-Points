@@ -408,17 +408,18 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
   int num_middle_points = points_length-2; // The number of points between our stable/unstable coordinates.
   interval integration_time = 2*T/(num_middle_points+1);
 
-  IMatrix DG = Compute_DG(points, neighborhoods , integration_time) ;
+  
 
-//   IVector G  = Construct_G(  G_forward, G_backwards, points);
+
    
   
   
-  IVector G = Compute_G(points,integration_time); // TODO Multiply integration time by 2 when it is defined
+  IVector G = Compute_G(points,integration_time); 
+  IMatrix DG = Compute_DG(points, neighborhoods , integration_time) ;
 //   cout <<  "___ G*= " << G_New  << endl;  
   
   cout <<  "___ G = " << G  << endl;  
-//   cout <<  "___ DG = " << DG<< endl;  
+  cout <<  "___ DG = " << DG<< endl;  
   
   interval sum_G =0;
   for(unsigned i =0;i<G.dimension();i++) 
@@ -498,17 +499,20 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
   vector <IMatrix> DG_forward(points_length-1);
   vector <IMatrix> DG_backwards(points_length-1);
   
+  vector <IVector> G_forward(points_length-1);
+  
 //   We integrate from the points on the stable/unstable manifold  
 // NOTE These matricies still have an extra bottom row.   
   interval time_zero =0;
     DG_forward[0]        =  DGxy( X_pt, X_nbd, integration_time, UNSTABLE);
     DG_backwards.back()  = -DGxy( Y_pt, Y_nbd, time_zero , STABLE);
+    G_forward[0]         =  Gxy( X_pt, X_nbd, integration_time , UNSTABLE); 
     
     
+//     We construct an identity matrix
   IMatrix eye(dimension-1,dimension-1);
-  for(int i =0;i<dimension-1;i++)
-      eye[i][i]=1;
-//   cout << "eye" << eye << endl;
+  for(int i =0;i<dimension-1;i++){      eye[i][i]=1;    }
+
   
   //   We integrate from the middle points.
   for ( int i =0 ; i< num_middle_points;i++)
@@ -518,9 +522,9 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
 //       Integrate_point(points[i+1], neighborhoods[i+1] ,integration_time,BACKWARDS,backwards_vector,backwards_derivative);
       DG_forward[i+1] = forward_derivative;
       DG_backwards[i] = -eye;
+      G_forward[i+1] = forward_vector;
   }
-  
-  IMatrix DG = Construct_DG( DG_forward, DG_backwards, points,neighborhoods);
+  IMatrix DG = Construct_DG( DG_forward, DG_backwards, points,neighborhoods,G_forward);//TODO Add G_forward
   
 //     cout <<  "___ DG = " << DG<< endl;  
   
@@ -659,7 +663,7 @@ vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector
 IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points) // TODO replace with "COMPUTE G" 
 {
     int N = G_forward.size();
-    IVector G(N*(dimension-1)+1);
+    IVector G(N*(dimension-1)+2);
     
     for (int i =0;i<N;i++)
     {
@@ -671,31 +675,37 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
     
     //     We try to fix the radius of the unstable coordinate
     IVector X_pt = points[0];
+    IVector Y_pt = points.back();
 
-    interval radius = sqr((*pUnstable).getRadius())*dimension/2;
-  interval x_radius_sqr = 0;
-  for(int i = 0 ; i<dimension/2;i++){x_radius_sqr += sqr(X_pt[i]);}
+    interval radius_x = sqr((*pUnstable).getRadius())*dimension/2;
+    interval radius_y = sqr((*pStable).getRadius())*dimension/2;
   
+    interval x_radius_sqr = 0;
+    interval y_radius_sqr = 0;
+    for(int i = 0 ; i<dimension/2;i++){x_radius_sqr += sqr(X_pt[i]);}
+    for(int i = 0 ; i<dimension/2;i++){y_radius_sqr += sqr(Y_pt[i]);}
+    cout << " Y radius  = " << sqrt(y_radius_sqr) << endl;
 // // //    We replace the last term of G with point^2 - radius^2 
-  G[N*(dimension-1)] = x_radius_sqr - radius; 
+  G[N*(dimension-1)] = x_radius_sqr - radius_x; 
+  G[N*(dimension-1)+1] = y_radius_sqr - radius_y; 
             
-      for (int i = 0 ; i<N ;i++)
-    {
+//       for (int i = 0 ; i<N ;i++)
+//     {
 //         cout << " G_for ["<<i<<"] = " << G_forward[i] << endl;
 //         cout << " G_bac ["<<i<<"] = " << G_backwards[i] << endl;
-    }  
+//     }  
   
   
     return G;   
 }
 
-IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector <IMatrix> DG_backwards, vector <IVector> points,vector <IVector> neighborhoods)//TODO Revise
+IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, const  vector <IMatrix> &DG_backwards, const  vector <IVector> &points, const vector <IVector> &neighborhoods, const vector < IVector> &G_forward )//TODO Revise
 {
     
     int num_regions = points.size();
     int num_middle_points = num_regions-2; // The number of points between our stable/unstable coordinates.
     
-    int N =  num_middle_points*(dimension-1)+dimension;
+    int N =  num_middle_points*(dimension-1)+dimension +1;
     
     
     
@@ -715,7 +725,7 @@ IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector 
     {
         for (int j=0;j<dimension-1;j++) // row
         {
-            DG[N-(dimension-1)-1+j][N-(dimension/2)+i] = DG_backwards.back()[j][i];
+            DG[N-(dimension-1)-1+j-1][N-(dimension/2)+i-1] = DG_backwards.back()[j][i];
         }
     }
     
@@ -737,7 +747,21 @@ IMatrix boundaryValueProblem::Construct_DG( vector <IMatrix> DG_forward, vector 
 //     We add the derivative from fixing the unstable radius
     for (int i =0;i<dimension/2; i++)
     {
-        DG[N-1][i]=2*(points[0][i]+neighborhoods[0][i]);
+        DG[N-2][i]=2*(points[0][i]+neighborhoods[0][i]);
+    }
+    
+//     TODO This is incomplete
+    //     We add the derivative from fixing the stable radius
+    for (int i =0;i<dimension/2; i++)
+    {
+        DG[N-1][N-dimension/2-1+i]=2*(points.back()[i]+neighborhoods.back()[i]);
+    }
+    
+//     We add the derivative with respect to time
+    for (int i = 0 ; i < dimension -1;i++)
+    {
+        IVector local_derivative = G_forward[i];
+        cout << "G_forward = " << G_forward  << endl;
     }
     
 //     for (int i = 0 ; i<num_equations ;i++)

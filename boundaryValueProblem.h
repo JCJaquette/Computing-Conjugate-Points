@@ -5,6 +5,7 @@
 #include <iostream>
 using namespace std;
 
+
 #include "capd/capdlib.h"
 #include "utils.h"
 #include "localVField.h"
@@ -48,7 +49,7 @@ public:
   IVector Compute_G(const vector <IVector> &points,interval T);
   IMatrix Compute_DG(const vector <IVector> &points,const vector <IVector> &neighborhoods,interval integration_time);
   IVector Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points);
-  IMatrix Construct_DG( vector <IMatrix> DG_forward, vector <IMatrix> DG_backwards, vector <IVector> points,vector <IVector> neighborhoods);
+  IMatrix Construct_DG(const vector <IMatrix> &DG_forward, const vector <IMatrix> &DG_backwards,const  vector <IVector> &points, const vector <IVector> &neighborhoods,const vector < IVector> &G_forward);
   IVector Construct_Initial_Vector(vector <IVector> points,vector <IVector> neighborhoods);
   vector <IVector> Deconstruct_Output_Vector(IVector initial_vector);
   
