@@ -25,7 +25,7 @@ void test(int dimension,vector < double > All_parameters)
 {
   
   
-  clock_t begin = clock();
+
   
 
 
@@ -46,7 +46,7 @@ void test(int dimension,vector < double > All_parameters)
   interval L_plus = 10;
   int manifold_subdivision = 8;
   int shots = 5;
-  int multiple_newton_steps = 15;
+  int multiple_newton_steps = 0;
  
   bool CHECK_MANIFOLD 		= 1;
   bool CHECK_CONNECTING_ORBIT 	= 0;
@@ -333,7 +333,7 @@ cout << endl;
   }
     
     
-
+  clock_t begin = clock();
 
 //    -- We calculate the norm bounds 
 // IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 

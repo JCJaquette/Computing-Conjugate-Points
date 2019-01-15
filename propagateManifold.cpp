@@ -85,10 +85,13 @@ vector<IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, i
 {
 
   
+    int thread_id =omp_get_thread_num();
+    
+    cout << "THread = " << thread_id << endl;
   
   interval timeStep = interval(pow(2,-step_size)); 
     //   We Create our solvers 
-  ITaylor lin_solver((*pf),order);
+  ITaylor lin_solver(list_of_maps[thread_id ],order);
   
   lin_solver.setStep(timeStep);
   ITimeMap lin_Phi(lin_solver);
@@ -143,9 +146,15 @@ void propagateManifold::frameDet(interval T,int grid)
   
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
   
-//   int omp_get_thread_num();
+  
+  int max_threads = omp_get_max_threads();
+  
+  cout << " max_threads " << max_threads << endl;
+  list_of_maps.resize(max_threads );
+  for( int i = 0 ; i < max_threads  ; i ++ ) { list_of_maps[i]=(*pf);}
+  
   /// I am trying to parrelize this
-//   #pragma omp parallel for  
+  #pragma omp parallel for  
   for (int i = 0 ; i<dimension/2;i++)
   {
     List_of_Trajectories[i] = computeTotalTrajectory(i,  T,  grid);

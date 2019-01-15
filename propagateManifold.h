@@ -23,6 +23,8 @@ class propagateManifold
 {
 private:
   IMap *pf;
+  
+  vector <IMap> list_of_maps; 
 
   IVector InitialConditions_local;
   IVector XY_pt;
