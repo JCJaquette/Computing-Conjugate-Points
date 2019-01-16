@@ -1,4 +1,6 @@
 #include "propagateManifold.h"
+// #include <../../home/jonathan/capd-5.0.59/capdDynSys4/include/capd/dynset/dynsetLib.h>
+// #include <../../home/jonathan/capd-5.0.59/capdAlg/include/capd/vectalg/vectalgLib.h>
 
 
 vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
@@ -47,9 +49,9 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
   //   TODO Compute appropriate Error Terms
   // We add some small error to this. 
   
-  interval error_size =(*pUnstable).ErrorEigenfunction();
+  interval error_size = (*pUnstable).ErrorEigenfunction();
 
-  cout << " Error = " << error_size  << endl;
+//   cout << " Error = " << error_size  << endl;
     
   error_size  = error_size * interval(-1,1);
   for (int i =dimension;i< 2*dimension;i++)
@@ -81,13 +83,13 @@ IMatrix propagateManifold::construct_A_lin(void)
 }
 
 
-vector<IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, interval T, int grid)
+vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, interval T, int grid)
 {
 
   
     int thread_id =omp_get_thread_num();
-    
-    cout << "THread = " << thread_id << endl;
+    if (thread_id ==1 ) 
+        cout << "  Using multiple processors " << endl;
   
   interval timeStep = interval(pow(2,-step_size)); 
     //   We Create our solvers 
@@ -136,20 +138,21 @@ vector<IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, i
 
 
 
-void propagateManifold::frameDet(interval T,int grid)
+int propagateManifold::frameDet(interval T,int grid)
 {
   
-  ofstream file;
-  file.open("plot_det.txt");
-  file.precision(16);
+//   ofstream file;
+//   file.open("plot_det.txt");
+//   file.precision(16);
   
   
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
   
   
   int max_threads = omp_get_max_threads();
+  if (max_threads > dimension/2)
+      max_threads = dimension/2;
   
-  cout << " max_threads " << max_threads << endl;
   list_of_maps.resize(max_threads );
   for( int i = 0 ; i < max_threads  ; i ++ ) { list_of_maps[i]=(*pf);}
   
@@ -173,12 +176,20 @@ void propagateManifold::frameDet(interval T,int grid)
   A_frame.initialize();
   
   A_frame.makePlot();
-  A_frame.countZeros();
+  vector<int> conjugate_points = A_frame.countZeros();
 
   
-  file.close();
+//   file.close();
   
-  lastEuFrame( A_frame);
+//   lastEuFrame( A_frame);
+  
+  if ( conjugate_points[1]>1 )
+  {
+//       We could not verify the conjugate conjugate_points
+      return -3;
+  }
+  else 
+      return conjugate_points[0];
   
   
  
@@ -201,25 +212,24 @@ void propagateManifold::lastEuFrame(topFrame &A_frame)
     
     if (i < dimension /2)
       cout << " w_" << i << "   = ";
-    else
+    else if (i == dimension /2)
       cout << " phi'  = ";
     cout << vec_in_local_coord << endl;
   }
+//    We get the last column to output the final point
+  IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
+  IVector stable_point = (*(*pStable).pF).p ;
+  for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
+//   cout<<endl<<" phi   = " << col << endl; 
+//   col.resize(dimension);
+//   cout<<endl<<" phi   = " << col << endl; 
   
-// / /  Construct adjoint 
-//   IVector phi = getColumn(last_Frame,dimension,dimension/2);
-//   
-//   IVector adj = phi;
-// //   Assume D = (1,...1)
-//   for(int i=0;i<dimension/2;i++)
-//   {
-//     adj[i]		=-phi[i+dimension/2];
-//     adj[i+dimension/2]	=phi[i];
-//   }
-//   IVector vec_in_local_coord = gauss(A_s,adj);
-//   vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
-//   cout << " phi'* = ";
-//   cout << midVector(vec_in_local_coord) << endl;
+  
+//   cout << " stable_point  " <<  stable_point <<endl;
+  
+  cout << "Dist from stable equilibrium = " << stable_point << endl;
+  
+  
 }
 
 

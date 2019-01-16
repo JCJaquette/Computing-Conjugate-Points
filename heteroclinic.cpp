@@ -20,8 +20,9 @@ using namespace capd::matrixAlgorithms;
 #include "propagateManifold.h"
 #include "topFrame.h"
 #include <ctime>
+#include <cmath>
 
-void test(int dimension,vector < double > All_parameters)
+int test(int dimension,vector < double > All_parameters)
 {
   
   
@@ -41,15 +42,16 @@ void test(int dimension,vector < double > All_parameters)
   
   
   int order = 20;
-  int grid = 32; 
+  int grid = 8; 
   int stepsize = 6;
   interval L_plus = 10;
   int manifold_subdivision = 8;
-  int shots = 5;
+  int shots = 3;
   int multiple_newton_steps = 0;
+  int single_newton_steps = 17;
  
   bool CHECK_MANIFOLD 		= 1;
-  bool CHECK_CONNECTING_ORBIT 	= 0;
+  bool CHECK_CONNECTING_ORBIT 	= 1;
 
   
 
@@ -127,7 +129,7 @@ void test(int dimension,vector < double > All_parameters)
   {
     cout << "Failed to validate Conditions " << endl;
     if (CHECK_MANIFOLD )
-      return;
+      return -1;
   }
   
   localStable.constructDW();
@@ -165,8 +167,8 @@ void test(int dimension,vector < double > All_parameters)
   interval S_radius_sqr = 0;  // TODO Turn this into a function 
   for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(local_guess_U[i]);}
   for(int i = 0 ; i<dimension/2;i++){S_radius_sqr += sqr(local_guess_S[i]);}
-  cout << "U_radius" << sqrt(U_radius_sqr) << endl;
-  cout << "S_radius" << sqrt(S_radius_sqr) << endl;
+//   cout << "U_radius" << sqrt(U_radius_sqr) << endl;
+//   cout << "S_radius" << sqrt(S_radius_sqr) << endl;
   local_guess_U = local_guess_U *sqrt(radius_x/U_radius_sqr);
   local_guess_S = local_guess_S *sqrt(radius_y/S_radius_sqr);
   
@@ -178,7 +180,7 @@ void test(int dimension,vector < double > All_parameters)
     else
       XY_pt[i]=local_guess_S[i-dimension/2];
   }
-  cout << " Old XY_pt    = " << XY_pt << endl;  
+//   cout << " Old XY_pt    = " << XY_pt << endl;  
   
   
 cout << endl;
@@ -201,11 +203,11 @@ cout << endl;
     if (shots >0)
         multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
     
-    // We output the energies of our guesses
-    for (int i = 0 ; i < shots ; i++)
-    {
-        cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
-    }
+//     // We output the energies of our guesses
+//     for (int i = 0 ; i < shots ; i++)
+//     {
+//         cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
+//     }
     
     // We go to the zero level set via the gradient 
     for (int i = 0 ; i < shots ; i++)
@@ -250,10 +252,10 @@ cout << endl;
   
 //   cout << "points = " << points << endl;
   
-  for (unsigned i = 0 ; i < points.size();i++)
-  {
-    cout << "Region["<<i<<"] = " << points[i] << endl;
-  }
+//   for (unsigned i = 0 ; i < points.size();i++)
+//   {
+//     cout << "Region["<<i<<"] = " << points[i] << endl;
+//   }
   
   interval integration_time = 2*T/(shots+1);
   
@@ -261,25 +263,37 @@ cout << endl;
   vector < IVector > regions;
   for (int i = 0 ; i<multiple_newton_steps ;i++)
   {
-      cout << " ### = " << i << endl; 
-      cout << points[0] << endl;
+//       cout << " ### = " << i << endl; 
       regions = BVP.NewtonStep(points, neighborhoods ,integration_time) ;
       integration_time = integration_time.mid();
       for (unsigned j=0;j<regions.size();j++)
           points[j] = midVector(regions[j]);
       
-      cout << "New Guess " << endl;
-      for (unsigned i = 0 ; i < regions.size();i++)
-    {
-        cout << " Region["<<i<<"] = " << regions[i] << endl;
-    }
+//       cout << "New Guess " << endl;
+//       for (unsigned i = 0 ; i < regions.size();i++)
+//     {
+//         cout << " Region["<<i<<"] = " << regions[i] << endl;
+//     }
   }
+  
+  
+  
+    if (multiple_newton_steps>0)
+    {
+        cout << endl << "Final Guess " << endl;
+        
+        for (unsigned i = 0 ; i < regions.size();i++)
+        {
+            cout << " Region["<<i<<"] = " << regions[i] << endl;
+        }
+        cout << "done testing " << endl;
+    }
 
 
   //   END Testing integration of middle points
   
   
-  cout << "done testing " << endl;
+  
 //   return;
   
   BVP.setMiddlePoints(0);
@@ -288,7 +302,7 @@ cout << endl;
   
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
-  for (int i = 0 ; i<50;i++)
+  for (int i = 0 ; i<single_newton_steps ;i++)
   {
     
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
@@ -329,7 +343,7 @@ cout << endl;
   {
     cout << "Cannot verify connecting orbit" << endl;
     if (CHECK_CONNECTING_ORBIT )
-      return;
+      return -2;
   }
     
     
@@ -348,7 +362,8 @@ cout << endl;
   
   propagateManifold E_u(f_linearize, localUnstable,localStable, XY_pt,XY_nbd,order,stepsize);
       
-  E_u.frameDet(T+L_plus,grid);
+  
+  int unstable_e_values = E_u.frameDet(T+L_plus,grid);
     
   
   
@@ -356,6 +371,11 @@ cout << endl;
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   
   cout <<endl <<  "Runtime = " << elapsed_secs  << endl;
+  
+  cout << " unstable_e_values " << unstable_e_values  << endl;
+  
+  return unstable_e_values;
+  
 //   END
 }
 
@@ -453,9 +473,106 @@ vector < double >  RetrieveParameters( int dimension)
  
 }
 
+vector < vector < double > > Construct_ParameterList( int subdivisions_circle,int subdivisions_radius, double radius_min, double radius_max)
+{
+    vector < double > Input;
+    Input.push_back(1); // b1
+    Input.push_back(.98);// b2 
+    Input.push_back(.95);// b3
+    
+    
+    
+    vector < vector < double > > Parameter_list;
+    double radius_step = (radius_max-radius_min)/(subdivisions_radius-1);
+    
+    /*vector < vector < double > > Parameter_list(subdivisions_circle*subdivisions_radius)*/;
+    for (int i = 0 ; i< subdivisions_circle;i++)
+    {
+        double theta  = (i+.5)*2*M_PI/subdivisions_circle;
+        
+        for (int j = 0 ; j< subdivisions_radius; j ++ ) 
+        {
+            theta = theta + 2*M_PI/(subdivisions_circle*subdivisions_radius);
+            double radius = radius_min + radius_step*j;
+            
+            vector < double > Local_Input = Input;
+            
+            double c_12 = radius*cos(theta);
+            double c_23 = radius*sin(theta);
+            
+            Local_Input.push_back(c_12);
+            Local_Input.push_back(c_23);            
+            
+            Parameter_list.push_back(Local_Input);
+            
+        }
+    }
+    
+    return Parameter_list;
+}
+
+void SampleParameters( void)
+{
+    
+    
+  clock_t begin = clock();
+    
+    int subdivisions_circle = 32;
+    int subdivisions_radius = 5;
+    
+    double radius_min = .01;
+    double radius_max = .05;
+    
+    vector < vector < double > > Parameter_list = Construct_ParameterList(subdivisions_circle,subdivisions_radius, radius_min, radius_max);
+    
+    int no_params = Parameter_list.size();
+    vector < int > Unstable_EigenValues(no_params);
+    
+    int dimension =6;
+    for (int i = 0 ; i< no_params; i++)
+    {
+        cout <<endl<<endl<< "Trial #"<<i+1<< " of " << no_params<<endl<<endl;
+        try
+        {
+            Unstable_EigenValues[i] =  test(dimension,Parameter_list[i]);
+            
+        }
+        catch(exception& e)
+        {
+    		cout << "\n\nException caught: "<< e.what() << endl;
+            Unstable_EigenValues[i] = -5;
+        }
+//         We consolidate our error messages;
+        if (Unstable_EigenValues[i] <0)
+            Unstable_EigenValues[i] = -1;
+    }
+    
+    
+    ofstream file;
+    file.open("plot_parameters.txt");
+    file.precision(8);
+  
+  
+    
+    for (int i = 0 ; i < no_params; i++)
+    {
+        file << Parameter_list[i][3] << " " ;
+        file << Parameter_list[i][4] << " " ;
+        file << Unstable_EigenValues[i] << endl ;
+    }
+    file.close();
+    
+    
+      
+  clock_t end = clock();
+  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  cout <<endl <<  "Total time for " << no_params << " runs = " << elapsed_secs  << endl;
+}
 
 int main(int argc, char* argv[])
 {
+//     SampleParameters();
+//     return 0;
   	cout.precision(6);
 	try
 	{
@@ -483,9 +600,17 @@ int main(int argc, char* argv[])
             
 //             Input.push_back(.005);// c12
 //             Input.push_back(.025);// c23         3 - unstable
+            
+//             Input.push_back(.0001);// c12
+//             Input.push_back(.05);// c23         3 - unstable
 
-            Input.push_back(-.015);// c12
-            Input.push_back(.02);// c23          2 - unstable
+//             Input.push_back(-.015);// c12
+//             Input.push_back(.02);// c23          2 - unstable
+            
+            Input.push_back(0.00058870804);// c12
+            Input.push_back(0.0099826561);// c23          2?? 
+            
+//             0.00058870804 
 
 //             Input.push_back(.005);// c12
 //             Input.push_back(-.025);// c23           1 - unstable

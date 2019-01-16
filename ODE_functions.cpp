@@ -1,4 +1,6 @@
 #include "ODE_functions.h"
+// #include <../../home/jonathan/capd-5.0.59/capdAlg/include/capd/vectalg/vectalgLib.h>
+// #include <../../home/jonathan/capd-5.0.59/capdDynSys4/include/capd/map/mapLib.h>
 
 DVector fixedPoint(int i,int dimension) 
 {
@@ -76,7 +78,7 @@ vector < IVector >  multipleShootingGuess( int shots, interval T ,int dimension,
      output.push_back(local_vector);
  }
  
- cout << "Times " << times <<endl;
+//  cout << "Times " << times <<endl;
  
  return output;
 }

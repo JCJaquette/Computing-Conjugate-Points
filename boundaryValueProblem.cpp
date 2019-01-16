@@ -406,9 +406,9 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
   
 //   cout <<  "___ G*= " << G_New  << endl;  
   
-  cout <<  "___ G = " << G  << endl;  
+//   cout <<  "___ G = " << G  << endl;  
   
-  cout << " integration_time " << integration_time << endl;
+//   cout << " integration_time " << integration_time << endl;
   
   
   
@@ -416,10 +416,10 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vecto
   for(unsigned i =0;i<G.dimension();i++) 
       sum_G += abs(G[i]);
   sum_G = sum_G.right();
-  cout << " |G| = " << sum_G << endl;
+//   cout << " |G| = " << sum_G << endl;
   
   IMatrix DG = Compute_DG(points, neighborhoods , integration_time) ;
-  cout <<  "___ det " << det(DG) << endl;  
+//   cout <<  "___ det " << det(DG) << endl;  
 //   cout <<  "___ DG = " << DG<< endl;  
   
 //   If |G| is large, we do a non-rigorous newton step
@@ -441,7 +441,7 @@ vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);
 
 
 integration_time = out_vector[num_middle_points*(dimension-1)+1];
-cout << " integration_time " << integration_time << endl;
+// cout << " integration_time " << integration_time << endl;
 //   BEGIN Verify the newton step
 //   cout << "output nbd " << XY_out_nbd << endl;
   

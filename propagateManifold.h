@@ -50,7 +50,7 @@ public:
   IMatrix construct_A_lin(void);
   vector <IVector> construct_InitCondU(int eigenvector_NUM);
   
-  void frameDet(interval T, int grid);
+  int frameDet(interval T, int grid);
   
   void lastEuFrame(topFrame &A_frame);
 

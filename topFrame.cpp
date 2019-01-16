@@ -219,7 +219,8 @@ void topFrame::makePlot( void)
 
 vector<int> topFrame::countZeros( void)
 {
-  
+//   output [ 0 ] =  # of conjugate pts 
+//   output [ 1 ] =  failure count
   vector<int> output;
   int failure_count  =0;
   int zero_count  =0;
@@ -280,7 +281,7 @@ IMatrix topFrame::getLastFrame( void)
 { 
 // For the last time recorded, we return the right-endpt num_trajectories + the derivative of \varphi
   
-  IMatrix LastFrame(num_trajectories*2,num_trajectories+1);
+  IMatrix LastFrame(num_trajectories*2,num_trajectories+2);
   
 //   Traj / column
   for (int i = 0 ; i < num_trajectories ; i++)
@@ -293,10 +294,18 @@ IMatrix topFrame::getLastFrame( void)
     }
   }
   
-//   We add \varphi' to the last column
+//   We add \varphi' to the 2nd to last column
   for (int j =0;j< num_trajectories*2;j++)
   {
+//       This is the derivative over the entire interval, and could be improved to just take the right one. 
     LastFrame[j][num_trajectories]=traject_list.back().back()[j][4];
+  }
+  
+  //   We add \varphi to the last column
+  for (int j =0;j< num_trajectories*2;j++)
+  {
+//       This is the derivative over the entire interval, and could be improved to just take the right one. 
+    LastFrame[j][num_trajectories+1]=traject_list.back().back()[j][2];
   }
   
   return LastFrame;
@@ -323,13 +332,13 @@ void topFrame::normalizeFrameColumns( void)
       interval max =getMax(abs(left_col)).mid();
       if (max>pow(10,-5))
       {
-	for (int k_type =0;k_type< 4;k_type++)
-	{
-	  for (int l_row=0;l_row<num_trajectories;l_row++)
-	  {
-	    frame_series[i_time][k_type]= frame_series[i_time][k_type]/max;
-	  }
-	}
+        for (int k_type =0;k_type< 4;k_type++)
+        {
+            for (int l_row=0;l_row<num_trajectories;l_row++)
+            {
+                frame_series[i_time][k_type]= frame_series[i_time][k_type]/max;
+            }
+        }
       }
     }
   }
