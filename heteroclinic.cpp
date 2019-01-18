@@ -616,21 +616,10 @@ int main(int argc, char* argv[])
             Input.push_back(.9);// b3
             
 //             Input.push_back(.005);// c12
-//             Input.push_back(.025);// c23         3 - unstable
-            
-//             Input.push_back(.0001);// c12
-//             Input.push_back(.05);// c23         3 - unstable
+//             Input.push_back(.025);// c23         2 - unstable
 
 //             Input.push_back(-.015);// c12
-//             Input.push_back(.02);// c23          2 - unstable
-            
-//             Input.push_back(0.00058870804);// c12
-//             Input.push_back(0.0099826561);// c23          2?? 
-            
-//             0.00058870804 
-
-//             Input.push_back(.005);// c12
-//             Input.push_back(-.025);// c23           1 - unstable
+//             Input.push_back(.02);// c23          1 - unstable
             
             Input.push_back(-.17);// c12
             Input.push_back(.15);// c23         0 - unstable
