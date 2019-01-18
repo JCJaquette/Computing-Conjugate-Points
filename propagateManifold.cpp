@@ -141,9 +141,7 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 int propagateManifold::frameDet(interval T,int grid)
 {
   
-//   ofstream file;
-//   file.open("plot_det.txt");
-//   file.precision(16);
+
   
   
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
@@ -175,13 +173,13 @@ int propagateManifold::frameDet(interval T,int grid)
  
   A_frame.initialize();
   
-  A_frame.makePlot();
+//   A_frame.makePlot();
+  
   vector<int> conjugate_points = A_frame.countZeros();
 
   
-//   file.close();
   
-//   lastEuFrame( A_frame);
+  lastEuFrame( A_frame);
   
   if ( conjugate_points[1]>1 )
   {
@@ -216,18 +214,13 @@ void propagateManifold::lastEuFrame(topFrame &A_frame)
       cout << " phi'  = ";
     cout << vec_in_local_coord << endl;
   }
-//    We get the last column to output the final point
-  IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
-  IVector stable_point = (*(*pStable).pF).p ;
-  for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
-//   cout<<endl<<" phi   = " << col << endl; 
-//   col.resize(dimension);
-//   cout<<endl<<" phi   = " << col << endl; 
   
-  
-//   cout << " stable_point  " <<  stable_point <<endl;
-  
-  cout << "Dist from stable equilibrium = " << stable_point << endl;
+// //    We get the last column to output the final point
+//   IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
+//   IVector stable_point = (*(*pStable).pF).p ;
+//   for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
+//   
+//   cout << "Dist from stable equilibrium = " << stable_point << endl;
   
   
 }

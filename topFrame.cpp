@@ -264,7 +264,7 @@ vector<int> topFrame::countZeros( void)
     else
     {
       failure_count ++;
-      cout << "Cannot determine sign of vertex " << endl ;
+      cout << "Cannot determine sign of vertex  --- decrease grid or stepsize" << endl ;
     }
   }
 		    

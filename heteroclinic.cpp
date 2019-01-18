@@ -24,36 +24,29 @@ using namespace capd::matrixAlgorithms;
 
 int test(int dimension,vector < double > All_parameters)
 {
+  clock_t begin = clock();
   
+  int order = 20;
   
+  int manifold_subdivision = 8;
+  int shots = 5;
+  int multiple_newton_steps = 20;
+  int single_newton_steps = 20;
+ 
+  int grid = 10; // count zeros
+  int stepsize = 4;
+  interval L_plus = 8;
+  
+  bool CHECK_MANIFOLD 		= 0;
+  bool CHECK_CONNECTING_ORBIT 	= 0;
 
-  
-
-
-  
-  vector <IMap> functions = constructFunctions(  dimension,All_parameters);
+    vector <IMap> functions = constructFunctions(  dimension,All_parameters);
   vector <IFunction> energy_vec   = constructEnergy(dimension,  All_parameters);
   IMap f             = functions[0];
   IMap f_minus       = functions[1];
   IMap f_linearize   = functions[2];
   IFunction energy   = energy_vec[0];  // Not sure if this gets used
   IFunction energy_projection   = energy_vec[1];
-  
-  
-  
-  int order = 20;
-  int grid = 8; 
-  int stepsize = 6;
-  interval L_plus = 10;
-  int manifold_subdivision = 8;
-  int shots = 3;
-  int multiple_newton_steps = 0;
-  int single_newton_steps = 17;
- 
-  bool CHECK_MANIFOLD 		= 1;
-  bool CHECK_CONNECTING_ORBIT 	= 1;
-
-  
 
  
     //   Cone angle
@@ -114,6 +107,8 @@ int test(int dimension,vector < double > All_parameters)
   int STABLE = 1;
   //   We create the point
   IVector p_s=toInterval(fixedPoint(STABLE,dimension));
+  
+  
 //    We Create the approximate linearization
   IMatrix A_s = toInterval(coordinateChange(STABLE,dimension,All_parameters));
 //     We create the local vector field object  
@@ -180,7 +175,7 @@ int test(int dimension,vector < double > All_parameters)
     else
       XY_pt[i]=local_guess_S[i-dimension/2];
   }
-//   cout << " Old XY_pt    = " << XY_pt << endl;  
+  cout << " Old XY_pt    = " << XY_pt << endl;  
   
   
 cout << endl;
@@ -188,7 +183,7 @@ cout << endl;
   boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots );//TODO REMOVE FROZEN
  
   
-  T = BVP.FindTime(XY_pt,T);
+//   T = BVP.FindTime(XY_pt,T);
 // T = T *.95;
 //   END we construct the manifolds
   
@@ -203,11 +198,11 @@ cout << endl;
     if (shots >0)
         multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
     
-//     // We output the energies of our guesses
-//     for (int i = 0 ; i < shots ; i++)
-//     {
+    // We output the energies of our guesses
+    for (int i = 0 ; i < shots ; i++)
+    {
 //         cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
-//     }
+    }
     
     // We go to the zero level set via the gradient 
     for (int i = 0 ; i < shots ; i++)
@@ -276,7 +271,7 @@ cout << endl;
 //     }
   }
   
-  
+
   
     if (multiple_newton_steps>0)
     {
@@ -286,9 +281,27 @@ cout << endl;
         {
             cout << " Region["<<i<<"] = " << regions[i] << endl;
         }
+        
+        cout << endl;
+        
+            for (unsigned i = 0 ; i < regions.size();i++)
+        {
+            cout << " Region["<<i<<"] width = " << regions[i] - midVector(regions[i]) << endl;
+        }
         cout << "done testing " << endl;
     }
-
+    
+  cout << " Old T = " << T << endl;
+  T = (shots+1)*integration_time/2;
+  cout << " New T = " << T << endl;
+    
+  for (int i = 0 ; i < dimension / 2 ; i++)
+  {
+      XY_pt[i] = mid(regions[0][i]);
+      XY_pt[i+dimension/2] = mid( regions.back()[i]);
+  }
+  
+  cout << " XY_pt = " << XY_pt << endl;
 
   //   END Testing integration of middle points
   
@@ -347,7 +360,7 @@ cout << endl;
   }
     
     
-  clock_t begin = clock();
+  
 
 //    -- We calculate the norm bounds 
 // IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
@@ -372,7 +385,7 @@ cout << endl;
   
   cout <<endl <<  "Runtime = " << elapsed_secs  << endl;
   
-  cout << " unstable_e_values " << unstable_e_values  << endl;
+  cout << " Result " << unstable_e_values  << endl;
   
   return unstable_e_values;
   
@@ -478,7 +491,7 @@ vector < vector < double > > Construct_ParameterList( int subdivisions_circle,in
     vector < double > Input;
     Input.push_back(1); // b1
     Input.push_back(.98);// b2 
-    Input.push_back(.95);// b3
+    Input.push_back(.99);// b3
     
     
     
@@ -492,7 +505,7 @@ vector < vector < double > > Construct_ParameterList( int subdivisions_circle,in
         
         for (int j = 0 ; j< subdivisions_radius; j ++ ) 
         {
-            theta = theta + 2*M_PI/(subdivisions_circle*subdivisions_radius);
+            
             double radius = radius_min + radius_step*j;
             
             vector < double > Local_Input = Input;
@@ -504,6 +517,7 @@ vector < vector < double > > Construct_ParameterList( int subdivisions_circle,in
             Local_Input.push_back(c_23);            
             
             Parameter_list.push_back(Local_Input);
+            theta = theta + M_PI/(subdivisions_circle*subdivisions_radius);
             
         }
     }
@@ -517,11 +531,11 @@ void SampleParameters( void)
     
   clock_t begin = clock();
     
-    int subdivisions_circle = 32;
-    int subdivisions_radius = 5;
+    int subdivisions_circle = 24;
+    int subdivisions_radius = 4;
     
-    double radius_min = .01;
-    double radius_max = .05;
+    double radius_min = .005;
+    double radius_max = .03;
     
     vector < vector < double > > Parameter_list = Construct_ParameterList(subdivisions_circle,subdivisions_radius, radius_min, radius_max);
     
@@ -531,7 +545,10 @@ void SampleParameters( void)
     int dimension =6;
     for (int i = 0 ; i< no_params; i++)
     {
-        cout <<endl<<endl<< "Trial #"<<i+1<< " of " << no_params<<endl<<endl;
+        cout <<endl<<endl<< "Trial #"<<i+1<< " of " << no_params<<endl;
+        cout << "Parameters = " << Parameter_list[i][3] << " " ;
+        cout << Parameter_list[i][4] << " " << endl << endl;
+        
         try
         {
             Unstable_EigenValues[i] =  test(dimension,Parameter_list[i]);
@@ -589,14 +606,14 @@ int main(int argc, char* argv[])
         {
             Input.push_back(1); // a
             Input.push_back(.95);// b 
-            Input.push_back(.05);// c
+            Input.push_back(.5);// c
             test(dimension,Input);
         }
         else if (dimension ==6)
         {            
             Input.push_back(1); // b1
-            Input.push_back(.98);// b2 
-            Input.push_back(.95);// b3
+            Input.push_back(.95);// b2 
+            Input.push_back(.9);// b3
             
 //             Input.push_back(.005);// c12
 //             Input.push_back(.025);// c23         3 - unstable
@@ -607,16 +624,16 @@ int main(int argc, char* argv[])
 //             Input.push_back(-.015);// c12
 //             Input.push_back(.02);// c23          2 - unstable
             
-            Input.push_back(0.00058870804);// c12
-            Input.push_back(0.0099826561);// c23          2?? 
+//             Input.push_back(0.00058870804);// c12
+//             Input.push_back(0.0099826561);// c23          2?? 
             
 //             0.00058870804 
 
 //             Input.push_back(.005);// c12
 //             Input.push_back(-.025);// c23           1 - unstable
             
-//             Input.push_back(-.005);// c12
-//             Input.push_back(-.025);// c23         0 - unstable
+            Input.push_back(-.17);// c12
+            Input.push_back(.15);// c23         0 - unstable
             
 
             test(dimension,Input);

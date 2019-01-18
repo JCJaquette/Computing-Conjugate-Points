@@ -172,7 +172,7 @@ IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bo
 
 interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
 {
-  int repetitions = 5;
+  int repetitions = 10;
     
   vector < IVector > XY_vect_pt  = breakUpXY_gen( XY_pt );
   
