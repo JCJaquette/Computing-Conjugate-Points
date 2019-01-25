@@ -84,7 +84,7 @@ public:
   vector<int> countZeros( void);
   
   IMatrix getLastFrame( void);
- void normalizeFrameColumns( void); //TODO Ill behaved -- Remove 
+ 
   
 
 };

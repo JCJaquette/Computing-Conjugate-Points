@@ -16,7 +16,6 @@ void topFrame::initialize( void)
   
   constructTimeSeries();
   constructFrameSeries();
-//   normalizeFrameColumns(); //TODO Remove
   constructDetSeries(); //TODO
   improveDetBound();   //TODO
 }
@@ -312,36 +311,3 @@ IMatrix topFrame::getLastFrame( void)
   
 }
 
-void topFrame::normalizeFrameColumns( void)
-{
-//   Frame
-// 1st level is  time series
-// 2nd level is  type:
-  //   0 -- Left Endpoint
-  //   1 -- Right Endpoint
-  //   2 -- Bound on function Values
-  //   3 -- Bound on function Derivative
-  
-//   The matrix then represented is the top frame
-  
-  for (int i_time =0;i_time<series_length;i_time++)
-  {
-    for (int j_col = 0 ; j_col < num_trajectories;j_col++)
-    {
-      IVector left_col = getColumn(frame_series[i_time][0], num_trajectories, j_col);
-      interval max =getMax(abs(left_col)).mid();
-      if (max>pow(10,-5))
-      {
-        for (int k_type =0;k_type< 4;k_type++)
-        {
-            for (int l_row=0;l_row<num_trajectories;l_row++)
-            {
-                frame_series[i_time][k_type]= frame_series[i_time][k_type]/max;
-            }
-        }
-      }
-    }
-  }
-    
-  
-}

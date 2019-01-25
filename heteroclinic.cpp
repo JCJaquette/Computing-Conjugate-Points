@@ -29,13 +29,18 @@ int test(int dimension,vector < double > All_parameters)
   int order = 20;
   
   int manifold_subdivision = 8;
-  int shots = 5;
+  int shots = 3;
   int multiple_newton_steps = 20;
   int single_newton_steps = 20;
  
   int grid = 10; // count zeros
   int stepsize = 4;
   interval L_plus = 8;
+  interval T ;
+  if (dimension ==4 )
+    T = 16.3; // n=2
+  else 
+    T = 20; // n=3
   
   bool CHECK_MANIFOLD 		= 0;
   bool CHECK_CONNECTING_ORBIT 	= 0;
@@ -92,22 +97,14 @@ int test(int dimension,vector < double > All_parameters)
 //   We create the local manifold object
   localManifold localUnstable(F_u,U_flat, L, UNSTABLE,manifold_subdivision);
   
-//   cout << "Dfg = " << f[p_u] << endl;
-//   cout << "Df  = " << F_u[p_u] << endl;
-
-  
   bool conditions_U = localUnstable.checkConditions( U_flat );
-  
-  
   
   cout << endl;
   
-
   //   Create local Stable Manifold
   int STABLE = 1;
   //   We create the point
   IVector p_s=toInterval(fixedPoint(STABLE,dimension));
-  
   
 //    We Create the approximate linearization
   IMatrix A_s = toInterval(coordinateChange(STABLE,dimension,All_parameters));
@@ -119,6 +116,8 @@ int test(int dimension,vector < double > All_parameters)
   
   bool conditions_S = localStable.checkConditions( U_flat ); 
 
+  localStable.constructDW();
+  localUnstable.constructDW();
   
   if(! (conditions_S&&conditions_U))
   {
@@ -127,26 +126,16 @@ int test(int dimension,vector < double > All_parameters)
       return -1;
   }
   
-  localStable.constructDW();
-  localUnstable.constructDW();
-  
-//   clock_t end_1 = clock();
-//   double elapsed_secs_1 = double(end_1 - begin) / CLOCKS_PER_SEC;
-//   
-//   cout << "Runtime = " << elapsed_secs_1  << endl;
+//   END we construct the manifolds
+ 
   
   
   
-  
-//   We Get our initial condition
+//  BEGIN  We Get our initial condition
 //   TODO This thing below needs to be made into a function; consider moving to BVP classs??
   
   IVector XY_pt(dimension);  
-  interval T ;
-  if (dimension ==4 )
-    T = 16.3; // n=2
-  else 
-    T = 20; // n=3
+  
     
     
   IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
@@ -162,8 +151,6 @@ int test(int dimension,vector < double > All_parameters)
   interval S_radius_sqr = 0;  // TODO Turn this into a function 
   for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(local_guess_U[i]);}
   for(int i = 0 ; i<dimension/2;i++){S_radius_sqr += sqr(local_guess_S[i]);}
-//   cout << "U_radius" << sqrt(U_radius_sqr) << endl;
-//   cout << "S_radius" << sqrt(S_radius_sqr) << endl;
   local_guess_U = local_guess_U *sqrt(radius_x/U_radius_sqr);
   local_guess_S = local_guess_S *sqrt(radius_y/S_radius_sqr);
   
@@ -178,45 +165,15 @@ int test(int dimension,vector < double > All_parameters)
   cout << " Old XY_pt    = " << XY_pt << endl;  
   
   
+  
 cout << endl;
   
-  boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots );//TODO REMOVE FROZEN
- 
-  
-//   T = BVP.FindTime(XY_pt,T);
-// T = T *.95;
-//   END we construct the manifolds
-  
-// // // // // // // // // // // // // // // // //   
-// // // // // // // // // // // // // // // // //   
-// // // // // // // // // // // // // // // // //   
-// // // // // // // // // // // // // // // // //   
-//   BEGIN Testing integration of middle points
   
     //   We get the initial mid-points for multiple shooting
     vector < IVector > multiple_guess ;
     if (shots >0)
         multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
     
-    // We output the energies of our guesses
-    for (int i = 0 ; i < shots ; i++)
-    {
-//         cout << " Energy of guess " << i << " = " << energy(multiple_guess[i]) << endl;
-    }
-    
-    // We go to the zero level set via the gradient 
-    for (int i = 0 ; i < shots ; i++)
-    {
-        for (int j = 0;j<15;j++)
-        {
-            interval local_energy = energy(multiple_guess[i]);
-            IVector local_grad = energy.gradient(multiple_guess[i]);
-            multiple_guess[i] -= midVector((local_energy /(local_grad*local_grad))*local_grad);
-            multiple_guess[i]=midVector(multiple_guess[i]);
-        }
-//         cout << " diff " << i << " = " << (local_energy /(local_grad*local_grad))*local_grad << endl;
-//         cout << " new Energy " << i << " = " << energy(multiple_guess[i]) << endl;
-    }
     
     //   We throw away the last coordinate of each of our guesses  
     for (int i = 0 ; i < shots ; i++)
@@ -236,34 +193,39 @@ cout << endl;
   for (int i =1;i<shots+1;i++)
   {
       points[i]         =multiple_guess[i-1];
-//       neighborhoods[i]  = coord_nbd;
       neighborhoods[i]  = IVector(dimension-1);
   }
   points[0]=local_guess_U;
   points.back()=local_guess_S;
   
-  neighborhoods[0]    =0*U_flat;
-  neighborhoods.back()  =0*U_flat;
+
+
+//   END we construct an initial guess 
   
-//   cout << "points = " << points << endl;
   
-//   for (unsigned i = 0 ; i < points.size();i++)
-//   {
-//     cout << "Region["<<i<<"] = " << points[i] << endl;
-//   }
+// // // // // // // // // // // // // // // // //   
+// // // // // // // // // // // // // // // // //   
+// // // // // // // // // // // // // // // // //   
+// // // // // // // // // // // // // // // // //   
+//   BEGIN Testing integration of middle points
   
+  
+  neighborhoods[0]      = IVector(dimension/2);
+  neighborhoods.back()  = IVector(dimension/2);
+  
+  boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots );
   interval integration_time = 2*T/(shots+1);
   
 //    We do the newton method
   vector < IVector > regions;
   for (int i = 0 ; i<multiple_newton_steps ;i++)
   {
-//       cout << " ### = " << i << endl; 
       regions = BVP.NewtonStep(points, neighborhoods ,integration_time) ;
       integration_time = integration_time.mid();
       for (unsigned j=0;j<regions.size();j++)
           points[j] = midVector(regions[j]);
       
+//       cout << " ### = " << i << endl;       
 //       cout << "New Guess " << endl;
 //       for (unsigned i = 0 ; i < regions.size();i++)
 //     {
@@ -307,11 +269,9 @@ cout << endl;
   
   
   
-//   return;
   
-  BVP.setMiddlePoints(0);
 //   BEGIN  do the single-shooting newton method & globalize manifold
-
+  BVP.setMiddlePoints(0);
   
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
@@ -327,23 +287,13 @@ cout << endl;
   }
   
   
-  
-
-//   cout << "Answ XY_pt 	= " << XY_pt << endl;
-  
 //    We inflate our neighborhood and try to verify
     IVector XY_nbd(dimension);
     
   for (int i = 0 ; i< dimension;i++)
   {
-      
-//     if ( i != frozen)
-      XY_nbd[i] = scale * initial_box; //TODO REMOVE FROZEN
+      XY_nbd[i] = scale * initial_box; 
   }
- 
-
-//     cout << "XY_nbd = " << XY_nbd << endl;
-//   cout << "Y_nbd = " << X_nbd << endl;
 
   Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T);
   cout << " Answ XY pt   = " << XY_pt<< endl;
@@ -359,16 +309,11 @@ cout << endl;
       return -2;
   }
     
-    
-  
 
 //    -- We calculate the norm bounds 
 // IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
 //   IVector norm_bounds = BVP.NormBound(XY,T);
 //   cout << "Norm Bounds = " << norm_bounds << endl;
-  
-  
-//   return;
   
   
   cout << endl << "Globalizing Manifold ... " << endl;
@@ -614,14 +559,8 @@ int main(int argc, char* argv[])
             Input.push_back(1); // b1
             Input.push_back(.95);// b2 
             Input.push_back(.9);// b3
-            
-//             Input.push_back(.005);// c12
-//             Input.push_back(.025);// c23         2 - unstable
-
-//             Input.push_back(-.015);// c12
-//             Input.push_back(.02);// c23          1 - unstable
-            
-            Input.push_back(-.17);// c12
+                        
+            Input.push_back(-.1);// c12
             Input.push_back(.15);// c23         0 - unstable
             
 

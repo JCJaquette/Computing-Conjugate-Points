@@ -32,7 +32,6 @@ private:
   int dimension;
   int num_middle_points;  // This NEEDS to be \geq 1 
   int order;
-//   int frozen; 
 public:
   boundaryValueProblem(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int num_middle_points_){pf = &pf_;pf_minus = &pf_minus_;p_energy_proj=&p_energy_proj_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_; num_middle_points = num_middle_points_;dimension = (*pStable).dim();SUCCESS=0;}
 
@@ -40,7 +39,7 @@ public:
   IVector Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) ; 
   IMatrix DGxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE);  
   
-  IMatrix DG_combine(IMatrix DGX, IMatrix DGY,IVector X_pt, IVector X_nbd);//TODO REMOVE FROZEN //TODO
+  IMatrix DG_combine(IMatrix DGX, IMatrix DGY,IVector X_pt, IVector X_nbd); 
   IVector calcG(IVector X, IVector Y, interval T);
   IVector calcDG(IVector X, IVector Y, interval T);
   interval FindTime( IVector X_mid, interval T);
@@ -56,7 +55,7 @@ public:
   vector <IVector> Deconstruct_Output_Vector(IVector initial_vector);
   
   
-  IVector NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) ;//TODO REMOVE FROZEN //TODO
+  IVector NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) ; 
   vector <IVector> NewtonStep(vector <IVector> XY_pt, vector <IVector> XY_nbd  ,interval &T);   
   bool Verify( IVector XY_pt, IVector XY_nbd  ,interval T){return 0;};// TODO Write this function 
   bool checkProof(void){return SUCCESS;};

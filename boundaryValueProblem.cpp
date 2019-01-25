@@ -161,8 +161,6 @@ IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bo
 
   XY_new = Phi(T,S_XY,XY_deriv); 
   
-  
-  
   IMatrix DG_XY = XY_deriv*A_i*((*pManifold).DW);
   
   
@@ -229,11 +227,6 @@ interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
     T = T - (1/D_diff)*(diff);
     T=T.mid();
 
-    
-    
-    
-    
-    
 
   }
 //       cout << "Phi_T (x)      = " << phi_T_x << endl;
@@ -361,21 +354,17 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   G[dimension-1] = x_radius_sqr - radius; //TODO Remove
 
 
-  IVector XY_out_nbd = gauss(DG,G); // TODO  invDG_G -->> XY_out_nbd ;  G_trunc -->> G
+  IVector XY_out_nbd = gauss(DG,G); 
   
   
   
   IVector XY_out = XY_pt - XY_out_nbd;
-  
-//    We don't change the coordinate we've frozen
-//   XY_out[frozen]=XY_pt[frozen]; //NOTE REMOVED FROZEN
   
   
 //   cout << "output nbd " << XY_out_nbd << endl;
   
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)
-  //TODO REMOVE FROZEN
   bool verify = 1;
   bool verify_local;
   
@@ -837,7 +826,7 @@ IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, 
 IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt, IVector X_nbd)
 {
     
-    //TODO REMOVE FROZEN
+
   IMatrix DG(dimension,dimension);
   for (int i = 0; i< dimension;i++)
   {
