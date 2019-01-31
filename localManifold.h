@@ -29,7 +29,7 @@ private:
   friend class propagateManifold;
   
 public:
-  localManifold(localVField &pF_, IVector U_flat_global_,interval L_, bool stable_, int subdivisionNUM_){pF = &pF_; U_flat_global = U_flat_global_; L=L_; stable = stable_;dimension=(*pF).A.numberOfRows();subdivisionNUM = subdivisionNUM_;}
+  localManifold(localVField &pF_, IVector U_flat_global_,interval L_, bool stable_, int subdivisionNUM_){pF = &pF_; U_flat_global = U_flat_global_; L=L_; stable = stable_;dimension=(*pF).A.numberOfRows();subdivisionNUM = subdivisionNUM_;constructDW( );}
 
   int dim( ){return dimension;}
   IVector constructU( IVector U_flat);

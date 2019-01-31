@@ -155,7 +155,7 @@ int propagateManifold::frameDet(interval T,int grid)
   for( int i = 0 ; i < max_threads  ; i ++ ) { list_of_maps[i]=(*pf);}
   
   /// I am trying to parrelize this
-  #pragma omp parallel for  
+//   #pragma omp parallel for  
   for (int i = 0 ; i<dimension/2;i++)
   {
     List_of_Trajectories[i] = computeTotalTrajectory(i,  T,  grid);

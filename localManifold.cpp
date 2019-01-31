@@ -292,7 +292,7 @@ bool localManifold::checkRateCondition(IVector U_flat ) //TODO Separate this fro
 
   IVector U = constructU( U_flat);
   
-  cout << " U = " << U << endl;
+//   cout << " U = " << U << endl;
 
   //   M  is DF[U]
   IMatrix M = boundDFU(U);

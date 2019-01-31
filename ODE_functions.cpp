@@ -284,3 +284,77 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
   return output;
 }
 
+
+vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters, interval T ,  localManifold &localUnstable,  localManifold &localStable)
+{
+
+  IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
+  IVector guess_S = initialGuessGlobal(dimension, All_parameters, T, 0);
+  
+  IVector local_guess_U = localUnstable.projectPoint(  guess_U);
+  IVector local_guess_S = localStable.projectPoint(  guess_S); 
+  
+  
+  interval radius_x = sqr(localUnstable.getRadius())*dimension/2;
+  interval radius_y = sqr(localStable.getRadius())*dimension/2;
+  
+  interval U_radius_sqr = 0;   
+  interval S_radius_sqr = 0;  
+  for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(local_guess_U[i]);}
+  for(int i = 0 ; i<dimension/2;i++){S_radius_sqr += sqr(local_guess_S[i]);}
+  local_guess_U = local_guess_U *sqrt(radius_x/U_radius_sqr);
+  local_guess_S = local_guess_S *sqrt(radius_y/S_radius_sqr);
+    
+    vector < IVector > output;
+    output.push_back(local_guess_U);
+    output.push_back(local_guess_S);
+    return output;
+    
+    
+}
+
+vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable, int shots)
+{
+    
+    //   We get the initial mid-points for multiple shooting
+    vector < IVector > multiple_guess ;
+    if (shots >0)
+        multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
+    
+    
+    //   We throw away the last coordinate of each of our guesses  
+    for (int i = 0 ; i < shots ; i++)
+    {
+        IVector new_vector(dimension-1);
+        for(int j = 0 ; j < dimension-1;j++)
+            new_vector[j]= multiple_guess[i][j];
+        multiple_guess[i]=new_vector;
+    }
+    
+
+
+    //   We make our input points and nbd 
+    vector <IVector> points(shots+2);
+    vector <IVector> neighborhoods(shots+2);
+  
+    for (int i =1;i<shots+1;i++)
+    {
+        points[i]         =multiple_guess[i-1];
+        neighborhoods[i]  = IVector(dimension-1);
+    }
+  
+    vector < IVector > local_guesses = getLocalGuess( dimension, All_parameters, T ,  localUnstable,  localStable);
+    points[0]     = local_guesses[0];  // local_guess_U 
+    points.back() = local_guesses[1];  // local_guess_S 
+    
+    neighborhoods[0]      = IVector(dimension/2);
+    neighborhoods.back()  = IVector(dimension/2);
+    
+    vector <vector < IVector > > output;
+    
+    output.push_back(points);
+    output.push_back(neighborhoods);
+    
+    return output;
+    
+}

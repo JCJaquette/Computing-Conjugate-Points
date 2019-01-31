@@ -5,6 +5,7 @@
 using namespace std;
 
 #include "capd/capdlib.h"
+#include "localManifold.h"
 using namespace capd;
 using namespace capd::alglib;
 using namespace capd::matrixAlgorithms;
@@ -19,5 +20,6 @@ IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interv
 vector <IFunction> constructEnergy(int dimension,  vector < double > All_parameters);
 vector < IMap > constructFunctions( int dimension, vector < double > All_parameters);
 
-
+vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable);
+vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable, int shots);
 #endif
