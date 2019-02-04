@@ -31,8 +31,8 @@
   global_pt[dimension-1]=(*p_energy_proj)(coord_pt);
 //   TODO Turn this into a point, and add the thick interval to the nbd
 
-//   We compute the gradient of the projection in the neighborhood of our point.
-  IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd);
+//   We compute the gradient of the projection in the neighborhood of our point. 
+  IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd); // Maybe optimize this using second derivative
   
 //   cout << " grad = " << projection_grad <<endl;
   
@@ -45,7 +45,12 @@
       A_energy[dimension-1][i] = projection_grad[i];
   }
   A_energy[dimension-1][dimension-1]=1;
-//   cout << "A_energy  = " << A_energy << endl;
+
+  
+  IMatrix A_energy_error = A_energy - midVector(A_energy);
+  A_energy = midVector(A_energy);  
+  global_nbd = global_nbd +  gauss(A_energy,A_energy_error*global_nbd) ;
+  
   
 //   We create the set we will integrate  
   C1Rect2Set S_XY(global_pt,A_energy,global_nbd);  
@@ -57,9 +62,17 @@
   vector_out = Phi(T,S_XY,monodromy_matrix);   
   
   
-  
+//   cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
 //   We pre-multiply the monodromy_matrix by the derivative of the 0-energy section chart
-  monodromy_matrix = monodromy_matrix *A_energy;
+    cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
+    IMatrix Test1 = monodromy_matrix * A_energy;
+    IMatrix Test2 = monodromy_matrix * (A_energy + A_energy_error);
+    monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
+    
+    cout << "monodromy_matrix1 = " << Test1 - midVector(Test1)<< endl;
+    cout << "monodromy_matrix2 = " << Test2 - midVector(Test2)<< endl;
+    cout << "monodromy_matrix0 = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
+//   monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
 //   We get rid of the last column & row
 //   * * * X
 //   * * * X
@@ -73,6 +86,7 @@ for( int i =0;i<dimension-1;i++)
         output_matrix[i][j] = monodromy_matrix[i][j];
     }
 }
+// cout << " output_matrix = " << output_matrix - midVector(output_matrix)<< endl;
 derivative_out = output_matrix;
 
      return;
@@ -299,7 +313,6 @@ vector < IVector > boundaryValueProblem::breakUpXY_gen( IVector XY)
 
 IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) 
 {
-//   NOTE: WE FIX X[frozen] AS A SINGLE NUMBER 
 
   //    We assume we fail
   SUCCESS =0; 
@@ -351,7 +364,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 //   cout << " x_radius^2 = " << x_radius_sqr << endl;
 //   cout << "   radius^2 = " << radius << endl;
 // // //    We replace the last term of G with point^2 - radius^2 
-  G[dimension-1] = x_radius_sqr - radius; //TODO Remove
+  G[dimension-1] = x_radius_sqr - radius; //TODO Remove --- why?
 
 
   IVector XY_out_nbd = gauss(DG,G); 
@@ -388,41 +401,44 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 
 
 
-vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vector <IVector> neighborhoods ,interval &integration_time) 
+vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> &points, vector <IVector> &neighborhoods ,interval &integration_time, interval time_nbd) 
 { 
-  
+//     We Assume that we verify the newton step, and update this if we fail.
+    bool verify = 1;
+    
   IVector G = Compute_G(points,integration_time); 
-  
-//   cout <<  "___ G*= " << G_New  << endl;  
-  
 //   cout <<  "___ G = " << G  << endl;  
   
-//   cout << " integration_time " << integration_time << endl;
   
-  
-  
+//   sum_G >> is just used to see if we want to do this non-rigorously
   interval sum_G =0;
   for(unsigned i =0;i<G.dimension();i++) 
       sum_G += abs(G[i]);
   sum_G = sum_G.right();
-//   cout << " |G| = " << sum_G << endl;
+  cout << " |G| = " << sum_G << endl;
   
-  IMatrix DG = Compute_DG(points, neighborhoods , integration_time) ;
-//   cout <<  "___ det " << det(DG) << endl;  
-//   cout <<  "___ DG = " << DG<< endl;  
+  IMatrix DG = Compute_DG(points, neighborhoods , integration_time+time_nbd) ;
+  
+  cout <<  "___ DG = " << DG<< endl;  
+  cout <<  "___ det " << det(DG) << endl;  
+  
+//   cout <<  "___ DGw= " << DG - midVector(DG)<< endl;  
   
 //   If |G| is large, we do a non-rigorous newton step
   if (sum_G > pow(10,-4))
   {
     G = midVector(G);
     DG = midVector(DG);
+    verify =0;
   }
   IVector XY_out_nbd = gauss(DG,G); 
   
   
 //   TODO Reimpliment
-  IVector initial_vector = Construct_Initial_Vector(points , neighborhoods,integration_time);
-//   We perform the newton step
+  IVector initial_vector = Construct_Initial_Vector(points ,neighborhoods,integration_time,0);
+  IVector initial_nbd    = Construct_Initial_Vector(points ,neighborhoods,(integration_time+time_nbd),1);
+
+  //   We perform the newton step
   IVector out_vector = initial_vector - XY_out_nbd; 
    
   
@@ -430,26 +446,30 @@ vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);
 
 
 integration_time = out_vector[num_middle_points*(dimension-1)+1];
-// cout << " integration_time " << integration_time << endl;
+
 //   BEGIN Verify the newton step
-//   cout << "output nbd " << XY_out_nbd << endl;
+
   
 //   TODO Implement Verification
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)
-//   bool verify = 1;
-//   bool verify_local;
-//   
-//     for (int i = 0 ; i< dimension;i++)
-//     {
-//         verify_local = subsetInterior(-XY_out_nbd[i],XY_nbd[i]);
-//         if (verify_local ==0)
-//             verify=0;
-//     }
-//   if (verify ==1)
-//   {
-//     SUCCESS = 1;
-//   }
+  
+  bool verify_local;
+  
+    for (int i = 0 ; i< dimension;i++)
+    {
+        verify_local = subsetInterior(out_vector[i],initial_nbd[i]);
+        cout <<  verify_local ;
+        if (verify_local ==0)
+            verify=0;
+    }
+    
+    cout << endl;
+    
+  if (verify ==1)
+  {
+    SUCCESS = 1;
+  }
   
 //   cout << "Domain = " << XY_nbd << endl;
 //   cout << " Image = " << -XY_out_nbd << endl;
@@ -603,7 +623,7 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
   
 }
 
-IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods)
+IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods) // TODO I think we can delete this function
 {
     
     
@@ -631,16 +651,19 @@ IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,c
     return initial_vector;   
 }
 
-IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods, interval integration_time)
+IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods, interval integration_time, bool ADD)
 {
-    
+//     We construct one big vector, adding the points to the neighborhoods, and including the integration time. 
     
     int num_regions = points.size();
     
-//     We add the points and the neighborhoods together
-    for (int i=0;i<num_regions;i++)
-        points[i] = points[i] + neighborhoods[i];
-
+    if (ADD)
+    {
+    //     We add the points and the neighborhoods together
+        for (int i=0;i<num_regions;i++)
+            points[i] = points[i] + neighborhoods[i];
+    }
+    
 //     We erase the middle, middle point TODO this is not very efficient :( 
     points.erase( points.begin()+ 1+floor(num_middle_points/2));
     
@@ -663,7 +686,32 @@ IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,c
 
     return initial_vector;   
 }
+IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points, interval integration_time)
+{
+//     We construct one big vector,  including the integration time. 
+    
+//     We erase the middle, middle point TODO this is not very efficient :( 
+    points.erase( points.begin()+ 1+floor(num_middle_points/2));
+    
+    IVector initial_vector( num_middle_points*(dimension-1)+2);
+    
+    initial_vector[num_middle_points*(dimension-1)+1]=integration_time;
 
+    int counter = 0;
+    
+    for (int i=0;i<num_middle_points+1;i++)
+    {
+        int region_length = points[i].dimension();
+        for (int j = 0;j<region_length ;j++)
+        {
+            initial_vector[counter] = points[i][j];
+            counter ++;
+        }
+    }
+    
+
+    return initial_vector;   
+}
 vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector_in)
 {
     

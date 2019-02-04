@@ -50,13 +50,14 @@ public:
   IMatrix Compute_DG(const vector <IVector> &points,const vector <IVector> &neighborhoods,interval integration_time);
   IVector Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points);
   IMatrix Construct_DG(const vector <IMatrix> &DG_forward, const vector <IMatrix> &DG_backwards,const  vector <IVector> &points, const vector <IVector> &neighborhoods,const vector < IVector> &time_derivatives);
-  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods);
-  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods,interval integration_time);
+  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods);// TODO REMOVE
+  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods,interval integration_time, bool ADD); 
+  IVector Construct_Initial_Vector(vector <IVector> points, interval integration_time);// TODO REMOVE
   vector <IVector> Deconstruct_Output_Vector(IVector initial_vector);
   
   
   IVector NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) ; 
-  vector <IVector> NewtonStep(vector <IVector> XY_pt, vector <IVector> XY_nbd  ,interval &T);   
+  vector <IVector> NewtonStep(vector <IVector> &XY_pt, vector <IVector> &XY_nbd  ,interval &T, interval time_nbd);   
   bool Verify( IVector XY_pt, IVector XY_nbd  ,interval T){return 0;};// TODO Write this function 
   bool checkProof(void){return SUCCESS;};
   void setMiddlePoints(int shots){num_middle_points = shots;};

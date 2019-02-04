@@ -29,7 +29,7 @@ int test(int dimension,vector < double > All_parameters)
   int order = 20;
   
   int manifold_subdivision = 8;
-  int shots = 5;
+  int shots = 3;
   int multiple_newton_steps = 10;
   int single_newton_steps = 10;
  
@@ -133,19 +133,22 @@ int test(int dimension,vector < double > All_parameters)
           points[j] = midVector(regions[j]);
   }
   
+  interval multiplier = 1.1;
+  time_nbd = 0 * (integration_time - integration_time.mid());
   
-  time_nbd = integration_time - integration_time.mid();
+  cout << " Time nbd " << time_nbd <<endl;
   integration_time = integration_time.mid();
   for (unsigned j=0;j<regions.size();j++){
-    neighborhoods[j] = .10*(regions[j] -  points[j]);
+    neighborhoods[j] = multiplier *(regions[j] -  points[j]);
   }
 
   for (unsigned i = 0 ; i < regions.size();i++)
         {
             cout << " neighborhoods["<<i<<"] = " << neighborhoods[i] << endl;
         }
-        
+  cout << " Verifying .... " << endl;      
   regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
+  cout << " Time nbd " << integration_time - integration_time.mid() <<endl;
   
     if (multiple_newton_steps>0)
     {
@@ -153,7 +156,7 @@ int test(int dimension,vector < double > All_parameters)
         
         for (unsigned i = 0 ; i < regions.size();i++)
         {
-            cout << " Region["<<i<<"] = " << regions[i] << endl;
+//             cout << " Region["<<i<<"] = " << regions[i] << endl;
         }
         
         cout << endl;
@@ -164,7 +167,8 @@ int test(int dimension,vector < double > All_parameters)
         }
         cout << "done testing " << endl;
     }
-    return -5;
+//     return -5;
+    
   cout << " Old T = " << T << endl;
   T = (shots+1)*integration_time/2;
   cout << " New T = " << T << endl;
@@ -224,6 +228,8 @@ int test(int dimension,vector < double > All_parameters)
 
     
 //      END single shooting 
+
+return -5;
 
 //  BEGIN globalize manifold
 //    -- We calculate the norm bounds 
@@ -410,9 +416,9 @@ int main(int argc, char* argv[])
         {            
             Input.push_back(1); // b1
             Input.push_back(.95);// b2 
-            Input.push_back(.9);// b3
+            Input.push_back(.98);// b3
                         
-            Input.push_back(-.021);// c12
+            Input.push_back(-.15);// c12
             Input.push_back(.05);// c23         0 - unstable
             
 
