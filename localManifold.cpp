@@ -410,21 +410,56 @@ interval localManifold::ErrorEigenfunction( void)
   IVector U = constructU(U_flat);
   
   
+  IMatrix pi_1(dimension,dimension);
+  for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}
   
+  IMatrix pi1_A = pi_1 * (*pF).A;
+  
+  IMatrix D2G_U =  (*(*pF).f)[ (*pF).p +  pi1_A*U ]*pi_1;
+  IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ]           *pi_1;
+  
+  interval C_G = euclNorm(D2G_U - D2G_p);
+  cout << " C_G  = " << C_G << endl;  
+
+//   cout << " U out = " << (*(*pF).f)[ (*pF).p +  pi1_A*U ] << endl;
+//   cout << " pi_1 = " << pi_1       << endl;  
+//   cout << " pi1_A  = " << pi1_A << endl;  
+//   cout << " D2G_U  = " << D2G_U << endl;  
+//   cout << " D2G_p  = " << D2G_p << endl;  
+  
+//   IMatrix derivative(IVector w){return Ainv*(*f)[p+A*w]*A;}
   
   interval c = sqrt(1 + sqr(L) );
-  IMatrix guess = (*pF)[U] - (*pF)[(*pF).p];
+  IMatrix guess = (*pF)[U] - (*pF)[(*pF).p]; // TODO
+  
+//   cout << " guess  = " << guess << endl;  
+//   cout << " C_G  = " << C_G << endl;  
+//   
+//   cout << " guess N = " << euclNorm(guess) << endl;  
+//   cout << " C_G N = " << euclNorm(C_G) << endl;
+
   
   
-  interval C = c*sqr(euclNorm(guess)); // We should really be taking a second derivative ..... and calculating this in a different class. 
-//   cout << " C = " << C<< endl;
+  
+  cout << " f(U) = " << (*(*pF).f)((*pF).p+(*pF).A*U)      << endl;  
+  
+  cout << " Df(U) = " << (*pF)[U]       << endl;  
+  cout << " Df(p) = " << (*pF)[(*pF).p] << endl;  
+//   cout << " D3G = " << guess << endl;  
+  
+  interval C = C_G*sqrt(1 + sqr(L) ); // We should really be taking a second derivative ..... and calculating this in a different class. 
+  cout << " C = " << C<< endl;
+  
   interval eta = xi; // This needs xi to already have been computed. 
-  interval lambda = K*C/eta;
+  interval norm_A0 = euclNorm((*pF).A);
+  interval lambda = K* C_G * sqrt(1 + sqr(L) ) * norm_A0 /eta;
   
+  cout << " !lambda = " << lambda<< endl;
   lambda = lambda.right(); // This reduces wrapping effect. 
   
   interval error = lambda/(1-lambda);
-  error = error/10000;
+
+//     cout << " !error = " << error<< endl;
   return error;
 }
 

@@ -29,32 +29,33 @@ int test(int dimension,vector < double > All_parameters)
   int order = 20;
   
   int manifold_subdivision = 8;
-  int shots = 3;
-  int multiple_newton_steps = 10;
+  int shots = 7;
+  int multiple_newton_steps = 1;
   int single_newton_steps = 10;
  
   int grid = 10; // count zeros
-  int stepsize = 4;
-  interval L_plus = 8;
+  int stepsize = 5;
+  interval L_plus = 10;
   interval T ;
   if (dimension ==4 )
     T = 16.3; // n=2
   else 
     T = 20; // n=3
   
-  bool CHECK_MANIFOLD 		= 0;
-  bool CHECK_CONNECTING_ORBIT 	= 0;
+  bool CHECK_MANIFOLD 		    = 1;
+  bool CHECK_CONNECTING_ORBIT 	= 1;
 
-    vector <IMap> functions = constructFunctions(  dimension,All_parameters);
+  vector <IMap> functions = constructFunctions(  dimension,All_parameters);
   vector <IFunction> energy_vec   = constructEnergy(dimension,  All_parameters);
-  IMap f             = functions[0];
-  IMap f_minus       = functions[1];
-  IMap f_linearize   = functions[2];
+  IMap f             = functions[0]; // For unstable manifold
+  IMap f_minus       = functions[1]; // For stable manifold
+  IMap f_linearize   = functions[2]; // For non-autonomous system
+  
   IFunction energy   = energy_vec[0];  // Not sure if this gets used
   IFunction energy_projection   = energy_vec[1];
 
  
-    //   Cone angle
+  //   Cone angle
   //   We define the box used for the boundary value problem
   interval initial_box;
   interval L; 
@@ -128,12 +129,13 @@ int test(int dimension,vector < double > All_parameters)
   for (int i = 0 ; i<multiple_newton_steps ;i++)
   {
       integration_time = integration_time.mid();
+      cout << " integration_time " << integration_time <<endl;
       regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
       for (unsigned j=0;j<regions.size();j++)
           points[j] = midVector(regions[j]);
   }
   
-  interval multiplier = 1.1;
+  interval multiplier = 0.;
   time_nbd = 0 * (integration_time - integration_time.mid());
   
   cout << " Time nbd " << time_nbd <<endl;
@@ -229,7 +231,7 @@ int test(int dimension,vector < double > All_parameters)
     
 //      END single shooting 
 
-return -5;
+// return -5;
 
 //  BEGIN globalize manifold
 //    -- We calculate the norm bounds 
@@ -404,12 +406,12 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6;
+	    dimension=4;
         if (dimension ==4)
         {
             Input.push_back(1); // a
             Input.push_back(.95);// b 
-            Input.push_back(.1);// c
+            Input.push_back(.01);// c
             test(dimension,Input);
         }
         else if (dimension ==6)
@@ -418,7 +420,7 @@ int main(int argc, char* argv[])
             Input.push_back(.95);// b2 
             Input.push_back(.98);// b3
                         
-            Input.push_back(-.15);// c12
+            Input.push_back(-.015);// c12
             Input.push_back(.05);// c23         0 - unstable
             
 
