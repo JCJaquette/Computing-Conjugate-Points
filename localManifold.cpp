@@ -408,7 +408,7 @@ interval localManifold::ErrorEigenfunction( void)
   IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ]           *pi_1;
   
   interval C_G = euclNorm(D2G_U - D2G_p);
-  cout << " C_G  = " << C_G.right() << endl;  
+  cout << " C_G  = " << C_G << endl;  
   
   interval K = computeK(); 
 

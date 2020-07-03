@@ -195,33 +195,64 @@ int propagateManifold::frameDet(interval T,int grid)
 
 void propagateManifold::lastEuFrame(topFrame &A_frame)
 {
+    int STABLE = 1;
+    int manifold_subdivision = 8;
   
-  IMatrix A_s = (*(*pStable).pF).A;
-  
-  
-  IMatrix last_Frame = A_frame.getLastFrame();
-//   cout <<endl<< "Last frame = " << last_Frame << endl; 
-  
-  for (int i = 0 ; i < dimension /2 +1;i++)
-  {
-    IVector col = getColumn(last_Frame,dimension,i);
-    IVector vec_in_local_coord = gauss(A_s,col);
-    vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
+    IMatrix A_s = (*(*pStable).pF).A;
+//     BEGIN We validate the stable manifold in a larger nbd
     
-    if (i < dimension /2)
-      cout << " w_" << i << "   = ";
-    else if (i == dimension /2)
-      cout << " phi'  = ";
-    cout << vec_in_local_coord << endl;
-  }
+    IMatrix last_Frame = A_frame.getLastFrame();
+    //   cout <<endl<< "Last frame = " << last_Frame << endl; 
+    
+    //    We get the last column to output the final point
+    IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
+    IVector stable_point = (*(*pStable).pF).p ;
+    
+    for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
+    
+    cout << "Dist from stable equilibrium = " << stable_point << endl;
+    
+    IVector local_dist = krawczykInverse(A_s)*stable_point;
+    cout << "Dist from stable equilibrium (eigen) = " << local_dist << endl;
+    
+    IVector U_flat_new(dimension/2);
+    for (int i =0;i<dimension/2;i++){ U_flat_new[i]=(abs(local_dist[i+dimension/2])+1e-10)*interval(-1,1);}
+    
+    
+    localVField F_s_new     = (*(*pStable).pF);
+    interval    L_new       = 6*euclNorm(U_flat_new).right();
+
   
-//    We get the last column to output the final point
-  IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
-  IVector stable_point = (*(*pStable).pF).p ;
-  for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
-  
-  cout << "Dist from stable equilibrium = " << stable_point << endl;
-  
+    localManifold localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            //   We create the local manifold object, which encloses our final trajectory;
+    
+    cout << " Made a new manifold" << endl;
+    bool conditions_S = localStableBig.checkConditions( U_flat_new ); 
+    
+    if(! (conditions_S))
+    {
+        cout << "Failed to validate Conditions " << endl;
+    }  
+    
+//     END
+    
+
+// BEGIN We project the final endpoint into the large stable manifold coordinates 
+    for (int i = 0 ; i < dimension /2 +1;i++)
+    {
+        IVector col = getColumn(last_Frame,dimension,i);
+        IVector vec_in_local_coord = gauss(A_s,col);
+        vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
+        
+        if (i < dimension /2)
+        cout << " w_" << i << "   = ";
+        else if (i == dimension /2)
+        cout << " phi'  = ";
+        cout << vec_in_local_coord << endl;
+    }
+    
+//     END 
+    
+
   
 }
 
