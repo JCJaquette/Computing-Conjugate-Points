@@ -44,19 +44,14 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
 
 
 
+    IVector Eigenfunction_Error = (*pUnstable).getEigenError_minus_infty(eigenvector_NUM);
+
+// cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
 
   
-  //   TODO Compute appropriate Error Terms
-  // We add some small error to this. 
-  
-  interval error_size = (*pUnstable).ErrorEigenfunction();
-
-//   cout << " Error = " << error_size  << endl;
-    
-  error_size  = error_size * interval(-1,1);
-  for (int i =dimension+(dimension/2);i< 2*dimension;i++)
+    for (int i =0;i< dimension;i++)
   {
-    lin_init_nbd[i]  = error_size*interval(-1,1);
+    lin_init_nbd[i+dimension]  = Eigenfunction_Error[i];
   }
 
     cout << " Error = " << lin_init_nbd  << endl;
@@ -89,8 +84,10 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 
   
     int thread_id =omp_get_thread_num();
-    if (thread_id ==1 ) 
+    if (thread_id ==1 ){
         cout << "  Using multiple processors " << endl;
+        abort();
+    }
   
   interval timeStep = interval(pow(2,-step_size)); 
     //   We Create our solvers 
@@ -143,9 +140,11 @@ int propagateManifold::frameDet(interval T,int grid)
 {
   
 
-  
+//   We compute the eigenfunction error;
+    (*pUnstable).computeEigenError_minus_infty();
   
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
+  
   
   
   int max_threads = omp_get_max_threads();
@@ -155,8 +154,8 @@ int propagateManifold::frameDet(interval T,int grid)
   list_of_maps.resize(max_threads );
   for( int i = 0 ; i < max_threads  ; i ++ ) { list_of_maps[i]=(*pf);}
   
-  /// I am trying to parrelize this
-//   #pragma omp parallel for  
+// // //   /// I am trying to parrelize this
+// // // //   #pragma omp parallel for  
   for (int i = 0 ; i<dimension/2;i++)
   {
     List_of_Trajectories[i] = computeTotalTrajectory(i,  T,  grid);
@@ -216,12 +215,12 @@ void propagateManifold::lastEuFrame(topFrame &A_frame)
     cout << vec_in_local_coord << endl;
   }
   
-// //    We get the last column to output the final point
-//   IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
-//   IVector stable_point = (*(*pStable).pF).p ;
-//   for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
-//   
-//   cout << "Dist from stable equilibrium = " << stable_point << endl;
+//    We get the last column to output the final point
+  IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
+  IVector stable_point = (*(*pStable).pF).p ;
+  for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
+  
+  cout << "Dist from stable equilibrium = " << stable_point << endl;
   
   
 }

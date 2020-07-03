@@ -408,22 +408,28 @@ interval localManifold::ErrorEigenfunction( void)
   IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ]           *pi_1;
   
   interval C_G = euclNorm(D2G_U - D2G_p);
-  cout << " C_G  = " << C_G << endl;  
+  cout << " C_G  = " << C_G.right() << endl;  
   
-  interval K = computeK(); // TODO 
+  interval K = computeK(); 
 
-//   cout << " D2G_U  = " << D2G_U << endl;  
   
   interval eta = xi; // This needs xi to already have been computed. 
   interval norm_A0 = euclNorm((*pF).A);
+  
+//   cout << " eta  = " << eta << endl;  
+//   cout << " norm_A0  = " << norm_A0 << endl;  
+  
   interval lambda = K* C_G * sqrt(1 + sqr(L) ) * norm_A0 /eta;
   
   cout << " !lambda = " << lambda<< endl;
   lambda = lambda.right(); // This reduces wrapping effect. 
   
   interval error = lambda/(1-lambda);
-
+  eps_unscaled = error;
+  
+  
 //     cout << " !error = " << error<< endl;
+  
   return error;
 }
 
@@ -437,12 +443,81 @@ interval localManifold::computeK( void )
     IVector Lambda_vec(dimension) ;
     for (int i =0;i<dimension;i++){ Lambda_vec[i]=Lambda[i][i];}
     
-    IMatrix Q = boundEigenvectors( A_infty, A_u , Lambda_vec); 
-
+    
+    
+    vector < IMatrix >  output= boundEigenvectors( A_infty, A_u , Lambda_vec); 
+    IMatrix Q_center = output[0];
+    IMatrix Q_error  = output[1];
+    
+    
+    IMatrix Q = Q_center +Q_error  ;
+    
     interval K =euclNorm(Q)* euclNorm( gaussInverseMatrix(Q)); 
+    
+    cout << " K = " << K << endl;
+    
+    Eigenvector_Error = Q_error ;
+    K_store = K;
     
     return K;
  
 }
 
+
+void localManifold::ErrorEigenfunctionTotal_minus_infty( void){
+ 
+//     cout << "Eigenvector_Error = " << Eigenvector_Error << endl;
+    
+    IMatrix Error_mat(dimension,dimension/2);
+    
+    IMatrix A_u = (*pF).A;                                  // Eigenvectors
+    
+    IVector V_col(dimension);
+    for (int j =0;j<dimension/2;j++){
+        V_col = getColumn(A_u,dimension,j);
+        interval eps_local = eps_unscaled*euclNorm(V_col) *interval(-1,1);
+        
+        for (int i=0;i<dimension;i++){
+            Error_mat[i][j] = Eigenvector_Error[i][j] + eps_local;
+        }
+        
+    }
+    
+    IMatrix E_u(dimension/2,dimension/2);
+    IMatrix E_s(dimension/2,dimension/2);
+    IVector V_sol(dimension);
+    
+    for (int j =0;j<dimension/2;j++){
+        V_col = getColumn(Error_mat,dimension,j);
+        
+        V_sol = gauss(A_u,V_col);
+        
+        for (int i=0;i<dimension/2;i++){
+            E_u[i][j] = V_sol[i];
+            E_s[i][j] = V_sol[i+dimension/2];
+        }
+        
+    }
+    
+    IMatrix eye(dimension/2,dimension/2);
+    for (int i =0;i<dimension/2;i++){ eye[i][i]=1;}
+    
+    Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
+     
+    cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
+//     cout << "E_s = " << E_s << endl;
+    
+//     return 0
+}
+
+
+IVector localManifold::getEigenError_minus_infty(int columnNumber){
+    IVector v_out(dimension);
+    
+    for (int i = 0 ; i<dimension/2;i++){
+        v_out[i+dimension/2] = Eu_m_Error_Final[i][columnNumber];
+    }
+    
+    return v_out;
+}
 
