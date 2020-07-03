@@ -20,7 +20,7 @@ private:
   int dimension; // this should be num_trajectories * 4  TODO Check this calculation  TODO This is bad variable naming :(
   int series_length;
   
-  vector <vector < IMatrix> >  traject_list;
+  vector <vector < IMatrix> > * p_traject_list;
 // 1st level is  # of trajectories 
 // 2nd level is  time series  
 
@@ -64,7 +64,7 @@ private:
 
 
 public:
-  topFrame(vector <vector < IMatrix> >  traject_list_){traject_list  = traject_list_;num_trajectories =traject_list.size();series_length =traject_list[0].size(); dimension = traject_list[0][0][0].dimension();}
+  topFrame(vector <vector < IMatrix> >  &p_traject_list_){p_traject_list  = &p_traject_list_;num_trajectories =(*p_traject_list).size();series_length =(*p_traject_list)[0].size(); dimension = (*p_traject_list)[0][0][0].dimension();}
   void initialize( void);
   void constructTimeSeries( void);
   void constructDetSeries( void);
@@ -84,7 +84,7 @@ public:
   vector<int> countZeros( void);
   
   IMatrix getLastFrame( void);
- void normalizeFrameColumns( void); //TODO Ill behaved -- Remove 
+ 
   
 
 };

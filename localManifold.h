@@ -6,6 +6,7 @@ using namespace std;
 
 #include "capd/capdlib.h"
 #include "utils.h"
+#include "eigenvalues.h"
 #include "localVField.h"
 // #include "eigenvalues.h"
 
@@ -29,7 +30,7 @@ private:
   friend class propagateManifold;
   
 public:
-  localManifold(localVField &pF_, IVector U_flat_global_,interval L_, bool stable_, int subdivisionNUM_){pF = &pF_; U_flat_global = U_flat_global_; L=L_; stable = stable_;dimension=(*pF).A.numberOfRows();subdivisionNUM = subdivisionNUM_;}
+  localManifold(localVField &pF_, IVector U_flat_global_,interval L_, bool stable_, int subdivisionNUM_){pF = &pF_; U_flat_global = U_flat_global_; L=L_; stable = stable_;dimension=(*pF).A.numberOfRows();subdivisionNUM = subdivisionNUM_;constructDW( );}
 
   int dim( ){return dimension;}
   IVector constructU( IVector U_flat);
@@ -56,6 +57,9 @@ public:
   interval getRadius( void ){ return getMax( abs(U_flat_global));};
   
   bool checkConditions( IVector U_flat );
+  
+  interval computeK( void );
+  
 };
 
 #endif

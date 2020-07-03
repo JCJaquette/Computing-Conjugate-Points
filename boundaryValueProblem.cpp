@@ -31,8 +31,8 @@
   global_pt[dimension-1]=(*p_energy_proj)(coord_pt);
 //   TODO Turn this into a point, and add the thick interval to the nbd
 
-//   We compute the gradient of the projection in the neighborhood of our point.
-  IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd);
+//   We compute the gradient of the projection in the neighborhood of our point. 
+  IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd); // Maybe optimize this using second derivative
   
 //   cout << " grad = " << projection_grad <<endl;
   
@@ -45,7 +45,12 @@
       A_energy[dimension-1][i] = projection_grad[i];
   }
   A_energy[dimension-1][dimension-1]=1;
-//   cout << "A_energy  = " << A_energy << endl;
+
+  
+  IMatrix A_energy_error = A_energy - midVector(A_energy);
+  A_energy = midVector(A_energy);  
+  global_nbd = global_nbd +  gauss(A_energy,A_energy_error*global_nbd) ;
+  
   
 //   We create the set we will integrate  
   C1Rect2Set S_XY(global_pt,A_energy,global_nbd);  
@@ -57,9 +62,17 @@
   vector_out = Phi(T,S_XY,monodromy_matrix);   
   
   
-  
+//   cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
 //   We pre-multiply the monodromy_matrix by the derivative of the 0-energy section chart
-  monodromy_matrix = monodromy_matrix *A_energy;
+//     cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
+    IMatrix Test1 = monodromy_matrix * A_energy;
+    IMatrix Test2 = monodromy_matrix * (A_energy + A_energy_error);
+    monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
+    
+//     cout << "monodromy_matrix1 = " << Test1 - midVector(Test1)<< endl;
+//     cout << "monodromy_matrix2 = " << Test2 - midVector(Test2)<< endl;
+//     cout << "monodromy_matrix0 = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
+//   monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
 //   We get rid of the last column & row
 //   * * * X
 //   * * * X
@@ -73,6 +86,7 @@ for( int i =0;i<dimension-1;i++)
         output_matrix[i][j] = monodromy_matrix[i][j];
     }
 }
+// cout << " output_matrix = " << output_matrix - midVector(output_matrix)<< endl;
 derivative_out = output_matrix;
 
      return;
@@ -161,8 +175,6 @@ IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bo
 
   XY_new = Phi(T,S_XY,XY_deriv); 
   
-  
-  
   IMatrix DG_XY = XY_deriv*A_i*((*pManifold).DW);
   
   
@@ -229,11 +241,6 @@ interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
     T = T - (1/D_diff)*(diff);
     T=T.mid();
 
-    
-    
-    
-    
-    
 
   }
 //       cout << "Phi_T (x)      = " << phi_T_x << endl;
@@ -306,7 +313,6 @@ vector < IVector > boundaryValueProblem::breakUpXY_gen( IVector XY)
 
 IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) 
 {
-//   NOTE: WE FIX X[frozen] AS A SINGLE NUMBER 
 
   //    We assume we fail
   SUCCESS =0; 
@@ -358,24 +364,20 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 //   cout << " x_radius^2 = " << x_radius_sqr << endl;
 //   cout << "   radius^2 = " << radius << endl;
 // // //    We replace the last term of G with point^2 - radius^2 
-  G[dimension-1] = x_radius_sqr - radius; //TODO Remove
+  G[dimension-1] = x_radius_sqr - radius; //TODO Remove --- why?
 
 
-  IVector XY_out_nbd = gauss(DG,G); // TODO  invDG_G -->> XY_out_nbd ;  G_trunc -->> G
+  IVector XY_out_nbd = gauss(DG,G); 
   
   
   
   IVector XY_out = XY_pt - XY_out_nbd;
-  
-//    We don't change the coordinate we've frozen
-//   XY_out[frozen]=XY_pt[frozen]; //NOTE REMOVED FROZEN
   
   
 //   cout << "output nbd " << XY_out_nbd << endl;
   
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)
-  //TODO REMOVE FROZEN
   bool verify = 1;
   bool verify_local;
   
@@ -399,68 +401,78 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 
 
 
-vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> points, vector <IVector> neighborhoods ,interval &integration_time) 
+vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> &points, vector <IVector> &neighborhoods ,interval &integration_time, interval time_nbd) 
 { 
-  
+//     We Assume that we verify the newton step, and update this if we fail.
+    bool verify = 1;
+    
   IVector G = Compute_G(points,integration_time); 
-  
-//   cout <<  "___ G*= " << G_New  << endl;  
-  
 //   cout <<  "___ G = " << G  << endl;  
   
-//   cout << " integration_time " << integration_time << endl;
   
-  
-  
+//   sum_G >> is just used to see if we want to do this non-rigorously
   interval sum_G =0;
   for(unsigned i =0;i<G.dimension();i++) 
       sum_G += abs(G[i]);
   sum_G = sum_G.right();
-//   cout << " |G| = " << sum_G << endl;
+  cout << " |G| = " << sum_G << endl;
   
-  IMatrix DG = Compute_DG(points, neighborhoods , integration_time) ;
-//   cout <<  "___ det " << det(DG) << endl;  
+  IMatrix DG = Compute_DG(points, neighborhoods , integration_time+time_nbd) ;
+  
 //   cout <<  "___ DG = " << DG<< endl;  
+  cout <<  "___ det " << det(DG) << endl;  
+  
+  cout << " size( DG)  = " << DG.dimension( ) << endl;
+  cout << " size( G)  = " << G.dimension( ) << endl;
+//   cout <<  "___ DGw= " << DG - midVector(DG)<< endl;  
   
 //   If |G| is large, we do a non-rigorous newton step
   if (sum_G > pow(10,-4))
   {
     G = midVector(G);
     DG = midVector(DG);
+    verify =0;
   }
   IVector XY_out_nbd = gauss(DG,G); 
   
-  
+  cout << " Hello = "<< endl;
 //   TODO Reimpliment
-  IVector initial_vector = Construct_Initial_Vector(points , neighborhoods,integration_time);
-//   We perform the newton step
+  IVector initial_vector = Construct_Initial_Vector(points ,neighborhoods,integration_time,0);
+  IVector initial_nbd    = Construct_Initial_Vector(points ,neighborhoods,(integration_time+time_nbd),1);
+
+  //   We perform the newton step
   IVector out_vector = initial_vector - XY_out_nbd; 
    
   
 vector < IVector > output_regions = Deconstruct_Output_Vector(out_vector);
 
 
-integration_time = out_vector[num_middle_points*(dimension-1)+1];
-// cout << " integration_time " << integration_time << endl;
+
+integration_time = out_vector[(1+num_middle_points)*(dimension-1)+1];
+
 //   BEGIN Verify the newton step
-//   cout << "output nbd " << XY_out_nbd << endl;
+
   
 //   TODO Implement Verification
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)
-//   bool verify = 1;
-//   bool verify_local;
-//   
-//     for (int i = 0 ; i< dimension;i++)
-//     {
-//         verify_local = subsetInterior(-XY_out_nbd[i],XY_nbd[i]);
-//         if (verify_local ==0)
-//             verify=0;
-//     }
-//   if (verify ==1)
-//   {
-//     SUCCESS = 1;
-//   }
+  
+  bool verify_local;
+  
+    for (int i = 0 ; i< dimension;i++)
+    {
+        verify_local = subsetInterior(out_vector[i],initial_nbd[i]);
+        cout <<  verify_local ;
+        if (verify_local ==0)
+            verify=0;
+    }
+    
+    cout << endl;
+    
+  if (verify ==1)
+  {
+    SUCCESS = 1;
+  }
   
 //   cout << "Domain = " << XY_nbd << endl;
 //   cout << " Image = " << -XY_out_nbd << endl;
@@ -483,8 +495,8 @@ IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval 
 //   int num_middle_points = points_length-2; // The number of points between our stable/unstable coordinates.
   
   //   We create a list of the output from integrating forward / backwards
-  vector <IVector> G_forward(num_middle_points);
-  vector <IVector> G_backwards(num_middle_points);
+  vector <IVector> G_forward(num_middle_points+1);
+  vector <IVector> G_backwards(num_middle_points+1);
     
 // //   We get the stable / unstable coordinates 
   IVector X_pt = points[0];
@@ -495,12 +507,13 @@ IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval 
   IVector zero_nbd(dimension/2);
   IVector zero_nbd_middle(dimension-1);
   
-  //   We integrate from the points on the stable/unstable manifold
   interval time_zero =0;
+  
+  //   We integrate from the points on the stable/unstable manifold
   G_forward[0]       = Gxy( X_pt, zero_nbd, integration_time , UNSTABLE); 
-  G_backwards.back() = Gxy( Y_pt, zero_nbd, integration_time , STABLE);
+  G_backwards.back() = Gxy( Y_pt, zero_nbd, time_zero  , STABLE);
   
-  
+  cout << "Hello" << endl;
       // We initialize output for integating the middle points. 
     IVector forward_vector;
     IMatrix forward_derivative;
@@ -510,28 +523,20 @@ IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval 
   //   We integrate from the middle points.
   for ( int i =0 ; i< num_middle_points;i++)
   {
-//       We integrate forward, or backwards 
-      if ( i < floor(num_middle_points/2))
-      {
-          Integrate_point(points[i+1], zero_nbd_middle ,integration_time,FORWARD,forward_vector,forward_derivative);
-          G_forward[i+1] = forward_vector;
-          G_backwards[i] = points[i+1];
-      }
-      else if ( i > floor(num_middle_points/2) )
-      {
-          Integrate_point(points[i+1], zero_nbd_middle ,integration_time,BACKWARDS,backwards_vector,backwards_derivative);
-          G_forward[i] = points[i+1];
-          G_backwards[i-1] = backwards_vector;
-      }
+    Integrate_point(points[i+1], zero_nbd_middle ,integration_time,FORWARD,forward_vector,forward_derivative);
+    G_forward[i+1] = forward_vector;
+    G_backwards[i] = points[i+1];
   }
   
-  IVector G  = Construct_G(  G_forward, G_backwards, points);
   
+  
+  IVector G  = Construct_G(  G_forward, G_backwards, points);
+  cout << " G_forward   = " << G_forward << endl;
+  cout << " G_backwards = " << G_backwards << endl;
   
 //   We compute the local coordinates of the stable point
   
-//   cout << " G_forward   = " << G_forward << endl;
-//   cout << " G_backwards = " << G_backwards << endl;
+  
   
   
     return G; 
@@ -564,18 +569,18 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
   
 //   NOTE We get the derivative for integrating the CUBE
   //   We create a list of the output from integrating forward / backwards
-  vector <IMatrix> DG_forward(num_middle_points);
-  vector <IMatrix> DG_backwards(num_middle_points);
+  vector <IMatrix> DG_forward(num_middle_points+1);
+  vector <IMatrix> DG_backwards(num_middle_points+1);
   
-  vector <IVector> time_derivatives(num_middle_points);
+  vector <IVector> time_derivatives(num_middle_points+1);
   
 //   We integrate from the points on the stable/unstable manifold  
 // NOTE These matricies still have an extra bottom row.   
   interval time_zero =0;
     DG_forward[0]        =  DGxy( X_pt, X_nbd, integration_time, UNSTABLE);
-    DG_backwards.back()  = -DGxy( Y_pt, Y_nbd, integration_time , STABLE);
+    DG_backwards.back()  = -DGxy( Y_pt, Y_nbd, time_zero , STABLE);
     time_derivatives[0]                   =         (*pf)(Gxy( X_pt, X_nbd, integration_time , UNSTABLE)); 
-    time_derivatives[num_middle_points-1] +=  -(*pf_minus)(Gxy( Y_pt, Y_nbd, integration_time , STABLE)); 
+    time_derivatives[num_middle_points+0] +=  -(*pf_minus)(Gxy( Y_pt, Y_nbd, time_zero , STABLE)); 
     
     
 
@@ -589,20 +594,10 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
   for ( int i =0 ; i< num_middle_points;i++)
   {
       //       We integrate forward, or backwards 
-      if ( i < floor(num_middle_points/2))
-      {
           Integrate_point(points[i+1], neighborhoods[i+1] ,integration_time,FORWARD,forward_vector,forward_derivative);
           DG_forward[i+1] = forward_derivative;
           time_derivatives[i+1] += (*pf)(forward_vector);
           DG_backwards[i] = -eye;
-      }
-      else if ( i > floor(num_middle_points/2) )
-      {
-          Integrate_point(points[i+1], neighborhoods[i+1] ,integration_time,BACKWARDS,backwards_vector,backwards_derivative);
-          DG_forward[i] = eye;
-          DG_backwards[i-1] = -backwards_derivative;
-          time_derivatives[i-1] += -(*pf_minus)(backwards_vector);
-      }
 
   }
 
@@ -614,7 +609,7 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
   
 }
 
-IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods)
+IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods) // TODO I think we can delete this function
 {
     
     
@@ -642,16 +637,46 @@ IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,c
     return initial_vector;   
 }
 
-IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods, interval integration_time)
+IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods, interval integration_time, bool ADD)
 {
-    
+//     We construct one big vector, adding the points to the neighborhoods, and including the integration time. 
     
     int num_regions = points.size();
     
-//     We add the points and the neighborhoods together
-    for (int i=0;i<num_regions;i++)
-        points[i] = points[i] + neighborhoods[i];
+    if (ADD)
+    {
+    //     We add the points and the neighborhoods together
+        for (int i=0;i<num_regions;i++)
+            points[i] = points[i] + neighborhoods[i];
+    }
+    
+//     We erase the middle, middle point TODO this is not very efficient :( 
+//     points.erase( points.begin()+ 1+floor(num_middle_points/2));
+    
+    IVector initial_vector( (num_middle_points+1)*(dimension-1)+2);
+    
+    initial_vector[(num_middle_points+1)*(dimension-1)+1]=integration_time;
 
+    int counter = 0;
+    
+    for (int i=0;i<num_middle_points+2;i++)
+    {
+        int region_length = points[i].dimension();
+        for (int j = 0;j<region_length ;j++)
+        {
+            initial_vector[counter] = points[i][j];
+            counter ++;
+        }
+    }
+    
+    cout << " initial_vector <" << initial_vector << endl;
+
+    return initial_vector;   
+}
+IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points, interval integration_time) // TODO Delete?
+{
+//     We construct one big vector,  including the integration time. 
+    
 //     We erase the middle, middle point TODO this is not very efficient :( 
     points.erase( points.begin()+ 1+floor(num_middle_points/2));
     
@@ -674,7 +699,6 @@ IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,c
 
     return initial_vector;   
 }
-
 vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector_in)
 {
     
@@ -694,26 +718,28 @@ vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector
       IVector middle_point(dimension-1);
 
       //     We add the middle points coordinates // TODO This is messy
-      if ( i !=   floor(num_middle_points/2))
-      {
+//       if ( i !=   floor(num_middle_points/2))
+//       {
         int start_index=0;
-        if (i < floor(num_middle_points/2))
+//         if (i < floor(num_middle_points/2))
             start_index = dimension/2+ i*(dimension-1);
-        else if (i > floor(num_middle_points/2))
-            start_index = dimension/2+ (i-1)*(dimension-1);
+//         else if (i > floor(num_middle_points/2))
+//             start_index = dimension/2+ (i-1)*(dimension-1);
         
         for (int j = 0 ; j < dimension-1;j++)
         {
             middle_point[j] = vector_in[start_index+j];
         }
-      }
+//       }
       
       points_out[i+1]=middle_point;
   }
   
+  
+  
   //     We add the stable coordinates
   IVector Y(dimension/2);
-  int index_start = (num_middle_points-1)*(dimension-1)+(dimension/2);
+  int index_start = (num_middle_points+0)*(dimension-1)+(dimension/2);
 //   cout << " vect_in_ size =  "<< vector_in.dimension() << endl;
 //   cout << " index_start " << index_start << endl;
   for (int i =0; i< dimension/2;i++)
@@ -721,7 +747,7 @@ vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector
   
   points_out[num_middle_points+1]=Y;
   
-  
+  cout << " points_out " << points_out << endl;
 //   cout << " Y = " << endl;
 //   cout << Y << endl;
   
@@ -743,6 +769,8 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
             G[i*(dimension-1)+j]= G_forward[i][j] - G_backwards[i][j];
         }
     }
+    
+//     cout << "G = " << G << endl;
     
     //     We try to fix the radius of the unstable coordinate
     IVector X_pt = points[0];
@@ -767,7 +795,7 @@ IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, 
 {
     
     
-    int N =  num_middle_points*(dimension-1)+2;
+    int N =  (num_middle_points+1)*(dimension-1)+2;
     
     
     
@@ -794,7 +822,7 @@ IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, 
     
 //  Add the middle points
 
-    for ( int i =0;i <num_middle_points-1;i++)
+    for ( int i =0;i <num_middle_points;i++)
     {
         int point_index = i*(dimension-1);
         for (int j =0;j<dimension-1;j++) // row
@@ -822,7 +850,7 @@ IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, 
 
 
     //     We add the derivative with respect to time to the last column
-    for (int i = 0 ; i < num_middle_points ;i++)
+    for (int i = 0 ; i < num_middle_points +1;i++)
     {
 //         IVector local_derivative = (*pf)(G_forward[i]);
         for ( int j = 0 ; j < dimension -1; j++)
@@ -837,7 +865,7 @@ IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, 
 IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt, IVector X_nbd)
 {
     
-    //TODO REMOVE FROZEN
+
   IMatrix DG(dimension,dimension);
   for (int i = 0; i< dimension;i++)
   {

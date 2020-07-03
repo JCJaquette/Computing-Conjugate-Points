@@ -5,6 +5,7 @@
 using namespace std;
 
 #include "capd/capdlib.h"
+// #include <capdAlg/include/capd/vectalg/vectalgLib.h>
 
 using namespace capd;
 using namespace capd::alglib;

@@ -54,11 +54,12 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
 //   cout << " Error = " << error_size  << endl;
     
   error_size  = error_size * interval(-1,1);
-  for (int i =dimension;i< 2*dimension;i++)
+  for (int i =dimension+(dimension/2);i< 2*dimension;i++)
   {
     lin_init_nbd[i]  = error_size*interval(-1,1);
   }
 
+    cout << " Error = " << lin_init_nbd  << endl;
     
   vector < IVector > output;
   output.push_back(lin_init_pt);
@@ -155,7 +156,7 @@ int propagateManifold::frameDet(interval T,int grid)
   for( int i = 0 ; i < max_threads  ; i ++ ) { list_of_maps[i]=(*pf);}
   
   /// I am trying to parrelize this
-  #pragma omp parallel for  
+//   #pragma omp parallel for  
   for (int i = 0 ; i<dimension/2;i++)
   {
     List_of_Trajectories[i] = computeTotalTrajectory(i,  T,  grid);
