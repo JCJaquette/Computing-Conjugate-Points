@@ -393,23 +393,12 @@ bool localManifold::checkRateCondition(IMatrix DFU) //TODO Separate this from th
 
 
 interval localManifold::ErrorEigenfunction( void)
-{
-//  TODO This is a rough calculation and needs to be properly implemented
-   
+{  
   
-  
-  interval K =1; // TODO
-  
-  capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;
-  
-//   We estimate A(U) -A(p) --- this is NOT correct
-  
-  IVector U_flat(dimension/2);
-  interval scale = 0.00001;
-  for (int i =0;i<dimension/2;i++){ U_flat[i]=scale*interval(-1,1);}
-  IVector U = constructU(U_flat);
-  
-  
+//   We estimate A(U) -A(p) --- TODO this could be improved
+
+  IVector U = constructU(U_flat_global);
+    
   IMatrix pi_1(dimension,dimension);
   for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}
   
@@ -420,35 +409,10 @@ interval localManifold::ErrorEigenfunction( void)
   
   interval C_G = euclNorm(D2G_U - D2G_p);
   cout << " C_G  = " << C_G << endl;  
+  
+  interval K = computeK(); // TODO 
 
-//   cout << " U out = " << (*(*pF).f)[ (*pF).p +  pi1_A*U ] << endl;
-//   cout << " pi_1 = " << pi_1       << endl;  
-//   cout << " pi1_A  = " << pi1_A << endl;  
 //   cout << " D2G_U  = " << D2G_U << endl;  
-//   cout << " D2G_p  = " << D2G_p << endl;  
-  
-//   IMatrix derivative(IVector w){return Ainv*(*f)[p+A*w]*A;}
-  
-  interval c = sqrt(1 + sqr(L) );
-  IMatrix guess = (*pF)[U] - (*pF)[(*pF).p]; // TODO
-  
-//   cout << " guess  = " << guess << endl;  
-//   cout << " C_G  = " << C_G << endl;  
-//   
-//   cout << " guess N = " << euclNorm(guess) << endl;  
-//   cout << " C_G N = " << euclNorm(C_G) << endl;
-
-  
-  
-  
-  cout << " f(U) = " << (*(*pF).f)((*pF).p+(*pF).A*U)      << endl;  
-  
-  cout << " Df(U) = " << (*pF)[U]       << endl;  
-  cout << " Df(p) = " << (*pF)[(*pF).p] << endl;  
-//   cout << " D3G = " << guess << endl;  
-  
-  interval C = C_G*sqrt(1 + sqr(L) ); // We should really be taking a second derivative ..... and calculating this in a different class. 
-  cout << " C = " << C<< endl;
   
   interval eta = xi; // This needs xi to already have been computed. 
   interval norm_A0 = euclNorm((*pF).A);
@@ -464,6 +428,21 @@ interval localManifold::ErrorEigenfunction( void)
 }
 
 
+interval localManifold::computeK( void )
+{    
+    IMatrix A_u = (*pF).A;                                  // Eigenvectors
+    IMatrix A_infty = (*(*pF).f)[(*pF).p];                  // Asymptotic Matrix
+    
+    IMatrix Lambda = gaussInverseMatrix(A_u)*A_infty*A_u;   // Eigenvalues     
+    IVector Lambda_vec(dimension) ;
+    for (int i =0;i<dimension;i++){ Lambda_vec[i]=Lambda[i][i];}
+    
+    IMatrix Q = boundEigenvectors( A_infty, A_u , Lambda_vec); 
 
+    interval K =euclNorm(Q)* euclNorm( gaussInverseMatrix(Q)); 
+    
+    return K;
+ 
+}
 
 

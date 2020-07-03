@@ -43,7 +43,7 @@ DMatrix coordinateChange(int i,int dimension, vector < double> All_parameters)
 
   
   DMatrix Df=f[p];
-  return coordinateChange(Df);
+  return coordinateChange(Df); // See Utils.cpp ; computes & sorts eigenvectors
 }
 
 

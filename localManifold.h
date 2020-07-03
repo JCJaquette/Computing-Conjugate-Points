@@ -6,6 +6,7 @@ using namespace std;
 
 #include "capd/capdlib.h"
 #include "utils.h"
+#include "eigenvalues.h"
 #include "localVField.h"
 // #include "eigenvalues.h"
 
@@ -56,6 +57,9 @@ public:
   interval getRadius( void ){ return getMax( abs(U_flat_global));};
   
   bool checkConditions( IVector U_flat );
+  
+  interval computeK( void );
+  
 };
 
 #endif

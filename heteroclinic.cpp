@@ -13,6 +13,7 @@ using namespace capd::alglib;
 using namespace capd::matrixAlgorithms;
 
 #include "utils.h"
+#include "eigenvalues.h"
 #include "ODE_functions.h"
 #include "localVField.h"
 #include "localManifold.h"
@@ -406,12 +407,13 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4;
+	    dimension=4; // TESTING DIMENSION
+	    
         if (dimension ==4)
         {
             Input.push_back(1); // a
             Input.push_back(.95);// b 
-            Input.push_back(.01);// c
+            Input.push_back(.05);// c
             test(dimension,Input);
         }
         else if (dimension ==6)
