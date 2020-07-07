@@ -26,7 +26,9 @@ vector<IMatrix> getTotalTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &t
 void 	constructMatrix(const interval &time,const IVector &left_end,const IVector &right_end,const IVector &v_value,const IVector &v_deriv, IMatrix &matrix_mod);
 IVector getColumn(const IMatrix &A, int dimension,int column);
 
+interval omega( IVector V, IVector W, int n);
 
+interval ml(const IMatrix &A);
 
  IVector getSubdivision(const IVector &U, const vector < int > &index_list , const vector < int > &part_list , const int &subdivisionNUM);
  int int_pow( int base, int exp);

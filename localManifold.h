@@ -27,10 +27,14 @@ private:
   IVector U_flat_global; // TODO Replace this in how class is called
   interval xi;
   
+  IVector eigenvalues;
+  
   interval K_store;
   interval eps_unscaled;
   IMatrix Eigenvector_Error; // Error for unit norm eigenvectors;  
-  IMatrix Eu_m_Error_Final;
+  IMatrix Eu_m_Error_Final;  // Error for the unstable eigenfucntions at minus infinity
+  
+  IMatrix Eigenfunction_Error_plus_infty;  // Error for the all eigenfucntions at plus infinity
   
   friend class boundaryValueProblem;
   friend class propagateManifold;
@@ -46,6 +50,8 @@ public:
   
   IMatrix boundDFU( IVector U); 			
   
+  interval boundDFU_proj( IVector U);
+  
   void constructDW( ); 
   
   bool checkRateCondition(IVector U_flat );
@@ -60,7 +66,9 @@ public:
   
   interval ErrorEigenfunction( void);  
   void ErrorEigenfunctionTotal_minus_infty( void);
+  void ErrorEigenfunctionTotal_plus_infty( void);
   void computeEigenError_minus_infty( void){ErrorEigenfunction( ); ErrorEigenfunctionTotal_minus_infty( );};
+  void computeEigenError_plus_infty( void){ErrorEigenfunction( ); ErrorEigenfunctionTotal_plus_infty( );};
   
   IVector getEigenError_minus_infty(int columnNumber);
   

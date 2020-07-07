@@ -46,13 +46,18 @@ public:
   
   
   
-  
   IMatrix construct_A_lin(void);
   vector <IVector> construct_InitCondU(int eigenvector_NUM);
   
-  int frameDet(interval T, int grid);
+  int frameDet(interval T, interval L_plus, int grid,IVector endPoint_LPlus);
   
-  void lastEuFrame(topFrame &A_frame);
+  bool lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus);
+  
+  bool checkL_plus( IMatrix U_coord,interval eps_0,IVector eigenvalues );
+  
+  bool checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0,interval nu_1 , interval nu_n);
+  
+  interval eps_beta( IMatrix Gamma, IMatrix Beta);
 
 };
 

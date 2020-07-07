@@ -218,62 +218,73 @@ void topFrame::makePlot( void)
 
 vector<int> topFrame::countZeros( void)
 {
-//   output [ 0 ] =  # of conjugate pts 
-//   output [ 1 ] =  failure count
-  vector<int> output;
-  int failure_count  =0;
-  int zero_count  =0;
-//   We go through each thing in the constructDetSeries
+    //   output [ 0 ] =  # of conjugate pts 
+    //   output [ 1 ] =  failure count
+    vector<int> output;
+    int failure_count  =0;
+    int zero_count  =0;
+    //   We go through each thing in the constructDetSeries
+    
+    interval derivative;
+    interval MVT_deriv;
+    interval MVT_bound;
   
-  interval derivative;
-  
-  for (int i_time = 0;i_time < series_length;i_time ++)
-  {
-    //    if left and right endpoints are of the same sign
-    if (det_series[i_time][0] * det_series[i_time][1]>0 )
+    for (int i_time = 0;i_time < series_length;i_time ++)
     {
-      //   	check that the entire interval is bounded away from zero
-      if ((det_series[i_time][2]>0)||(det_series[i_time][2]<0))
-      {
-	continue;
-      }
-      else
-      {
-	//       Alternatively, check if the derivative is bounded away from zero
-	derivative = calculateDerivative(frame_series[i_time][2], frame_series[i_time][3]);
-	if ((derivative>0)||(derivative<0))
-	  continue;
-	else
-	{
-	  failure_count ++;
-  // 	cout << "Time is " << time_series[i_time] << endl;
-	}
-      }
+        //    if left and right endpoints are of the same sign
+        if (det_series[i_time][0] * det_series[i_time][1]>0 )
+        {
+            //   	check that the entire interval is bounded away from zero
+            if ((det_series[i_time][2]>0)||(det_series[i_time][2]<0))
+                continue;
+            else
+            {
+                //       Alternatively, check if the derivative is bounded away from zero
+                derivative = calculateDerivative(frame_series[i_time][2], frame_series[i_time][3]);
+                if ((derivative>0)||(derivative<0))
+                    continue;
+                else
+                {
+                    // Use the mean-value-theorem
+                    MVT_deriv = (time_series[i_time]-time_series[i_time].left() )*derivative;
+                    MVT_bound = intervalHull(det_series[i_time][0],det_series[i_time][1]) + MVT_deriv/2;
+                    if ((MVT_bound>0)||(MVT_bound<0))
+                        continue;
+                    else{
+                        failure_count ++;
+                        cout << "Time is " << time_series[i_time] << endl;
+                        cout << "   LEFT        = " << det_series[i_time][0] << "     RIGHT = " << det_series[i_time][1] << endl;
+                        cout << "   MVT Bound = " << (time_series[i_time]-time_series[i_time].left())*derivative  << endl;        
+                    //         cout << "   Value Bound = " << det_series[i_time][2]  << endl;
+                    //         cout << "   Deriv Bound = " << derivative  << endl;
+                    }
+                }
+            }
+        }
+        //   else if endpoints are of different sign
+        else if (det_series[i_time][0] * det_series[i_time][1] < 0 )
+        {
+        //   	if derivative is bounded away from zero
+            derivative = calculateDerivative(frame_series[i_time][2], frame_series[i_time][3]);
+            if ((derivative>0)||(derivative<0))
+            zero_count++;
+            else
+            failure_count ++;
+        }
+        else
+        {
+            failure_count ++;
+            cout << "Cannot determine sign of vertex  --- decrease grid or stepsize" << endl ;
+        }
     }
-    //   else if endpoints are of different sign
-    else if (det_series[i_time][0] * det_series[i_time][1] < 0 )
-    {
-//   	if derivative is bounded away from zero
-      derivative = calculateDerivative(frame_series[i_time][2], frame_series[i_time][3]);
-      if ((derivative>0)||(derivative<0))
-	zero_count++;
-      else
-	failure_count ++;
-    }
-    else
-    {
-      failure_count ++;
-      cout << "Cannot determine sign of vertex  --- decrease grid or stepsize" << endl ;
-    }
-  }
-		    
-  if (failure_count > 0)
+            
+    if (failure_count > 0)
     cout << " Failure Count = " <<     failure_count << endl;
-  
-  cout << endl << " Unstable Eigenvalues    = " <<     zero_count << endl;
-  output.push_back(zero_count);
-  output.push_back(failure_count);
-  return output;
+
+    cout << endl << " Unstable Eigenvalues    = " <<     zero_count << endl;
+    output.push_back(zero_count);
+    output.push_back(failure_count);
+    return output;
 }
 
 IMatrix topFrame::getLastFrame( void)
