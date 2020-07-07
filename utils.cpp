@@ -377,3 +377,23 @@ void print( vector <IMatrix> matrix_list)
     }
 }
 
+interval omega( IVector V, IVector W, int n){
+    IVector JW(2*n);
+    for (int i =0;i<n;i++){
+        JW[i]=-W[i+n];
+    }
+    for (int i =0;i<n;i++){
+        JW[i+n]=W[i];
+    }
+    
+    interval prod = V*JW;
+    return prod;
+}
+
+/////////////// -- From Capinski, Wasieczko-Zajac 2017
+// This function computes the bound on the logarithmic min-norm of a matrix
+interval ml(const IMatrix &A)
+{
+	capd::vectalg::EuclLNorm<IVector,IMatrix> l;
+	return -l(-A);
+}

@@ -1,5 +1,5 @@
 #include "eigenvalues.h" 
-
+// #include <capdAlg/include/capd/vectalg/vectalgLib.h>
 
 IVector boundEigenvalues(IMatrix B)
 {
@@ -17,7 +17,7 @@ IVector boundEigenvalues(IMatrix B)
     return eigenvalues;
 }
 
-IVector boundSingleEigenvector(IMatrix A, IVector V, interval lambda)
+vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda)
 {
     int dimension = A.numberOfRows();
     
@@ -66,12 +66,17 @@ IVector boundSingleEigenvector(IMatrix A, IVector V, interval lambda)
     }
     
 //     Get the vector part.
-    IVector V_out(dimension);
+
+    IVector V_err(dimension);
     for (int i=0; i<dimension;i++){
-        V_out[i] = kraw_image[i];
+        V_err[i] = H_vec[i];
     }
     
-    return V_out;
+    vector < IVector > output;    
+    output.push_back(V);
+    output.push_back(V_err);    
+    
+    return output;
 }
 
 vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , IVector H_vec)
@@ -160,12 +165,18 @@ IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
     
 }
 
-IMatrix boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
+vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
 {
         
     int dimension = A.numberOfRows();   
     
     IVector  V_col(dimension);
+    
+    IVector  V_cen(dimension);
+    IVector  V_err(dimension);
+    
+    IMatrix Q_center(dimension,dimension);
+    IMatrix Q_error(dimension,dimension);
     
     for (int j = 0 ; j< dimension; j++)
     {
@@ -176,19 +187,23 @@ IMatrix boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
         
         
         //  Feed to local function
-        V_col =  boundSingleEigenvector(A, V_col, lambda);
+        vector < IVector > output  =  boundSingleEigenvector(A, V_col, lambda);
+        V_cen = output[0];
+        V_err = output[1];
         
         // Define output;
         for(int i =0;i<dimension;i++)
         { 
-            Q[i][j] = V_col[i];
+            Q_center[i][j] = V_cen[i];
+            Q_error[i][j] = V_err[i];
         }
         
     }
     
+    vector < IMatrix >  output;
+    output.push_back(Q_center);
+    output.push_back(Q_error);    
     
-    
-    
-    return Q;
+    return output;
 }
 

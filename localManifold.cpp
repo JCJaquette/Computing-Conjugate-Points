@@ -218,13 +218,88 @@ IMatrix localManifold::boundDFU( IVector U)
 }
 
 
-/////////////// -- From Capinski, Wasieczko-Zajac 2017
-// This function computes the bound on the logarithmic min-norm of a matrix
-interval ml(const IMatrix &A)
+interval localManifold::boundDFU_proj( IVector U)
 {
-	capd::vectalg::EuclLNorm<IVector,IMatrix> l;
-	return -l(-A);
+  int subdivision_dim = dimension/2;
+  
+  IMatrix pi_1(dimension,dimension);                    // NOTE this line is different 
+  for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}      // NOTE this line is different 
+  IMatrix pi1_A = pi_1 * (*pF).A;                       // NOTE this line is different 
+  
+  IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ] *pi_1;         // NOTE this line is different 
+  
+  
+//   We Create the index list
+  vector < int > index_list(dimension/2);
+
+//     We subdivide the stable part if we are looking at the stable manifold
+  if (stable)
+  {
+    for (int i=0;i<dimension/2;i++)
+    {
+      index_list[i] = i +dimension/2;
+    }
+  }
+//     We subdivide the unstable part if we are looking at the unstable manifold
+  else
+  {
+    for (int i=0;i<dimension/2;i++)
+    {
+      index_list[i] = i;
+    }
+  }
+
+  
+//    We get a bound on the first part
+  vector < int > part_list(dimension/2);
+  
+  IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+//   IMatrix A = (*pF)[U_part];
+  IMatrix A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;  // NOTE this line is different 
+  
+  interval MaxDiff;                                         // NOTE this line is different 
+  MaxDiff = euclNorm(A-D2G_p);                              // NOTE this line is different 
+  
+//    We make a single for loop to go through all the subdivision dimensions
+  int sum;
+  int N = subdivisionNUM;
+  int n = subdivision_dim;
+  int N_to_i;
+  for (int j = 0;j< (int_pow(N,n));j++)
+  {
+//     We index the part we want
+    sum = 0;
+    N_to_i = 1;
+    for (int i = 0 ; i<n;i++)
+    {
+      part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
+      if (i < n-1)
+      {
+	sum += part_list[i]*N_to_i;
+	N_to_i = N_to_i * N;
+      }
+    }
+//     We get the part 
+    U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+//     A = intervalHull(A,(*pF)[U_part]);
+    A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;        // NOTE this line is different 
+    MaxDiff =  intervalHull(MaxDiff , euclNorm(A-D2G_p));   // NOTE this line is different 
+
+  }
+  
+  return MaxDiff;
 }
+
+
+
+// Moved to Utls 
+// // // /////////////// -- From Capinski, Wasieczko-Zajac 2017
+// // // // This function computes the bound on the logarithmic min-norm of a matrix
+// // // interval ml(const IMatrix &A)
+// // // {
+// // // 	capd::vectalg::EuclLNorm<IVector,IMatrix> l;
+// // // 	return -l(-A);
+// // // }
 
 bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
 {
@@ -395,35 +470,67 @@ bool localManifold::checkRateCondition(IMatrix DFU) //TODO Separate this from th
 interval localManifold::ErrorEigenfunction( void)
 {  
   
-//   We estimate A(U) -A(p) --- TODO this could be improved
+//   We estimate A(U) -A(p) --- TODO this could be improved BY SUBDIVISION! TODO
 
   IVector U = constructU(U_flat_global);
+  
+  
+// //   for (int i = 0 ; i < dimension ; i++){
+// //       U[i] = U[i].left();
+// //   }
+  cout << "U = " << U << endl;
     
   IMatrix pi_1(dimension,dimension);
   for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}
   
   IMatrix pi1_A = pi_1 * (*pF).A;
+
+  //   TODO Add DW
   
   IMatrix D2G_U =  (*(*pF).f)[ (*pF).p +  pi1_A*U ]*pi_1;
   IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ]           *pi_1;
   
+  
+  
+  
   interval C_G = euclNorm(D2G_U - D2G_p);
+  
+//   cout << " D2G_U = " << D2G_U << endl;
+  
+  
   cout << " C_G  = " << C_G << endl;  
   
-  interval K = computeK(); // TODO 
+  interval C_G_new = boundDFU_proj( U);
+  
+  cout << " C_G!!  = " << C_G_new << endl;  
+  
+  C_G = C_G_new;
+  
+// //   cout << " C_G (new) = " << euclNorm(D3G_ru) << endl;  
+  
+  interval K = computeK(); 
 
-//   cout << " D2G_U  = " << D2G_U << endl;  
   
   interval eta = xi; // This needs xi to already have been computed. 
   interval norm_A0 = euclNorm((*pF).A);
+  
+  cout << " eta  = " << eta << endl;  
+  cout << " norm_A0  = " << norm_A0 << endl;  
+  cout << " sqrt(1+L^2)  = " << sqrt(1 + sqr(L) ) << endl;  
+  cout << "        L^2   = " << sqr(L) << endl;  
+  
   interval lambda = K* C_G * sqrt(1 + sqr(L) ) * norm_A0 /eta;
   
   cout << " !lambda = " << lambda<< endl;
   lambda = lambda.right(); // This reduces wrapping effect. 
   
   interval error = lambda/(1-lambda);
-
-//     cout << " !error = " << error<< endl;
+  eps_unscaled = error;
+  
+// // //   abort();
+  
+    cout << " !error = " << error<< endl;
+  
   return error;
 }
 
@@ -434,15 +541,114 @@ interval localManifold::computeK( void )
     IMatrix A_infty = (*(*pF).f)[(*pF).p];                  // Asymptotic Matrix
     
     IMatrix Lambda = gaussInverseMatrix(A_u)*A_infty*A_u;   // Eigenvalues     
+    eigenvalues = boundEigenvalues( Lambda);
     IVector Lambda_vec(dimension) ;
     for (int i =0;i<dimension;i++){ Lambda_vec[i]=Lambda[i][i];}
     
-    IMatrix Q = boundEigenvectors( A_infty, A_u , Lambda_vec); 
-
-    interval K =euclNorm(Q)* euclNorm( gaussInverseMatrix(Q)); 
+    
+    
+    vector < IMatrix >  output= boundEigenvectors( A_infty, A_u , Lambda_vec); 
+    IMatrix Q_center = output[0];
+    IMatrix Q_error  = output[1];
+    
+    
+    IMatrix Q = Q_center +Q_error  ;
+    
+//     cout <<" Q = " << Q << endl;
+//     cout <<" Q^{-1} = " << krawczykInverse(Q) << endl;
+//     cout << " || Q || = " << euclNorm(Q) << endl;
+//     cout << " || Q^{-1} || = " << euclNorm(krawczykInverse(Q)) << endl;
+    
+    
+    interval K =euclNorm(Q)* euclNorm( krawczykInverse(Q)); 
+    
+    cout << " K = " << K << endl;
+    
+//     K =euclNorm(Q)* euclNorm( krawczykInverse(Q)); 
+//     cout << " K!! = " << K << endl;
+    
+    Eigenvector_Error = Q_error ;
+    K_store = K;
     
     return K;
  
 }
 
+
+void localManifold::ErrorEigenfunctionTotal_minus_infty( void){
+//     Computes the Eigenfunction error, and puts it all in the stable modes. 
+    
+    IMatrix Error_mat(dimension,dimension/2);
+    
+    IMatrix A_u = (*pF).A;                                  // Eigenvectors
+    
+    IVector V_col(dimension);
+    for (int j =0;j<dimension/2;j++){
+        V_col = getColumn(A_u,dimension,j);
+        interval eps_local = eps_unscaled *interval(-1,1);
+        
+        for (int i=0;i<dimension;i++){
+            Error_mat[i][j] = (Eigenvector_Error[i][j] + eps_local) * euclNorm(V_col);
+        }
+        
+    }
+    
+    IMatrix E_u(dimension/2,dimension/2);
+    IMatrix E_s(dimension/2,dimension/2);
+    IVector V_sol(dimension);
+    
+    for (int j =0;j<dimension/2;j++){
+        V_col = getColumn(Error_mat,dimension,j);
+        
+        V_sol = gauss(A_u,V_col);
+        
+        for (int i=0;i<dimension/2;i++){
+            E_u[i][j] = V_sol[i];
+            E_s[i][j] = V_sol[i+dimension/2];
+        }
+        
+    }
+    
+    IMatrix eye(dimension/2,dimension/2);
+    for (int i =0;i<dimension/2;i++){ eye[i][i]=1;}
+    
+    Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
+     
+    cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
+//     cout << "E_s = " << E_s << endl;
+    
+//     return 0
+}
+
+void localManifold::ErrorEigenfunctionTotal_plus_infty( void){
+        
+    IMatrix Error_mat(dimension,dimension);     // All eigenfunction error
+    
+    IMatrix A_s = (*pF).A;                                  // Eigenvectors
+    
+    IVector V_col(dimension);
+    for (int j =0;j<dimension;j++){
+        V_col = getColumn(A_s,dimension,j);
+        interval eps_local = eps_unscaled *interval(-1,1);
+        
+        for (int i=0;i<dimension;i++){
+            Error_mat[i][j] = (Eigenvector_Error[i][j] + eps_local) * euclNorm(V_col);
+        }
+        
+    }
+    
+    Eigenfunction_Error_plus_infty = Error_mat;
+    
+}
+
+
+IVector localManifold::getEigenError_minus_infty(int columnNumber){
+    IVector v_out(dimension);
+    
+    for (int i = 0 ; i<dimension/2;i++){
+        v_out[i+dimension/2] = Eu_m_Error_Final[i][columnNumber];
+    }
+    
+    return v_out;
+}
 

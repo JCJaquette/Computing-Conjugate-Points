@@ -27,8 +27,8 @@
       global_pt[i]  = coord_pt[i];
       global_nbd[i] = coord_nbd[i];
   }
-//   We add the last velocity which gets us on the zero-energy surface
   global_pt[dimension-1]=(*p_energy_proj)(coord_pt);
+//   We add the last velocity which gets us on the zero-energy surface
 //   TODO Turn this into a point, and add the thick interval to the nbd
 
 //   We compute the gradient of the projection in the neighborhood of our point. 
@@ -117,7 +117,7 @@ IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, boo
   //    We get the local linearization
   IMatrix A_i = (*(*pManifold).pF).A; 
   
-  
+//   cout << " XY_nbd = " << XY_nbd << endl;
   vector < IVector >  global_pt_nbd = (*pManifold).getPointNbd(  XY_pt,  XY_nbd);
   IVector p_i = global_pt_nbd[0];
   IVector Uxy = global_pt_nbd[1];
@@ -174,6 +174,7 @@ IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bo
   IMatrix XY_deriv(dimension,dimension);
 
   XY_new = Phi(T,S_XY,XY_deriv); 
+  
   
   IMatrix DG_XY = XY_deriv*A_i*((*pManifold).DW);
   
@@ -336,8 +337,8 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   IVector G_x = Gxy( X_pt, zero_nbd, T, 0); 
   IVector G_y = Gxy( Y_pt, zero_nbd, T, 1); 
   
-//   cout << " Phi_T (X) = " << G_x << endl;
-//   cout << " Phi_T (Y) = " << G_y << endl;
+  cout << " Phi_T (X) = " << G_x << endl;
+  cout << " Phi_T (Y) = " << G_y << endl;
   
   
   IVector G = G_x - G_y; 
@@ -346,7 +347,10 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 //   cout << " Y = " << Y << endl;  
 //   cout << " Phi_T (X) - Phi_T (Y) = " << G << endl << endl;
   
-
+      cout << " X_pt = " << X_pt << endl;
+  cout << " Y_pt = " << Y_pt << endl;
+  cout << " X_nbd = " << X_nbd << endl;
+  cout << " Y_nbd = " << Y_nbd << endl;
   
   IMatrix  DG_x =  DGxy( X_pt, X_nbd, T, 0);
   IMatrix  DG_y = -DGxy( Y_pt, Y_nbd, T, 1);
@@ -369,12 +373,26 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 
   IVector XY_out_nbd = gauss(DG,G); 
   
+// //   TODO Make a Krawczyk version of this!!
+// //   
+  //     Get approximate inverse
+    IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DG)));
+    cout << "ApproxInverse = " << ApproxInverse  << endl;
+// //     Define identity matrix
+    IMatrix eye(dimension,dimension);
+    for (int i =0;i<dimension+1;i++){ eye[i][i]=1;}
+    IVector new_Nbd     = - ApproxInverse*G + ( eye - ApproxInverse*DG )*XY_nbd;
+    IVector kraw_image  = XY_pt + new_Nbd ;
+
   
   
-  IVector XY_out = XY_pt - XY_out_nbd;
+//   IVector XY_out = XY_pt - XY_out_nbd;
+  IVector XY_out = kraw_image;
+  XY_out_nbd = new_Nbd;
   
   
-//   cout << "output nbd " << XY_out_nbd << endl;
+//     cout << "output nbd " << XY_out_nbd << endl;
+//     cout << "output nbd!" << new_Nbd << endl;
   
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)
@@ -435,7 +453,7 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> &points, vect
   }
   IVector XY_out_nbd = gauss(DG,G); 
   
-  cout << " Hello = "<< endl;
+//   cout << " Hello = "<< endl;
 //   TODO Reimpliment
   IVector initial_vector = Construct_Initial_Vector(points ,neighborhoods,integration_time,0);
   IVector initial_nbd    = Construct_Initial_Vector(points ,neighborhoods,(integration_time+time_nbd),1);

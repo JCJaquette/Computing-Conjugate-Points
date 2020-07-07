@@ -25,6 +25,8 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
   IVector EigenVector_component = (*pUnstable).getEigenvector( eigenvector_NUM);
   IMatrix A_i = (*(*pUnstable).pF).A;
   
+  cout << " Uxy = " << Uxy << endl;
+  
 //   cout << "Eigenvector = " << EigenVector_component << endl;
 //   cout << "A           = " << A_i[1] << endl;
   
@@ -44,19 +46,14 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
 
 
 
+    IVector Eigenfunction_Error = (*pUnstable).getEigenError_minus_infty(eigenvector_NUM);
+
+// cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
 
   
-  //   TODO Compute appropriate Error Terms
-  // We add some small error to this. 
-  
-  interval error_size = (*pUnstable).ErrorEigenfunction();
-
-//   cout << " Error = " << error_size  << endl;
-    
-  error_size  = error_size * interval(-1,1);
-  for (int i =dimension+(dimension/2);i< 2*dimension;i++)
+    for (int i =0;i< dimension;i++)
   {
-    lin_init_nbd[i]  = error_size*interval(-1,1);
+    lin_init_nbd[i+dimension]  = Eigenfunction_Error[i];
   }
 
     cout << " Error = " << lin_init_nbd  << endl;
@@ -89,8 +86,10 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 
   
     int thread_id =omp_get_thread_num();
-    if (thread_id ==1 ) 
+    if (thread_id ==1 ){
         cout << "  Using multiple processors " << endl;
+        abort();
+    }
   
   interval timeStep = interval(pow(2,-step_size)); 
     //   We Create our solvers 
@@ -139,13 +138,18 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 
 
 
-int propagateManifold::frameDet(interval T,int grid)
+int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector endPoint_LPlus)
 {
   
 
-  
+//   We compute the eigenfunction error;
+    (*pUnstable).computeEigenError_minus_infty();
   
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
+  
+//   IVector endPoint = getL_plusPoint( T, L_plus);
+//   abort();
+  
   
   
   int max_threads = omp_get_max_threads();
@@ -155,14 +159,15 @@ int propagateManifold::frameDet(interval T,int grid)
   list_of_maps.resize(max_threads );
   for( int i = 0 ; i < max_threads  ; i ++ ) { list_of_maps[i]=(*pf);}
   
-  /// I am trying to parrelize this
-//   #pragma omp parallel for  
+// // //   /// I am trying to parrelize this
+// // // //   #pragma omp parallel for  
   for (int i = 0 ; i<dimension/2;i++)
   {
-    List_of_Trajectories[i] = computeTotalTrajectory(i,  T,  grid);
+    List_of_Trajectories[i] = computeTotalTrajectory(i,  T + L_plus,  grid);
   }
-
   
+  
+
   
   
   cout << "Checking Stability ... " << endl;
@@ -176,11 +181,19 @@ int propagateManifold::frameDet(interval T,int grid)
   
 //   A_frame.makePlot();
   
-  vector<int> conjugate_points = A_frame.countZeros();
+  
+  bool L_PLUS = lastEuFrame( A_frame,endPoint_LPlus);
 
+  vector<int> conjugate_points = A_frame.countZeros();
+  
+  if ( L_PLUS == 0){
+//       We could not verify the L_+ condition
+      return -4;
+  }      
   
   
-  lastEuFrame( A_frame);
+  
+
   
   if ( conjugate_points[1]>1 )
   {
@@ -194,36 +207,377 @@ int propagateManifold::frameDet(interval T,int grid)
  
 }
 
-void propagateManifold::lastEuFrame(topFrame &A_frame)
+
+bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 {
+    int STABLE = 1;
+    int manifold_subdivision = 15;
   
-  IMatrix A_s = (*(*pStable).pF).A;
-  
-  
-  IMatrix last_Frame = A_frame.getLastFrame();
-//   cout <<endl<< "Last frame = " << last_Frame << endl; 
-  
-  for (int i = 0 ; i < dimension /2 +1;i++)
-  {
-    IVector col = getColumn(last_Frame,dimension,i);
-    IVector vec_in_local_coord = gauss(A_s,col);
-    vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
+    IMatrix A_s = (*(*pStable).pF).A;
+//     BEGIN We validate the stable manifold in a larger nbd
     
-    if (i < dimension /2)
-      cout << " w_" << i << "   = ";
-    else if (i == dimension /2)
-      cout << " phi'  = ";
-    cout << vec_in_local_coord << endl;
-  }
+    IMatrix last_Frame = A_frame.getLastFrame();
+    //   cout <<endl<< "Last frame = " << last_Frame << endl; 
+    
+    cout << "--Dist from stable equilibrium         = " << endPoint_LPlus << endl;
+    endPoint_LPlus = gauss(A_s,endPoint_LPlus);
+    cout << "--Dist from stable equilibrium (eigen) = " << endPoint_LPlus << endl;
+    
+    IVector vec_Lplus_s(dimension/2);
+    IVector vec_Lplus_u(dimension/2);
+    for (int i = 0 ; i< dimension/2; i++){
+        vec_Lplus_u[i] = endPoint_LPlus[i];
+        vec_Lplus_s[i] = endPoint_LPlus[i+dimension/2];
+    }
+    
+//     cout << " endPoint_LPlus  = " << endPoint_LPlus  << endl;
+//     cout << " vec_Lplus_u  = " << vec_Lplus_u  << endl;
+//     cout << " vec_Lplus_s  = " << vec_Lplus_s  << endl;
+    
+  interval L_angle_new = euclNorm(vec_Lplus_u)/euclNorm(vec_Lplus_s);
   
-// //    We get the last column to output the final point
-//   IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
-//   IVector stable_point = (*(*pStable).pF).p ;
-//   for (int i = 0;i<dimension;i++){ stable_point[i]=stable_point[i]-col[i];}
-//   
-//   cout << "Dist from stable equilibrium = " << stable_point << endl;
+  cout << " L_angle_new  = " << L_angle_new  << endl;
   
   
+    
+    //    We get the last column to output the final point
+//     IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
+//     IVector stable_point = (*(*pStable).pF).p ;
+//     for (int i = 0;i<dimension;i++){ stable_point[i]= col[i] - stable_point[i];}
+    
+
+    
+    IVector U_flat_new(dimension/2);
+    for (int i =0;i<dimension/2;i++){ U_flat_new[i]=vec_Lplus_s[i]*interval(-1e-10,1+1e-10);}
+    
+    
+    localVField F_s_new     = (*(*pStable).pF);
+    interval    L_new       = L_angle_new.right();//5*euclNorm(U_flat_new).right();
+    
+    
+      
+    localManifold localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            //   We create the local manifold object, which encloses our final trajectory;
+    
+    int adjust_L = 10;
+    bool conditions_S;
+    for (int i = 0 ; i< adjust_L;i++){
+        conditions_S = localStableBig.checkConditions( U_flat_new ); 
+        if (conditions_S )
+            break;
+        else
+            localStableBig.L = localStableBig.L*2;
+        
+        cout << " localStableBig.L = " << localStableBig.L << endl;
+    }
+    
+    if(! (conditions_S))
+    {
+        cout << "Failed to validate L_+ Conditions " << endl;
+        return 0;
+    }  
+//     TODO There is a problem with the normalization of the eigenvectors .!! 
+    
+    localStableBig.computeEigenError_plus_infty();
+    IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;
+    
+    cout <<" Eigenfunction_Error_plus_infty  " << EFunction_Error  << endl;
+    
+    
+    
+    
+    IMatrix eye(dimension,dimension);
+    for (int i = 0 ; i  < dimension;i++){
+        eye[i][i] = 1;
+    }
+    
+//     cout.precision(16);
+//     IMatrix Kronic(dimension,dimension);
+//     for (int i = 0 ; i< dimension;i++){
+//         IVector V_left = getColumn(A_s,dimension,i);
+//         V_left = V_left/euclNorm(V_left);
+//         for (int j = 0 ; j<dimension ; j++){
+//             IVector V_right = getColumn(A_s,dimension,j);
+//             V_right = V_right/euclNorm(V_right);
+//             Kronic[i][j] = omega(V_left,V_right,dimension/2);
+//         }
+//     }
+//     cout << " omega product  = " << Kronic << endl;
+            
+    
+    
+//     END
+    
+//     TODO Make sure that this projection onto coordinates is up to code!!
+    
+// BEGIN We project the final endpoint into the large stable manifold coordinates 
+    for (int i = 0 ; i < dimension /2 +1;i++)
+    {
+        IVector col = getColumn(last_Frame,dimension,i);
+        IVector vec_in_local_coord = gauss(A_s,col);
+        vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
+        
+        if (i < dimension /2)
+        cout << " w_" << i << "   = ";
+        else if (i == dimension /2)
+        cout << " phi'  = ";
+        cout << vec_in_local_coord << endl;
+    }
+    
+    cout << " With additional error" << endl;
+    
+    IMatrix U_coord(dimension,dimension/2);
+    
+    IMatrix rightMat = EFunction_Error;
+    for (int i = 0 ; i < dimension;i++){
+        for( int j =0; j<dimension;j++){
+            rightMat[i][j] = abs(rightMat[i][j]).right();
+        }
+    }
+    IMatrix max_inverse_boud = krawczykInverse(eye+rightMat) - eye;
+    max_inverse_boud = interval(-1,1)* max_inverse_boud;
+    cout << rightMat << endl;
+//     cout << " New Bound = " << max_inverse_boud << endl;
+//     cout << " Old Bound = " << krawczykInverse(eye+EFunction_Error) - eye << endl;
+    
+//     abort();
+    
+
+
+    
+    // BEGIN We project the final endpoint into the large stable manifold coordinates 
+    for (int j = 0 ; j < dimension /2 +1;j++)
+    {
+        IVector col = getColumn(last_Frame,dimension,j);
+        IVector vec_in_local_coord = gauss(A_s,col);
+//         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
+        
+//         cout << " New Bound = " << vec_in_local_coord + max_inverse_boud*vec_in_local_coord  << endl;
+        
+//         cout << " Old Bound = " << gauss(eye+EFunction_Error ,vec_in_local_coord) << endl;
+        
+        vec_in_local_coord  = vec_in_local_coord + max_inverse_boud*vec_in_local_coord ;
+        
+        
+//         vec_in_local_coord = gauss(eye+EFunction_Error ,vec_in_local_coord);  // EigenfunctionError
+        vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
+        
+        
+        if (j < dimension /2){
+            cout << " w_" << j << "   = ";
+            for (int i = 0 ; i  < dimension ; i++){
+                U_coord[i][j] = vec_in_local_coord[i];
+            }
+        }
+        else if (j == dimension /2){
+            cout << " phi'  = ";
+        }
+        cout << vec_in_local_coord << endl;
+    }
+    
+    
+//     END 
+
+    interval eps_0;
+    for (int i = 0 ; i < dimension;i++){
+        eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
+    }
+    
+    cout << "eps0 = "<<  eps_0 << endl;
+    
+    IVector eigenvalues = localStableBig.eigenvalues;
+    cout << " eigenvalues= " << eigenvalues<< endl;
+
+    bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues);
+
+    return L_PLUS;
 }
+
+bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues ){
+    
+    cout << "U_coord = " << U_coord << endl;
+    
+    vector < IMatrix > Gamma_List;
+    vector < IMatrix > Beta_List;
+    IMatrix Gamma_local(dimension/2,dimension/2-1);
+    IMatrix Beta_local(dimension/2,dimension/2-1);
+    for (int k =0;k<dimension/2;k++) //remove k
+    {
+        int k_adjust =0;
+        for (int j = 0 ; j<dimension/2;j++) 
+        {
+            if(j==k){k_adjust =1;continue;}
+            for (int i = 0 ; i < dimension/2;i++){
+                Gamma_local[i][j-k_adjust] = U_coord[i][j];
+                Beta_local[i ][j-k_adjust] = U_coord[i+dimension/2][j];
+            }
+        }
+        
+        
+        Gamma_List.push_back(Gamma_local);
+        Beta_List.push_back(Beta_local);
+    }
+    
+    
+    
+    interval nu_1 = eigenvalues[0];                 // Largest 
+    interval nu_n = eigenvalues[dimension/2-1];     // Smallest
+    
+//     cout << " nu_1 = " << nu_1 << endl;
+//     cout << " nu_n = " << nu_n << endl;
+    
+    bool L_PLUS = 0;
+    for (int k = 0;k<dimension/2;k++){
+        L_PLUS = checkL_plus_local( Gamma_List[k], Beta_List[k],eps_0, nu_1, nu_n);
+        if (L_PLUS ==1)
+            break;
+    }
+    
+    return L_PLUS;
+}
+
+bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0, interval nu_1 , interval nu_n){
+    
+    interval epsilon_beta = eps_beta( Gamma, Beta);
+    
+    if (epsilon_beta < 0)
+        return 0;
+    
+    epsilon_beta = epsilon_beta .right();
+    eps_0  = eps_0 .right();
+    
+    cout << " eps_0 = " << eps_0 << endl; 
+    cout << "epsilon_beta  = " << epsilon_beta  << endl;
+//     epsilon_beta =0;
+    
+    interval d_min =1;
+    interval d_max =1;
+    int n = dimension/2;
+    
+    
+    IMatrix A_s = (*(*pStable).pF).A;
+    
+    IMatrix pi_1_Vs(dimension/2,dimension/2);
+    IMatrix pi_1_Vu(dimension/2,dimension/2);
+    IMatrix pi_2_Vs(dimension/2,dimension/2);
+    IMatrix pi_2_Vu(dimension/2,dimension/2);
+    
+    for (int i = 0 ; i < dimension/2 ; i++){
+        for (int j = 0 ; j < dimension/2 ; j ++){
+            pi_1_Vs[i][j] = A_s[i][j+dimension/2];
+            pi_1_Vu[i][j] = A_s[i][j];
+            pi_2_Vs[i][j] = A_s[i+dimension/2][j+dimension/2];
+            pi_2_Vu[i][j] = A_s[i+dimension/2][j];
+        }
+    }
+
+    
+//     cout << " A_s  = " << A_s << endl;
+//     
+//     cout << " pi_1_Vs  = " << pi_1_Vs << endl;
+//     cout << " pi_1_Vu  = " << pi_1_Vu << endl;
+//     cout << " pi_2_Vs  = " << pi_2_Vs << endl;
+//     cout << " pi_2_Vu  = " << pi_2_Vu << endl;
+    interval C_Q_new= n*( euclNorm(pi_1_Vs) + euclNorm(pi_1_Vu) + euclNorm(pi_2_Vs) + euclNorm(pi_2_Vu) + 2* eps_0*n);
+    
+    interval C_P    = ( 2*sqrt(n) * sqrt( 2* nu_1 * d_max)) / ( 1 - eps_0 * sqrt(n) * sqrt( 2*nu_1*d_max )) ;
+    interval C_Q    = sqrt(n)*( sqrt(2/(nu_n*d_min))+ sqrt( 2* nu_1 * d_max) + 2* eps_0*sqrt(n));
+    
+    C_P = C_P.right();
+    C_Q = C_Q.right();
+    
+    
+    
+    
+    interval C_M1   = eps_0 * C_Q * ( 2 + eps_0 * C_Q); 
+    interval C_M2   = eps_0 * C_P * ( 2 + eps_0 * C_P) +  2* epsilon_beta*(1+ eps_0 *C_P)  + sqr(epsilon_beta); 
+    
+    interval sum_for_neumann_test =  eps_0 * n * sqrt( 2 * nu_1 * d_max);
+//     cout << " sum_for_neumann_test = " << sum_for_neumann_test << endl; 
+    
+    bool NEUMANN_SERIES_TEST;
+    if (( C_M1 <1 ) && ( C_M2 < 1) && (sum_for_neumann_test <1))
+        NEUMANN_SERIES_TEST =1;
+    else
+        NEUMANN_SERIES_TEST =0;
+    
+    
+    cout << " C_P  = " << C_P << endl; 
+    cout << " C_Q  = " << C_Q << endl; 
+    cout << " C_Q!!= " << C_Q_new << endl; 
+    cout << " C_M1 = " << C_M1 << endl; 
+    cout << " C_M2 = " << C_M2 << endl << endl; 
+    
+    interval sum_1 = 2*eps_0*(C_Q + C_P);
+    interval sum_2 = sqr(eps_0)* ( sqr(C_Q) + sqr(C_P));
+    interval sum_3 = sqr(epsilon_beta) + 2*epsilon_beta*(1+eps_0*C_P);
+    interval sum_4 = sqr(1+eps_0*C_Q)*C_M1/abs(1-C_M1);
+    interval sum_5 = sqr(1+eps_0*C_P+epsilon_beta)*C_M2/abs(1-C_M2);
+    
+    interval total_sum = sum_1 + sum_2 + sum_3 + sum_4 + sum_5;
+    
+    cout << " sum_1 = " << sum_1 << endl; 
+    cout << " sum_2 = " << sum_2 << endl; 
+    cout << " sum_3 = " << sum_3 << endl; 
+    cout << " sum_4 = " << sum_4 << endl; 
+    cout << " sum_5 = " << sum_5 << endl; 
+    
+    cout << " total_sum = " << total_sum << endl; 
+    
+    bool L_PLUS = (NEUMANN_SERIES_TEST && ( total_sum <1));
+    
+    return L_PLUS ;
+}
+
+interval propagateManifold::eps_beta( IMatrix Gamma, IMatrix Beta){
+    
+    
+    IMatrix Gamma_center = midMatrix(Gamma);
+    IMatrix Gamma_delta  = Gamma - Gamma_center;
+    
+//     cout << " Gamma_center = " << Gamma_center << endl;
+//     cout << " Gamma_delta = " << Gamma_delta << endl;
+    
+//     cout << " Gc^T * Gc     = " << transpose(Gamma_center)*Gamma_center <<endl;
+//     cout << " 2* Gd^T * Gc  = " << interval(2)*((transpose(Gamma_delta)*Gamma_center)) <<endl;
+//     cout << " Gd^T * Gd     = " << transpose(Gamma_delta)*Gamma_delta  <<endl;
+    
+    
+    IMatrix GcT_by_Gc = transpose(Gamma_center)*Gamma_center    ;
+    IMatrix GdT_by_Gc = transpose(Gamma_delta)*Gamma_center     ;
+    IMatrix GdT_by_Gd = transpose(Gamma_delta)*Gamma_delta      ;
+    
+    
+    interval mu_c = ml( transpose(Gamma_center)*Gamma_center );
+    cout << "mu_c = " << mu_c << endl;
+    
+    interval mu_Rayleigh = mu_c - interval(2)*euclNorm(GdT_by_Gc) - euclNorm(GdT_by_Gd); 
+    
+    
+    
+    cout << "mu_Rayleigh = " << mu_Rayleigh << endl;
+    
+    interval mu_old = ml( transpose(Gamma)*Gamma);
+    
+
+    
+//     cout << " Gamma = " << Gamma << endl;
+//     cout << " Gamma^t*Gamma = " << transpose(Gamma)*Gamma << endl;
+    
+    cout << "mu_old = " << mu_old << endl;
+    
+    interval mu = mu_Rayleigh;
+    
+    if (mu.left() < 0)
+        return interval(-1);
+    
+    interval epsilon_beta = euclNorm(Beta) / sqrt(mu);
+    
+//     epsilon_beta = interval(0.0000001);
+    
+    
+    return epsilon_beta ;
+    
+}
+
 
 

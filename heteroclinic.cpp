@@ -29,19 +29,25 @@ int test(int dimension,vector < double > All_parameters)
   
   int order = 20;
   
-  int manifold_subdivision = 8;
-  int shots = 7;
-  int multiple_newton_steps = 1;
-  int single_newton_steps = 10;
+  int manifold_subdivision = 15;
+  int shots = 9;
+  int multiple_newton_steps = 2;
+  int single_newton_steps = 20;
  
-  int grid = 10; // count zeros
-  int stepsize = 5;
-  interval L_plus = 10;
+  int grid = 14; // count zeros
+  int stepsize = 7;
+  interval L_plus = 13.55;
   interval T ;
-  if (dimension ==4 )
+  if (dimension ==4 ){
     T = 16.3; // n=2
-  else 
-    T = 20; // n=3
+    L_plus = 13;
+    stepsize =7;
+  }
+  else{ 
+    T = 20.; // n=3
+    L_plus = 13.55;
+    L_plus = 14;
+  }
   
   bool CHECK_MANIFOLD 		    = 1;
   bool CHECK_CONNECTING_ORBIT 	= 1;
@@ -75,7 +81,8 @@ int test(int dimension,vector < double > All_parameters)
       scale = 0.000001;
       initial_box =interval(-.000001,.000001);
   }
-      
+  
+
     //   BEGIN we construct the manifolds  
   IVector U_flat(dimension/2);
   for (int i =0;i<dimension/2;i++){ U_flat[i]=scale*interval(-1,1);}
@@ -85,6 +92,23 @@ int test(int dimension,vector < double > All_parameters)
 
   IVector p_u=toInterval(fixedPoint(UNSTABLE,dimension));                           //   We create the point
   IMatrix A_u = toInterval(coordinateChange(UNSTABLE,dimension,All_parameters));    //   We create the approximate linearization
+  
+  
+  IVector local_vec_half(dimension/2);
+  IVector local_vec_full(dimension);
+  for (int j = 0 ; j < dimension ; j ++ ) {
+      local_vec_full = getColumn(A_u,dimension,j);
+      for ( int i =0; i < dimension/2 ; i++){
+          local_vec_half[i] = local_vec_full[i];
+      }
+      local_vec_full = local_vec_full/euclNorm(local_vec_half);
+      for (int i=0;i<dimension;i++){
+          A_u[i][j] = local_vec_full[i];
+      }
+  }
+  
+  cout << "Au = " << A_u << endl;
+  
   localVField F_u(f,A_u,p_u);                                                       //   We create the local vector field object  
   localManifold localUnstable(F_u,U_flat, L, UNSTABLE,manifold_subdivision);        //   We create the local manifold object
   
@@ -93,6 +117,25 @@ int test(int dimension,vector < double > All_parameters)
   
   IVector p_s=toInterval(fixedPoint(STABLE,dimension));                             //   We create the point
   IMatrix A_s = toInterval(coordinateChange(STABLE,dimension,All_parameters));      //   We Create the approximate linearization
+  
+  
+//   IVector local_vec_half(dimension/2);
+//   IVector local_vec_full(dimension);
+  for (int j = 0 ; j < dimension ; j ++ ) {
+      local_vec_full = getColumn(A_s,dimension,j);
+      for ( int i =0; i < dimension/2 ; i++){
+          local_vec_half[i] = local_vec_full[i];
+      }
+      local_vec_full = local_vec_full/euclNorm(local_vec_half);
+      for (int i=0;i<dimension;i++){
+          A_s[i][j] = local_vec_full[i];
+      }
+  }
+  
+  cout << "As = "<<  A_s << endl;
+  
+  
+  
   localVField F_s(f,A_s,p_s);                                                       //   We create the local vector field object  
   localManifold localStable(F_s,U_flat, L, STABLE,manifold_subdivision);            //   We create the local manifold object
   
@@ -201,7 +244,7 @@ int test(int dimension,vector < double > All_parameters)
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
-//     cout << "XY_pt " << XY_pt << endl;
+    cout << "XY_pt " << XY_pt << endl;
 
   }
   
@@ -213,8 +256,19 @@ int test(int dimension,vector < double > All_parameters)
   {
       XY_nbd[i] = scale * initial_box; 
   }
+  
+  
+    for (int i = 0 ; i<single_newton_steps ;i++){
+        Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T);
+    //     cout << "Answ XY_pt 	= " << XY_pt << endl;
+        XY_pt = midVector(Newton_out);
+        XY_nbd = (Newton_out - XY_pt)*interval(1.5);
+        cout << "XY_pt " << XY_pt << endl;
+        cout << "XY_nbd " << XY_nbd << endl;
+    }
 
   Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T);
+  cout << " Answ T       = " << T<< endl;
   cout << " Answ XY pt   = " << XY_pt<< endl;
   cout << " Answ XY nbd  = " << XY_nbd<< endl;
 
@@ -245,8 +299,27 @@ int test(int dimension,vector < double > All_parameters)
   
   propagateManifold E_u(f_linearize, localUnstable,localStable, XY_pt,XY_nbd,order,stepsize);
       
+//   Get the endpoint
   
-  int unstable_e_values = E_u.frameDet(T+L_plus,grid);
+  
+  IVector Y_pt(dimension/2); 
+  IVector Y_nbd(dimension/2);
+  
+  for (int i = 0 ; i< dimension/2 ; i++){
+      Y_pt[i]   = XY_pt[i+dimension/2];
+      Y_nbd[i]  = XY_nbd[i+dimension/2]; 
+  }
+  
+
+  
+  IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, T-L_plus,  STABLE) ;
+  
+  
+  cout << " endPoint_LPlus = " << endPoint_LPlus -p_s << endl;
+  cout << " endpoint eig = " << gauss(A_s,endPoint_LPlus -p_s) << endl;
+//   abort();
+  
+  int unstable_e_values = E_u.frameDet(T,L_plus,grid,endPoint_LPlus-p_s);
     
   
   
@@ -407,23 +480,23 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4; // TESTING DIMENSION
+	    dimension=6; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
             Input.push_back(1); // a
             Input.push_back(.95);// b 
-            Input.push_back(.05);// c
+            Input.push_back(-.05);// c
             test(dimension,Input);
         }
         else if (dimension ==6)
         {            
             Input.push_back(1); // b1
-            Input.push_back(.95);// b2 
-            Input.push_back(.98);// b3
+            Input.push_back(.98);// b2 
+            Input.push_back(.95);// b3
                         
             Input.push_back(-.015);// c12
-            Input.push_back(.05);// c23         0 - unstable
+            Input.push_back(-.05);// c23         0 - unstable
             
 
             test(dimension,Input);
