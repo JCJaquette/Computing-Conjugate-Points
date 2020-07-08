@@ -337,8 +337,8 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   IVector G_x = Gxy( X_pt, zero_nbd, T, 0); 
   IVector G_y = Gxy( Y_pt, zero_nbd, T, 1); 
   
-  cout << " Phi_T (X) = " << G_x << endl;
-  cout << " Phi_T (Y) = " << G_y << endl;
+//   cout << " Phi_T (X) = " << G_x << endl;
+//   cout << " Phi_T (Y) = " << G_y << endl;
   
   
   IVector G = G_x - G_y; 
@@ -347,10 +347,10 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 //   cout << " Y = " << Y << endl;  
 //   cout << " Phi_T (X) - Phi_T (Y) = " << G << endl << endl;
   
-      cout << " X_pt = " << X_pt << endl;
-  cout << " Y_pt = " << Y_pt << endl;
-  cout << " X_nbd = " << X_nbd << endl;
-  cout << " Y_nbd = " << Y_nbd << endl;
+//       cout << " X_pt = " << X_pt << endl;
+//   cout << " Y_pt = " << Y_pt << endl;
+//   cout << " X_nbd = " << X_nbd << endl;
+//   cout << " Y_nbd = " << Y_nbd << endl;
   
   IMatrix  DG_x =  DGxy( X_pt, X_nbd, T, 0);
   IMatrix  DG_y = -DGxy( Y_pt, Y_nbd, T, 1);
@@ -377,7 +377,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 // //   
   //     Get approximate inverse
     IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DG)));
-    cout << "ApproxInverse = " << ApproxInverse  << endl;
+//     cout << "ApproxInverse = " << ApproxInverse  << endl;
 // //     Define identity matrix
     IMatrix eye(dimension,dimension);
     for (int i =0;i<dimension+1;i++){ eye[i][i]=1;}

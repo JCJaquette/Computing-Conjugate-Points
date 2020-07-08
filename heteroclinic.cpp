@@ -31,7 +31,7 @@ int test(int dimension,vector < double > All_parameters)
   
   int manifold_subdivision = 15;
   int shots = 9;
-  int multiple_newton_steps = 2;
+  int multiple_newton_steps = 1;
   int single_newton_steps = 20;
  
   int grid = 14; // count zeros
@@ -47,6 +47,7 @@ int test(int dimension,vector < double > All_parameters)
     T = 20.; // n=3
     L_plus = 13.55;
     L_plus = 14;
+    stepsize =6;
   }
   
   bool CHECK_MANIFOLD 		    = 1;
@@ -92,23 +93,7 @@ int test(int dimension,vector < double > All_parameters)
 
   IVector p_u=toInterval(fixedPoint(UNSTABLE,dimension));                           //   We create the point
   IMatrix A_u = toInterval(coordinateChange(UNSTABLE,dimension,All_parameters));    //   We create the approximate linearization
-  
-  
-  IVector local_vec_half(dimension/2);
-  IVector local_vec_full(dimension);
-  for (int j = 0 ; j < dimension ; j ++ ) {
-      local_vec_full = getColumn(A_u,dimension,j);
-      for ( int i =0; i < dimension/2 ; i++){
-          local_vec_half[i] = local_vec_full[i];
-      }
-      local_vec_full = local_vec_full/euclNorm(local_vec_half);
-      for (int i=0;i<dimension;i++){
-          A_u[i][j] = local_vec_full[i];
-      }
-  }
-  
-  cout << "Au = " << A_u << endl;
-  
+  A_u = midMatrix(  symplecticNormalization(A_u,dimension)  );                      //   Impose symplecticNormalization  
   localVField F_u(f,A_u,p_u);                                                       //   We create the local vector field object  
   localManifold localUnstable(F_u,U_flat, L, UNSTABLE,manifold_subdivision);        //   We create the local manifold object
   
@@ -117,25 +102,7 @@ int test(int dimension,vector < double > All_parameters)
   
   IVector p_s=toInterval(fixedPoint(STABLE,dimension));                             //   We create the point
   IMatrix A_s = toInterval(coordinateChange(STABLE,dimension,All_parameters));      //   We Create the approximate linearization
-  
-  
-//   IVector local_vec_half(dimension/2);
-//   IVector local_vec_full(dimension);
-  for (int j = 0 ; j < dimension ; j ++ ) {
-      local_vec_full = getColumn(A_s,dimension,j);
-      for ( int i =0; i < dimension/2 ; i++){
-          local_vec_half[i] = local_vec_full[i];
-      }
-      local_vec_full = local_vec_full/euclNorm(local_vec_half);
-      for (int i=0;i<dimension;i++){
-          A_s[i][j] = local_vec_full[i];
-      }
-  }
-  
-  cout << "As = "<<  A_s << endl;
-  
-  
-  
+  A_s = midMatrix(  symplecticNormalization(A_s,dimension)  );                      //   Impose symplecticNormalization  
   localVField F_s(f,A_s,p_s);                                                       //   We create the local vector field object  
   localManifold localStable(F_s,U_flat, L, STABLE,manifold_subdivision);            //   We create the local manifold object
   
@@ -165,6 +132,25 @@ int test(int dimension,vector < double > All_parameters)
   
   
   boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots );
+  
+  
+//   IVector XY_pt_T(dimension);  
+//   for (int i = 0 ; i < dimension / 2 ; i++)
+//   {
+//       XY_pt_T[i] = mid(points[0][i]);
+//       XY_pt_T[i+dimension/2] = mid( points.back()[i]);
+//   }
+//   interval T_new = BVP.FindTime(  XY_pt_T,  T);
+//   
+//   
+//   cout << " T old = " << T << endl; 
+//   cout << " T new = " << T_new << endl; 
+//   
+//   T = T_new;
+//   integration_time = 2*T/(shots+1);
+//   Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
+//   points         = Guess[0];
+//   neighborhoods  = Guess[1];
   
   
 //    We do the newton method
@@ -244,7 +230,7 @@ int test(int dimension,vector < double > All_parameters)
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
-    cout << "XY_pt " << XY_pt << endl;
+//     cout << "XY_pt " << XY_pt << endl;
 
   }
   
@@ -263,8 +249,8 @@ int test(int dimension,vector < double > All_parameters)
     //     cout << "Answ XY_pt 	= " << XY_pt << endl;
         XY_pt = midVector(Newton_out);
         XY_nbd = (Newton_out - XY_pt)*interval(1.5);
-        cout << "XY_pt " << XY_pt << endl;
-        cout << "XY_nbd " << XY_nbd << endl;
+//         cout << "XY_pt " << XY_pt << endl;
+//         cout << "XY_nbd " << XY_nbd << endl;
     }
 
   Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T);
@@ -496,7 +482,7 @@ int main(int argc, char* argv[])
             Input.push_back(.95);// b3
                         
             Input.push_back(-.015);// c12
-            Input.push_back(-.05);// c23         0 - unstable
+            Input.push_back(-.06);// c23         0 - unstable
             
 
             test(dimension,Input);

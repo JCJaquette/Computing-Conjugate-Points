@@ -397,3 +397,46 @@ interval ml(const IMatrix &A)
 	capd::vectalg::EuclLNorm<IVector,IMatrix> l;
 	return -l(-A);
 }
+
+
+
+IMatrix symplecticNormalization(IMatrix A_s, int dimension){
+  interval normalization_factor;
+  
+  IVector local_vec_half_p(dimension/2);
+  IVector local_vec_half_q(dimension/2);  
+  
+  IVector local_vec_full_p(dimension);
+  IVector local_vec_full_q(dimension);
+  
+  for (int j = 0 ; j < dimension/2 ; j ++ ) {
+      local_vec_full_p = getColumn(A_s,dimension,j);
+      local_vec_full_q = getColumn(A_s,dimension,dimension-j-1);
+      for ( int i =0; i < dimension/2 ; i++){
+          local_vec_half_p[i] = local_vec_full_p[i];
+          local_vec_half_q[i] = local_vec_full_q[i];
+      }
+//       Normalize the top 'z' part
+      local_vec_full_p = local_vec_full_p/euclNorm(local_vec_half_p);
+      local_vec_full_q = local_vec_full_q/euclNorm(local_vec_half_q);
+      normalization_factor = omega(local_vec_full_p,local_vec_full_q,dimension/2) ;
+//       Flip sign if necessary
+      if (normalization_factor<0){
+          normalization_factor = - normalization_factor;
+          local_vec_full_q = -local_vec_full_q;
+      }
+      
+      local_vec_full_p = local_vec_full_p/sqrt(normalization_factor);
+      local_vec_full_q = local_vec_full_q/sqrt(normalization_factor);
+      for (int i=0;i<dimension;i++){
+          A_s[i][j]             = local_vec_full_p[i];
+          A_s[i][dimension-j-1] = local_vec_full_q[i];
+      }
+//             cout << " local_vec_full_p + local_vec_full_q = " << local_vec_full_p + local_vec_full_q << endl;
+//             cout << " local_vec_full_p - local_vec_full_q = " << local_vec_full_p - local_vec_full_q << endl;
+            
+//       cout << " || local_vec_full_p || = " << euclNorm(local_vec_full_p) << endl;
+//       cout << " || local_vec_full_q || = " << euclNorm(local_vec_full_q) << endl;
+  }
+  return A_s;
+}

@@ -37,5 +37,7 @@ interval ml(const IMatrix &A);
  int getMaxIndex(const IVector &V);
  void print( vector <IVector> vectors );
  void print( vector <IMatrix> matrix_list);
+ 
+ IMatrix symplecticNormalization(IMatrix A, int dimension );
   
 #endif

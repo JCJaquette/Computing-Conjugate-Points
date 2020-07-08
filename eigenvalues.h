@@ -12,11 +12,11 @@ using namespace capd::alglib;
 using namespace capd::matrixAlgorithms;
 
 IVector boundEigenvalues(IMatrix B);
-vector < IVector >  boundSingleEigenvector(IMatrix A, IVector v, interval lambda);
-vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , IVector H_vec);
+vector < IVector >  boundSingleEigenvector(IMatrix A, IVector v, interval lambda, interval local_norm_sq);
+vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , IVector H_vec, interval local_norm_sq);
 
 
-IVector F_eigenvector(IMatrix A, IVector v, interval lambda);
+IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm_sq);
 IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda);
 vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda);
 

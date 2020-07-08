@@ -318,13 +318,10 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
             rightMat[i][j] = abs(rightMat[i][j]).right();
         }
     }
-    IMatrix max_inverse_boud = krawczykInverse(eye+rightMat) - eye;
-    max_inverse_boud = interval(-1,1)* max_inverse_boud;
-    cout << rightMat << endl;
-//     cout << " New Bound = " << max_inverse_boud << endl;
-//     cout << " Old Bound = " << krawczykInverse(eye+EFunction_Error) - eye << endl;
-    
-//     abort();
+    IMatrix max_inverse_bound = krawczykInverse(eye+rightMat) - eye;
+    max_inverse_bound = interval(-1,1)* max_inverse_bound;
+//     cout << rightMat << endl;
+
     
 
 
@@ -336,11 +333,11 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         IVector vec_in_local_coord = gauss(A_s,col);
 //         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
         
-//         cout << " New Bound = " << vec_in_local_coord + max_inverse_boud*vec_in_local_coord  << endl;
+//         cout << " New Bound = " << vec_in_local_coord + max_inverse_bound*vec_in_local_coord  << endl;
         
 //         cout << " Old Bound = " << gauss(eye+EFunction_Error ,vec_in_local_coord) << endl;
         
-        vec_in_local_coord  = vec_in_local_coord + max_inverse_boud*vec_in_local_coord ;
+        vec_in_local_coord  = vec_in_local_coord + max_inverse_bound*vec_in_local_coord ;
         
         
 //         vec_in_local_coord = gauss(eye+EFunction_Error ,vec_in_local_coord);  // EigenfunctionError
@@ -370,7 +367,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     cout << "eps0 = "<<  eps_0 << endl;
     
     IVector eigenvalues = localStableBig.eigenvalues;
-    cout << " eigenvalues= " << eigenvalues<< endl;
+//     cout << " eigenvalues= " << eigenvalues<< endl;
 
     bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues);
 
@@ -379,7 +376,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 
 bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues ){
     
-    cout << "U_coord = " << U_coord << endl;
+//     cout << "U_coord = " << U_coord << endl;
     
     vector < IMatrix > Gamma_List;
     vector < IMatrix > Beta_List;

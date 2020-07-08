@@ -17,7 +17,7 @@ IVector boundEigenvalues(IMatrix B)
     return eigenvalues;
 }
 
-vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda)
+vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda, interval local_norm_sq)
 {
     int dimension = A.numberOfRows();
     
@@ -36,7 +36,7 @@ vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda)
     bool verify_local;
     
     for (int it = 0;it<Newton_Steps;it++){
-        kraw_out = krawczykEigenvector(A, V, lambda , H_vec);
+        kraw_out = krawczykEigenvector(A, V, lambda , H_vec, local_norm_sq);
         
         kraw_image  = kraw_out[0];
         new_Nbd     = kraw_out[1];
@@ -79,7 +79,7 @@ vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda)
     return output;
 }
 
-vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , IVector H_vec)
+vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , IVector H_vec, interval local_norm_sq)
 {
     // OUTPUTS: [ K(image), K(image)- mid ]
     
@@ -91,7 +91,7 @@ vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , I
     IVector  V_nbd(dimension);
     for (int i =0;i<dimension;i++){ V_nbd[i] = V[i] + H_vec[i];}
     
-    IVector F_out  = F_eigenvector(A,  V,  lambda);
+    IVector F_out  = F_eigenvector(A,  V,  lambda, local_norm_sq);
     IMatrix DF_out = DF_eigenvector(A, V,  lambda);
     IMatrix DF_outH = DF_eigenvector(A, V_nbd,  lambda_nbd );
     
@@ -117,7 +117,7 @@ vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , I
     return output;
 }
 
-IVector F_eigenvector(IMatrix A, IVector v, interval lambda)
+IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm_sq)
 {
     int dimension = A.numberOfRows();
     
@@ -127,7 +127,7 @@ IVector F_eigenvector(IMatrix A, IVector v, interval lambda)
     for (int i =0;i<dimension;i++){ F_out[i]=base[i];}
     
     interval normalization = (euclNorm(v)^2 );
-    normalization = normalization-1;
+    normalization = normalization-local_norm_sq;
 
     F_out[dimension] = normalization;
 
@@ -167,7 +167,8 @@ IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
 
 vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
 {
-        
+//         We do not normalize the vectors;
+    
     int dimension = A.numberOfRows();   
     
     IVector  V_col(dimension);
@@ -178,16 +179,20 @@ vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
     IMatrix Q_center(dimension,dimension);
     IMatrix Q_error(dimension,dimension);
     
+    interval local_norm_sq;
+    
     for (int j = 0 ; j< dimension; j++)
     {
         //  Pull the j^th-column 
         interval lambda = Lambda[j];
         V_col = getColumn(Q, dimension, j);
-        V_col = V_col /euclNorm(V_col );
+        local_norm_sq = mid( V_col*V_col );
+        
+//         cout << " local_norm_sq  = " << local_norm_sq  << endl;
         
         
         //  Feed to local function
-        vector < IVector > output  =  boundSingleEigenvector(A, V_col, lambda);
+        vector < IVector > output  =  boundSingleEigenvector(A, V_col, lambda, local_norm_sq);
         V_cen = output[0];
         V_err = output[1];
         
