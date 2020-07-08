@@ -85,15 +85,16 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 {
 
   
-    int thread_id =omp_get_thread_num();
-    if (thread_id ==1 ){
-        cout << "  Using multiple processors " << endl;
-        abort();
-    }
+//     int thread_id =omp_get_thread_num();
+//     if (thread_id ==1 ){
+//         cout << "  Using multiple processors " << endl;
+//         abort();
+//     }
   
   interval timeStep = interval(pow(2,-step_size)); 
     //   We Create our solvers 
-  ITaylor lin_solver(list_of_maps[thread_id ],order);
+//   ITaylor lin_solver(list_of_maps[thread_id ],order);
+  ITaylor lin_solver((*pf),order);
   
   lin_solver.setStep(timeStep);
   ITimeMap lin_Phi(lin_solver);
@@ -147,27 +148,11 @@ int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector en
   
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
   
-//   IVector endPoint = getL_plusPoint( T, L_plus);
-//   abort();
-  
-  
-  
-  int max_threads = omp_get_max_threads();
-  if (max_threads > dimension/2)
-      max_threads = dimension/2;
-  
-  list_of_maps.resize(max_threads );
-  for( int i = 0 ; i < max_threads  ; i ++ ) { list_of_maps[i]=(*pf);}
-  
-// // //   /// I am trying to parrelize this
-// // // //   #pragma omp parallel for  
+
   for (int i = 0 ; i<dimension/2;i++)
   {
     List_of_Trajectories[i] = computeTotalTrajectory(i,  T + L_plus,  grid);
   }
-  
-  
-
   
   
   cout << "Checking Stability ... " << endl;

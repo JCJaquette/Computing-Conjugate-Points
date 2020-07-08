@@ -22,9 +22,9 @@ using namespace capd::matrixAlgorithms;
 class propagateManifold 
 {
 private:
-  IMap *pf;
+  IMap *pf;         // The system of the 1st variation
   
-  vector <IMap> list_of_maps; 
+//   vector <IMap> list_of_maps; 
 
   IVector InitialConditions_local;
   IVector XY_pt;
