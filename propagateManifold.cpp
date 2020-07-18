@@ -221,7 +221,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     
   interval L_angle_new = euclNorm(vec_Lplus_u)/euclNorm(vec_Lplus_s);
   
-  cout << " L_angle_new  = " << L_angle_new  << endl;
+//   cout << " L_angle_new  = " << L_angle_new  << endl;
   
   
     
@@ -252,7 +252,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         else
             localStableBig.L = localStableBig.L*2;
         
-        cout << " localStableBig.L = " << localStableBig.L << endl;
+//         cout << " localStableBig.L = " << localStableBig.L << endl;
     }
     
     if(! (conditions_S))
@@ -270,10 +270,8 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     
     
     
-    IMatrix eye(dimension,dimension);
-    for (int i = 0 ; i  < dimension;i++){
-        eye[i][i] = 1;
-    }
+    IMatrix eye = identityMat(dimension);
+
     
 //     cout.precision(16);
 //     IMatrix Kronic(dimension,dimension);
@@ -312,17 +310,26 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     
     IMatrix U_coord(dimension,dimension/2);
     
-    IMatrix rightMat = EFunction_Error;
-    for (int i = 0 ; i < dimension;i++){
-        for( int j =0; j<dimension;j++){
-            rightMat[i][j] = abs(rightMat[i][j]).right();
-        }
-    }
-    IMatrix max_inverse_bound = krawczykInverse(eye+rightMat) - eye;
-    max_inverse_bound = interval(-1,1)* max_inverse_bound;
-//     cout << rightMat << endl;
-
+//     IMatrix rightMat = EFunction_Error;
+//     for (int i = 0 ; i < dimension;i++){
+//         for( int j =0; j<dimension;j++){
+//             rightMat[i][j] = abs(rightMat[i][j]).right();
+//         }
+//     }
+//     IMatrix max_inverse_bound = krawczykInverse(eye-rightMat) - eye;
+//     max_inverse_bound = interval(-1,1)* max_inverse_bound;
     
+//     IMatrix max_inverse_bound = krawczykInverse(eye + EFunction_Error) - eye;
+    
+//     cout << rightMat << endl;
+    
+//     IMatrix eye_plus_Eu_inv = boundEyeInverseDefect(EFunction_Error,dimension);
+
+    IMatrix U_coord_pt(dimension,dimension/2);
+    IMatrix U_coord_nbd(dimension,dimension/2);
+    
+    IVector vec_in_local_coord_pt;
+    IVector vec_in_local_coord_nbd;
 
 
     
@@ -331,16 +338,16 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     {
         IVector col = getColumn(last_Frame,dimension,j);
         IVector vec_in_local_coord = gauss(A_s,col);
+        
+        vec_in_local_coord_pt = vec_in_local_coord ; // NEW 
+        
 //         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
         
-//         cout << " New Bound = " << vec_in_local_coord + max_inverse_bound*vec_in_local_coord  << endl;
-        
-//         cout << " Old Bound = " << gauss(eye+EFunction_Error ,vec_in_local_coord) << endl;
-        
-        vec_in_local_coord  = vec_in_local_coord + max_inverse_bound*vec_in_local_coord ;
-        
-        
-//         vec_in_local_coord = gauss(eye+EFunction_Error ,vec_in_local_coord);  // EigenfunctionError
+//         cout << " New Bound = " << vec_in_local_coord + max_inverse_bound*vec_in_local_coord  << endl;        
+//         cout << " Old Bound = " << gauss(eye+EFunction_Error ,vec_in_local_coord) << endl;  // This is better than krawczykInverse 
+
+                
+        vec_in_local_coord = gauss(eye+EFunction_Error ,vec_in_local_coord);  // EigenfunctionError
         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
         
         
@@ -348,6 +355,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
             cout << " w_" << j << "   = ";
             for (int i = 0 ; i  < dimension ; i++){
                 U_coord[i][j] = vec_in_local_coord[i];
+                U_coord_pt[i][j] = vec_in_local_coord[i];
             }
         }
         else if (j == dimension /2){
@@ -355,6 +363,11 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         }
         cout << vec_in_local_coord << endl;
     }
+    
+//     cout << " U = " << U_coord << endl;
+//     cout << " U_pt = " << U_coord_pt << endl;
+//     cout << " |U_pt| = " << euclNorm(U_coord_pt) << endl;
+    
     
     
 //     END 
@@ -364,24 +377,37 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
     }
     
+    interval V_inverse_norm = euclNorm(  krawczykInverse(A_s));
+    interval E_norm = V_inverse_norm.right() * eps_0.right() * sqrt( dimension )  ; 
+    E_norm = E_norm /(1-E_norm );
+    
+    
+    
     cout << "eps0 = "<<  eps_0 << endl;
+    cout << "E_norm = "<<  E_norm << endl;
     
     IVector eigenvalues = localStableBig.eigenvalues;
 //     cout << " eigenvalues= " << eigenvalues<< endl;
 
-    bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues);
+    bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues,E_norm,U_coord_pt,U_coord_nbd);
 
     return L_PLUS;
 }
 
-bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues ){
+bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues , interval E_norm , IMatrix U_coord_pt, IMatrix U_coord_nbd){
     
 //     cout << "U_coord = " << U_coord << endl;
     
     vector < IMatrix > Gamma_List;
     vector < IMatrix > Beta_List;
+//     vector < IMatrix > VinvU_List;
+    vector < IMatrix > VinvU_List_pt;
+    vector < IMatrix > VinvU_List_nbd;
+    IVector EE_norm_list(dimension/2);
     IMatrix Gamma_local(dimension/2,dimension/2-1);
     IMatrix Beta_local(dimension/2,dimension/2-1);
+    IMatrix VinvU_local_pt(dimension,dimension/2-1);
+    IMatrix VinvU_local_nbd(dimension,dimension/2-1);
     for (int k =0;k<dimension/2;k++) //remove k
     {
         int k_adjust =0;
@@ -391,12 +417,30 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
             for (int i = 0 ; i < dimension/2;i++){
                 Gamma_local[i][j-k_adjust] = U_coord[i][j];
                 Beta_local[i ][j-k_adjust] = U_coord[i+dimension/2][j];
+                
+                VinvU_local_pt[i][j-k_adjust] = U_coord_pt[i][j];
+                VinvU_local_pt[i+dimension/2][j-k_adjust] = U_coord_pt[i+dimension/2][j];
+                
+                VinvU_local_nbd[i][j-k_adjust] = U_coord_nbd[i][j];
+                VinvU_local_nbd[i+dimension/2][j-k_adjust] = U_coord_nbd[i+dimension/2][j];
             }
+            
         }
         
         
         Gamma_List.push_back(Gamma_local);
         Beta_List.push_back(Beta_local);
+        
+        VinvU_List_pt.push_back(VinvU_local_pt);
+        VinvU_List_nbd.push_back(VinvU_local_nbd);
+        
+//         cout << " Vinv U = " << VinvU_local_pt << endl;
+        
+        cout << " ||E|| .||V^-1 U|| = " << E_norm * euclNorm(VinvU_local_pt ) << endl ;
+        
+        EE_norm_list[k] = E_norm * euclNorm(VinvU_local_pt ) ;
+        
+        
     }
     
     
@@ -409,7 +453,7 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
     
     bool L_PLUS = 0;
     for (int k = 0;k<dimension/2;k++){
-        L_PLUS = checkL_plus_local( Gamma_List[k], Beta_List[k],eps_0, nu_1, nu_n);
+        L_PLUS = checkL_plus_local( Gamma_List[k], Beta_List[k],eps_0, nu_1, nu_n , EE_norm_list[k]);
         if (L_PLUS ==1)
             break;
     }
@@ -417,9 +461,14 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
     return L_PLUS;
 }
 
-bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0, interval nu_1 , interval nu_n){
+bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0, interval nu_1 , interval nu_n , interval EE_norm){
     
-    interval epsilon_beta = eps_beta( Gamma, Beta);
+    interval epsilon_beta = compute_epsilon_beta( Gamma, Beta, EE_norm);
+    
+    
+// // //     A_s = (*(*pStable).pF).A;
+// // //     krawczykInverse( A_s )*
+    
     
     if (epsilon_beta < 0)
         return 0;
@@ -445,10 +494,10 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     
     for (int i = 0 ; i < dimension/2 ; i++){
         for (int j = 0 ; j < dimension/2 ; j ++){
-            pi_1_Vs[i][j] = A_s[i][j+dimension/2];
             pi_1_Vu[i][j] = A_s[i][j];
-            pi_2_Vs[i][j] = A_s[i+dimension/2][j+dimension/2];
+            pi_1_Vs[i][j] = A_s[i][j+dimension/2];
             pi_2_Vu[i][j] = A_s[i+dimension/2][j];
+            pi_2_Vs[i][j] = A_s[i+dimension/2][j+dimension/2];
         }
     }
 
@@ -459,7 +508,13 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
 //     cout << " pi_1_Vu  = " << pi_1_Vu << endl;
 //     cout << " pi_2_Vs  = " << pi_2_Vs << endl;
 //     cout << " pi_2_Vu  = " << pi_2_Vu << endl;
-    interval C_Q_new= n*( euclNorm(pi_1_Vs) + euclNorm(pi_1_Vu) + euclNorm(pi_2_Vs) + euclNorm(pi_2_Vu) + 2* eps_0*n);
+//     
+//     cout << " |pi_1_Vs|  = " << euclNorm(pi_1_Vs) << endl;
+//     cout << " |pi_1_Vu|  = " << euclNorm(pi_1_Vu) << endl;
+//     cout << " |pi_2_Vs|  = " << euclNorm(pi_2_Vs) << endl;
+//     cout << " |pi_2_Vu|  = " << euclNorm(pi_2_Vu) << endl;
+    
+    interval C_Q_new= sqrt(n)*( euclNorm(pi_1_Vs) + euclNorm(pi_1_Vu) + euclNorm(pi_2_Vs) + euclNorm(pi_2_Vu) + 2* eps_0*sqrt(n));
     
     interval C_P    = ( 2*sqrt(n) * sqrt( 2* nu_1 * d_max)) / ( 1 - eps_0 * sqrt(n) * sqrt( 2*nu_1*d_max )) ;
     interval C_Q    = sqrt(n)*( sqrt(2/(nu_n*d_min))+ sqrt( 2* nu_1 * d_max) + 2* eps_0*sqrt(n));
@@ -510,7 +565,7 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     return L_PLUS ;
 }
 
-interval propagateManifold::eps_beta( IMatrix Gamma, IMatrix Beta){
+interval propagateManifold::compute_epsilon_beta( IMatrix Gamma, IMatrix Beta, interval EE_norm){
     
     
     IMatrix Gamma_center = midMatrix(Gamma);
@@ -536,7 +591,9 @@ interval propagateManifold::eps_beta( IMatrix Gamma, IMatrix Beta){
     
     
     
-    cout << "mu_Rayleigh = " << mu_Rayleigh << endl;
+//     cout << "mu_Rayleigh       = " << mu_Rayleigh << endl;
+    
+    cout << "mu_Rayleigh ( -E) = " << mu_Rayleigh - interval(2)*EE_norm*(euclNorm(Gamma_center)+euclNorm(Gamma_delta)) - sqr(EE_norm)<< endl;
     
     interval mu_old = ml( transpose(Gamma)*Gamma);
     
@@ -545,14 +602,18 @@ interval propagateManifold::eps_beta( IMatrix Gamma, IMatrix Beta){
 //     cout << " Gamma = " << Gamma << endl;
 //     cout << " Gamma^t*Gamma = " << transpose(Gamma)*Gamma << endl;
     
-    cout << "mu_old = " << mu_old << endl;
+//     cout << "mu_old = " << mu_old << endl;
     
     interval mu = mu_Rayleigh;
     
     if (mu.left() < 0)
         return interval(-1);
     
+//     cout << " ||B|| (old) = " << euclNorm(Beta) << endl;
+    cout << " ||B|| ( +E) = " << euclNorm(Beta) +EE_norm<< endl;
     interval epsilon_beta = euclNorm(Beta) / sqrt(mu);
+    
+    
     
 //     epsilon_beta = interval(0.0000001);
     

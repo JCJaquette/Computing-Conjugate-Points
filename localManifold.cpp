@@ -609,13 +609,14 @@ void localManifold::ErrorEigenfunctionTotal_minus_infty( void){
         
     }
     
-    IMatrix eye(dimension/2,dimension/2);
-    for (int i =0;i<dimension/2;i++){ eye[i][i]=1;}
+    IMatrix eye = identityMat(dimension/2);
     
     Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
      
     cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
 //     cout << "E_s = " << E_s << endl;
+    
+//     abort();
     
 //     return 0
 }

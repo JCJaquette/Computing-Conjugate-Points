@@ -28,6 +28,11 @@ IVector getColumn(const IMatrix &A, int dimension,int column);
 
 interval omega( IVector V, IVector W, int n);
 
+
+// // // IMatrix boundEyeInverseDefect(IMatrix E,int n);
+
+IMatrix identityMat( int n);
+
 interval ml(const IMatrix &A);
 
  IVector getSubdivision(const IVector &U, const vector < int > &index_list , const vector < int > &part_list , const int &subdivisionNUM);

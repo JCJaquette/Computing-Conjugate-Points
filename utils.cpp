@@ -440,3 +440,33 @@ IMatrix symplecticNormalization(IMatrix A_s, int dimension){
   }
   return A_s;
 }
+
+// // // // IMatrix boundEyeInverseDefect(IMatrix E,int n){
+// // // //     
+// // // //     IMatrix rightMat = E;
+// // // //     IMatrix eye = identityMat(n);
+// // // //     
+// // // //     for (int i = 0 ; i < n;i++){
+// // // //         for( int j =0; j<n;j++){
+// // // //             rightMat[i][j] = abs(rightMat[i][j]).right();
+// // // //         }
+// // // //     }
+// // // //     cout << " rightMat " <<  rightMat <<endl;
+// // // //     cout << " max_inverse_bound 0 " <<  krawczykInverse(eye+E) - eye   <<endl;
+// // // //     IMatrix max_inverse_bound = krawczykInverse(eye+rightMat) - eye;
+// // // //     cout << " max_inverse_bound 1 " <<  max_inverse_bound <<endl;
+// // // //     max_inverse_bound = krawczykInverse(eye-rightMat) - eye;
+// // // //     cout << " max_inverse_bound 2 " <<  max_inverse_bound <<endl;
+// // // //     
+// // // //     max_inverse_bound = interval(-1,1)* max_inverse_bound;   
+// // // //     
+// // // //     return max_inverse_bound;    
+// // // // }
+
+IMatrix identityMat( int n){
+    IMatrix eye(n,n);
+    for (int i = 0 ; i  < n;i++){
+        eye[i][i] = 1;
+    }
+    return eye;
+}

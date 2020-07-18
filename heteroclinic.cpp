@@ -31,7 +31,7 @@ int test(int dimension,vector < double > All_parameters)
   
   int manifold_subdivision = 15;
   int shots = 9;
-  int multiple_newton_steps = 1;
+  int multiple_newton_steps = 0;
   int single_newton_steps = 20;
  
   int grid = 14; // count zeros
@@ -466,7 +466,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6; // TESTING DIMENSION
+	    dimension=4; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
