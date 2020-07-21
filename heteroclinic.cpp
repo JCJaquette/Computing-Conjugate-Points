@@ -41,12 +41,12 @@ int test(int dimension,vector < double > All_parameters)
   if (dimension ==4 ){
     T = 16.3; // n=2
     L_plus = 13;
-    stepsize =7;
+    stepsize =6;
   }
   else{ 
     T = 20.; // n=3
     L_plus = 13.55;
-    L_plus = 14;
+//     L_plus = 14;
     stepsize =6;
   }
   
@@ -466,13 +466,13 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4; // TESTING DIMENSION
+	    dimension=6; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
             Input.push_back(1); // a
             Input.push_back(.95);// b 
-            Input.push_back(-.05);// c
+            Input.push_back(.05);// c
             test(dimension,Input);
         }
         else if (dimension ==6)
@@ -481,8 +481,8 @@ int main(int argc, char* argv[])
             Input.push_back(.98);// b2 
             Input.push_back(.95);// b3
                         
-            Input.push_back(-.015);// c12
-            Input.push_back(-.06);// c23         0 - unstable
+            Input.push_back(.05);// c12                         (.050,.015)                     L_+ = 13.55
+            Input.push_back(.015);// c23         0 - unstable   (-.015,.050) & (-.015,-.050)    L_+ = 14
             
 
             test(dimension,Input);
