@@ -78,15 +78,17 @@ void bubbleSortEigenvectors(DVector &v, DMatrix &A)
 
 DMatrix coordinateChange(DMatrix Df)
 {
+//     Returns sorted eigenvectors. 
   int n=Df.numberOfColumns();
   DVector rE(n), iE(n);         	// real and imaginary parts of eigenvalues
   DMatrix rVec(n,n), iVec(n,n); 	// real and imaginary parts of eigenvectors
+  
+//   The program is built for Matrices with real eigenvalues, and so we only return the real eigenvectors. 
+//   If the input matrix has complex eigenvalues, things will fail to be validated later in the program.
 
   computeEigenvaluesAndEigenvectors(Df,rE,iE,rVec,iVec);
   bubbleSortEigenvectors(rE,rVec);
-//   double a=1;
-//   for(int i=0;i<4;i++) rVec[i][2]=rVec[i][2]*a;
-//   for(int i=0;i<4;i++) rVec[i][3]=rVec[i][3]*a;
+
   return rVec;
 }
 

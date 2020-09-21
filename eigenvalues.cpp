@@ -3,6 +3,7 @@
 
 IVector boundEigenvalues(IMatrix B)
 {
+//     Returns the diagonal of the matrix with bounds from Gershgorin theorem 
     int k=B.numberOfRows();
     IVector eigenvalues(k);
     for(int i = 0;i<k;i++)
@@ -10,7 +11,7 @@ IVector boundEigenvalues(IMatrix B)
       interval sum =0;
       for (int j = 0;j<k;j++)
       {
-	if( i!=j) sum += abs(B[i][j]); 
+        if( i!=j) sum += abs(B[i][j]); 
       }
       eigenvalues[i] = B[i][i] + interval(-1,1)*sum;
     }
@@ -19,10 +20,17 @@ IVector boundEigenvalues(IMatrix B)
 
 vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda, interval local_norm_sq)
 {
+//     Returns an approximate eigenvector and validated enclosure 
+    
+//     Does not update either the approximate eigenvector or eigenvalue. 
+    
+//     If verification fails, the entire program is aborted  
+    
     int dimension = A.numberOfRows();
     
     int Newton_Steps = 5;
     
+//     Initial neighborhood enclosing eigenvector
     interval scale = 3e-14;
     
     IVector H_vec(dimension+1);
@@ -57,7 +65,7 @@ vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda,
         if (it == Newton_Steps -1){break;}
         
         for (int i = 0 ; i< dimension+1;i++){
-            H_vec[i] = new_Nbd[i]*(1+1e-10);
+            H_vec[i] = new_Nbd[i]*(1+1e-10); // This is meant to ensure a future inclusion ... maybe unnecessary
         }        
     }
     if (verify == 0 ){
@@ -81,7 +89,14 @@ vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda,
 
 vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , IVector H_vec, interval local_norm_sq)
 {
-    // OUTPUTS: [ K(image), K(image)- mid ]
+    
+//     K = z - C F(z) + ( Id - C DF([z]) )( [z] - z )
+    
+//     OUTPUTS: [ K(image), K(image)- mid ] 
+    
+//     e.g. outputs: [ z , - C F(z) + ( Id - C DF([z]) )( [z] - z ) ]
+    
+//     -- does not really update the middle approximation point. 
     
     int dimension = A.numberOfRows();
     
@@ -119,6 +134,9 @@ vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , I
 
 IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm_sq)
 {
+//     Computes in first n-components   A*v-lambda*v 
+//     Computes in n+1 component        |v|^2-local_norm_sq 
+    
     int dimension = A.numberOfRows();
     
     IVector F_out(dimension +1);
@@ -126,7 +144,8 @@ IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm
     IVector base = (A*v-lambda*v);
     for (int i =0;i<dimension;i++){ F_out[i]=base[i];}
     
-    interval normalization = (euclNorm(v)^2 );
+    interval normalization = v*v;
+    
     normalization = normalization-local_norm_sq;
 
     F_out[dimension] = normalization;
@@ -141,10 +160,7 @@ IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
     int dimension = A.numberOfRows();
     
     IMatrix DF_out(dimension +1,dimension +1);
-    
-    IVector base = (A*v-lambda*v);
-
-    
+        
     for(int i = 0;i<dimension;i++)
     {
       for (int j = 0;j<dimension;j++)
@@ -167,12 +183,18 @@ IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
 
 vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
 {
+//     Returns <0> approximate e-vectors, and <1> rigorous enclosure
 //         We do not normalize the vectors;
+//     Returns enclosure of each e-vector having norm equal to that of the approximate e-vectors.     
+    
+//     Currently, the output <0> will be the input Q unchanged. 
+//     Assumes Q is a matrix with columns of e-vectors of A. 
+
     
     int dimension = A.numberOfRows();   
     
-    IVector  V_col(dimension);
-    
+    IVector  V_col(dimension); // Local e-vector
+     
     IVector  V_cen(dimension);
     IVector  V_err(dimension);
     

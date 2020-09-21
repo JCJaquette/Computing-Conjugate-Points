@@ -4,6 +4,8 @@
 
 DVector fixedPoint(int i,int dimension) 
 {
+//     If i==0, returns the fixed point (0,...,0,0,...,0) used for the UNSTABLE manifold
+//     If i==1, returns the fixed point (1,...,1,0,...,0) used for the STABLE manifold
  DVector p(dimension);
  if(i==0) return p;
  for (int j = 0;j<dimension/2;j++) 
