@@ -17,7 +17,10 @@ DVector fixedPoint(int i,int dimension)
 
 DMatrix coordinateChange(int i,int dimension, vector < double> All_parameters) 
 {
-  
+// Returns matrix of (approximate) eigenvectors of the linearization at a fixedpoint, 
+// Sorted by eigenvalues starting with most unstable 
+//  If i=0   ==>     fixedpoint = (0,0,0)
+//  If i=1   ==>     fixedpoint = (1,1,1)
   DVector p=fixedPoint(i,dimension);
   DMap f;
   if ( dimension == 4)
@@ -30,11 +33,8 @@ DMatrix coordinateChange(int i,int dimension, vector < double> All_parameters)
     
   }
   else if (dimension == 6 )
-  {
-//       f       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: v1, v2, v3, (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3));";  // NOTE THIS WAS WRONG
-      
+  {      
       f       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: v1, v2, v3,  (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(u1-.5)),  (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(u2-.5)-c23*u3*(1-u3)*(u2-.5)), (-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(u3-.5));"; 
-
       
     f.setParameter("b1", All_parameters[0]); // 
     f.setParameter("b2", All_parameters[1]); // 
@@ -51,11 +51,14 @@ DMatrix coordinateChange(int i,int dimension, vector < double> All_parameters)
 
 IVector knownSolution( double a, interval x)
 {
+//     Returns a (non-rigorous) enclosure of the standing wave to the bistable equation
+//     First component is the value, second component is the derivative.
+//     See equation ~4.3 in the paper. 
   IVector solution(2);
   
   double rt_a_2 = sqrt(a/2);
   solution[0] = 1/(1+exp(-rt_a_2 *x)); // u
-  solution[1] = rt_a_2/( 2 + exp(rt_a_2 *x) + exp(-rt_a_2 *x)); // v
+  solution[1] = rt_a_2/( 2 + exp(rt_a_2 *x) + exp(-rt_a_2 *x)); // v , simplified
   
   return solution; 
 }
@@ -213,11 +216,6 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
 //       f(u2) = u2*(u2-.5)*(1-u2)
 //       f(u3) = u3*(u3-.5)*(1-u3)      
       
-//     g(u1,u2) = u2*(1-u2)*(1-2*u1) // WRONG
-//     g(u2,u1) = u1*(1-u1)*(1-2*u2) // WRONG
-//     g(u2,u3) = u3*(1-u3)*(1-2*u2) // WRONG
-//     g(u3,u2) = u2*(1-u2)*(1-2*u3) // WRONG
-      
 //     g(u1,u2) = u2*(1-u2)*(u1-.5)
 //     g(u2,u1) = u1*(1-u1)*(u2-.5)
 //     g(u2,u3) = u3*(1-u3)*(u2-.5)
@@ -230,13 +228,7 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
       f       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: v1, v2, v3,  (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(u1-.5)),  (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(u2-.5)-c23*u3*(1-u3)*(u2-.5)), (-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(u3-.5));"; 
       f_minus = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun:-v1,-v2,-v3, -(-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(u1-.5)), -(-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(u2-.5)-c23*u3*(1-u3)*(u2-.5)),-(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(u3-.5));"; 
       
-      
-      
-      
- 
-      
-//     f       = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: v1, v2, v3, (-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), (-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3));";  // NOTE THIS WAS WRONG
-//     f_minus        = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun: -v1, -v2, -v3, -(-b1*u1*(u1-.5)*(1-u1) - c12*u2*(1-u2)*(1-2*u1)), -(-b2*u2*(u2-.5)*(1-u2) -c12*u1*(1-u1)*(1-2*u2)-c23*u3*(1-u3)*(1-2*u2)),-(-b3*u3*(u3-.5)*(1-u3)-c23*u2*(1-u2)*(1-2*u3));"; // NOTE THIS WAS WRONG
+
     
     
 // //  We Construct the linearized problem
