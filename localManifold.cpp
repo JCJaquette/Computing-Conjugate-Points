@@ -93,6 +93,9 @@ vector < IVector > localManifold::getPointNbd( IVector XY_pt, IVector XY_nbd)
 
 IVector localManifold::projectPoint( IVector XY_pt)
 {
+//     Takes an input point in ambient coordinates. 
+//     If at the stable (unstable) manifold, we project the point >> ( pt - equilibrium ) << onto the stable (unstable) eigenspace.
+//     Returns a vector of dimension n = dimension/2
   IVector local_coord(dimension/2);
   
   if (stable)
@@ -609,13 +612,14 @@ void localManifold::ErrorEigenfunctionTotal_minus_infty( void){
         
     }
     
-    IMatrix eye(dimension/2,dimension/2);
-    for (int i =0;i<dimension/2;i++){ eye[i][i]=1;}
+    IMatrix eye = identityMat(dimension/2);
     
     Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
      
     cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
 //     cout << "E_s = " << E_s << endl;
+    
+//     abort();
     
 //     return 0
 }

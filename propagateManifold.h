@@ -22,9 +22,9 @@ using namespace capd::matrixAlgorithms;
 class propagateManifold 
 {
 private:
-  IMap *pf;
+  IMap *pf;         // The system of the 1st variation
   
-  vector <IMap> list_of_maps; 
+//   vector <IMap> list_of_maps; 
 
   IVector InitialConditions_local;
   IVector XY_pt;
@@ -53,11 +53,11 @@ public:
   
   bool lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus);
   
-  bool checkL_plus( IMatrix U_coord,interval eps_0,IVector eigenvalues );
+  bool checkL_plus( IMatrix U_coord,interval eps_0,IVector eigenvalues , interval E_norm , IMatrix U_coord_pt, IMatrix U_coord_nbd);
   
-  bool checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0,interval nu_1 , interval nu_n);
+  bool checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0,interval nu_1 , interval nu_n, interval EE_norm);
   
-  interval eps_beta( IMatrix Gamma, IMatrix Beta);
+  interval compute_epsilon_beta( IMatrix Gamma, IMatrix Beta, interval EE_norm);
 
 };
 

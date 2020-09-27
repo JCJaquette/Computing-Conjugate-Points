@@ -247,7 +247,7 @@ vector<int> topFrame::countZeros( void)
                 {
                     // Use the mean-value-theorem
                     MVT_deriv = (time_series[i_time]-time_series[i_time].left() )*derivative;
-                    MVT_bound = intervalHull(det_series[i_time][0],det_series[i_time][1]) + MVT_deriv/2;
+                    MVT_bound = intervalHull(det_series[i_time][0]+MVT_deriv/2,det_series[i_time][1]-MVT_deriv/2) ;
                     if ((MVT_bound>0)||(MVT_bound<0))
                         continue;
                     else{

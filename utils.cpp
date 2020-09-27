@@ -78,15 +78,17 @@ void bubbleSortEigenvectors(DVector &v, DMatrix &A)
 
 DMatrix coordinateChange(DMatrix Df)
 {
+//     Returns sorted eigenvectors. 
   int n=Df.numberOfColumns();
   DVector rE(n), iE(n);         	// real and imaginary parts of eigenvalues
   DMatrix rVec(n,n), iVec(n,n); 	// real and imaginary parts of eigenvectors
+  
+//   The program is built for Matrices with real eigenvalues, and so we only return the real eigenvectors. 
+//   If the input matrix has complex eigenvalues, things will fail to be validated later in the program.
 
   computeEigenvaluesAndEigenvectors(Df,rE,iE,rVec,iVec);
   bubbleSortEigenvectors(rE,rVec);
-//   double a=1;
-//   for(int i=0;i<4;i++) rVec[i][2]=rVec[i][2]*a;
-//   for(int i=0;i<4;i++) rVec[i][3]=rVec[i][3]*a;
+
   return rVec;
 }
 
@@ -396,4 +398,77 @@ interval ml(const IMatrix &A)
 {
 	capd::vectalg::EuclLNorm<IVector,IMatrix> l;
 	return -l(-A);
+}
+
+
+
+IMatrix symplecticNormalization(IMatrix A_s, int dimension){
+  interval normalization_factor;
+  
+  IVector local_vec_half_p(dimension/2);
+  IVector local_vec_half_q(dimension/2);  
+  
+  IVector local_vec_full_p(dimension);
+  IVector local_vec_full_q(dimension);
+  
+  for (int j = 0 ; j < dimension/2 ; j ++ ) {
+      local_vec_full_p = getColumn(A_s,dimension,j);
+      local_vec_full_q = getColumn(A_s,dimension,dimension-j-1);
+      for ( int i =0; i < dimension/2 ; i++){
+          local_vec_half_p[i] = local_vec_full_p[i];
+          local_vec_half_q[i] = local_vec_full_q[i];
+      }
+//       Normalize the top 'z' part
+      local_vec_full_p = local_vec_full_p/euclNorm(local_vec_half_p);
+      local_vec_full_q = local_vec_full_q/euclNorm(local_vec_half_q);
+      normalization_factor = omega(local_vec_full_p,local_vec_full_q,dimension/2) ;
+//       Flip sign if necessary
+      if (normalization_factor<0){
+          normalization_factor = - normalization_factor;
+          local_vec_full_q = -local_vec_full_q;
+      }
+      
+      local_vec_full_p = local_vec_full_p/sqrt(normalization_factor);
+      local_vec_full_q = local_vec_full_q/sqrt(normalization_factor);
+      for (int i=0;i<dimension;i++){
+          A_s[i][j]             = local_vec_full_p[i];
+          A_s[i][dimension-j-1] = local_vec_full_q[i];
+      }
+//             cout << " local_vec_full_p + local_vec_full_q = " << local_vec_full_p + local_vec_full_q << endl;
+//             cout << " local_vec_full_p - local_vec_full_q = " << local_vec_full_p - local_vec_full_q << endl;
+            
+//       cout << " || local_vec_full_p || = " << euclNorm(local_vec_full_p) << endl;
+//       cout << " || local_vec_full_q || = " << euclNorm(local_vec_full_q) << endl;
+  }
+  return A_s;
+}
+
+// // // // IMatrix boundEyeInverseDefect(IMatrix E,int n){
+// // // //     
+// // // //     IMatrix rightMat = E;
+// // // //     IMatrix eye = identityMat(n);
+// // // //     
+// // // //     for (int i = 0 ; i < n;i++){
+// // // //         for( int j =0; j<n;j++){
+// // // //             rightMat[i][j] = abs(rightMat[i][j]).right();
+// // // //         }
+// // // //     }
+// // // //     cout << " rightMat " <<  rightMat <<endl;
+// // // //     cout << " max_inverse_bound 0 " <<  krawczykInverse(eye+E) - eye   <<endl;
+// // // //     IMatrix max_inverse_bound = krawczykInverse(eye+rightMat) - eye;
+// // // //     cout << " max_inverse_bound 1 " <<  max_inverse_bound <<endl;
+// // // //     max_inverse_bound = krawczykInverse(eye-rightMat) - eye;
+// // // //     cout << " max_inverse_bound 2 " <<  max_inverse_bound <<endl;
+// // // //     
+// // // //     max_inverse_bound = interval(-1,1)* max_inverse_bound;   
+// // // //     
+// // // //     return max_inverse_bound;    
+// // // // }
+
+IMatrix identityMat( int n){
+    IMatrix eye(n,n);
+    for (int i = 0 ; i  < n;i++){
+        eye[i][i] = 1;
+    }
+    return eye;
 }
