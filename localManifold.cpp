@@ -93,6 +93,9 @@ vector < IVector > localManifold::getPointNbd( IVector XY_pt, IVector XY_nbd)
 
 IVector localManifold::projectPoint( IVector XY_pt)
 {
+//     Takes an input point in ambient coordinates. 
+//     If at the stable (unstable) manifold, we project the point >> ( pt - equilibrium ) << onto the stable (unstable) eigenspace.
+//     Returns a vector of dimension n = dimension/2
   IVector local_coord(dimension/2);
   
   if (stable)

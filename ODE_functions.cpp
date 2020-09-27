@@ -65,14 +65,20 @@ IVector knownSolution( double a, interval x)
 
 vector < IVector >  multipleShootingGuess( int shots, interval T ,int dimension, vector < double > All_parameters)
 {
+//     Returns points along the unperturbed standing wave (c=0) between equally spaced times -T = t_-1 < t_0 < t_1 < ... <  t_(shots-1) <  t_shots =T
+//     Note |t_{i+1} - t_i | = 2T/(shots+1).
+//     Only returs the points corresponding to t_0 ... t_{shots-1} ;  does not return points corresponding to -T/+T.
  vector < IVector > output;
 //  Output is of length SHOTS
  
+ cout << T << endl;
  vector < interval > times(shots);
  interval time_increment = (2*T /(shots+1));
  times[0]=-T+time_increment;
- for(int i =1;i<shots;i++) 
+ for(int i =1;i<shots;i++) {
   times[i]=times[i-1]+time_increment;
+//   cout << " Time ( " << i<< ") = " << times[i] << endl;
+ }
  
  for(int i = 0 ; i< shots ; i++)
  {
@@ -94,6 +100,8 @@ vector < IVector >  multipleShootingGuess( int shots, interval T ,int dimension,
 
 IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interval T, bool STABLE)
 {
+//     Depending on Stable/Unstable, will return the value of the unperturbed (c=0) standing wave at time +/-T in the form
+//     (u_1,u_2,u_3, Du_1, Du_2, Du_3)
   IVector point(dimension);
   
   interval x;
@@ -115,8 +123,8 @@ IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interv
 vector <IFunction> constructEnergy(int dimension,  vector < double > All_parameters)
 {
     vector <IFunction> output;
-    IFunction energy;
-    IFunction energy_projection;
+    IFunction energy;               // Returns energy
+    IFunction energy_projection;    // Returns positive branch of v_n on the 0-energy surface
     if(dimension == 4)
     {
       
@@ -125,11 +133,6 @@ vector <IFunction> constructEnergy(int dimension,  vector < double > All_paramet
 //       U(u1,u2) = u1*(1-u1)*u2*(1-u2)/2
         energy             = "par:a,b,c;var:u1,u2,v1,v2;fun:         (sqr(v1)+sqr(v2))/2-a*sqr(u1)*sqr(1-u1)/4-b*sqr(u2)*sqr(1-u2)/4 -c*u1*(1-u1)*u2*(1-u2)/2;";
         energy_projection  = "par:a,b,c;var:u1,u2,v1   ;fun:sqrt(-2*((sqr(v1)        )/2-a*sqr(u1)*sqr(1-u1)/4-b*sqr(u2)*sqr(1-u2)/4 -c*u1*(1-u1)*u2*(1-u2)/2));";
-        /*
-//         Make this parameter set into a function
-        energy.setParameter("a",All_parameters[0]); // a=1
-        energy.setParameter("b",All_parameters[1]); // b=1
-        energy.setParameter("c",All_parameters[2]); // c= +/- 0.1*/
         
     }
     else if( dimension == 6) 
@@ -140,13 +143,7 @@ vector <IFunction> constructEnergy(int dimension,  vector < double > All_paramet
         
         energy              = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2,v3;fun:         (sqr(v1)+sqr(v2)+sqr(v3))/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2;";
         energy_projection   = "par:b1,b2,b3,c12,c23;var:u1,u2,u3,v1,v2   ;fun:sqrt(-2*((sqr(v1)+sqr(v2)        )/2-b1*sqr(u1)*sqr(1-u1)/4-b2*sqr(u2)*sqr(1-u2)/4-b3*sqr(u3)*sqr(1-u3)/4 -c12*u1*(1-u1)*u2*(1-u2)/2 -c23*u2*(1-u2)*u3*(1-u3)/2));";
-/*
-//         Make this parameter set into a function        
-        energy.setParameter("b1", All_parameters[0]); // 
-        energy.setParameter("b2", All_parameters[1]); // 
-        energy.setParameter("b3", All_parameters[2]); // 
-        energy.setParameter("c12",All_parameters[3]); // 
-        energy.setParameter("c23",All_parameters[4]); // */
+
     }
     else
     {
@@ -281,14 +278,19 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
 
 vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters, interval T ,  localManifold &localUnstable,  localManifold &localStable)
 {
+//     Returns guess near stable/unstable manifolds in eigencoordinates
 
+//     Get the approximations at -T/+T
   IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
   IVector guess_S = initialGuessGlobal(dimension, All_parameters, T, 0);
   
+//     Gets the eigen-coordinates of the approximation in the dominant eigenspace.
   IVector local_guess_U = localUnstable.projectPoint(  guess_U);
   IVector local_guess_S = localStable.projectPoint(  guess_S); 
+
+// We then uniformly rescale the approximate point so that it is on the edge of the local stable/unstable manifold's radius of validity.
   
-  
+//   Gets ~the radius of the nbd at the end points - stable/unstable manifolds.
   interval radius_x = sqr(localUnstable.getRadius())*dimension/2;
   interval radius_y = sqr(localStable.getRadius())*dimension/2;
   
@@ -298,7 +300,7 @@ vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters
   for(int i = 0 ; i<dimension/2;i++){S_radius_sqr += sqr(local_guess_S[i]);}
   local_guess_U = local_guess_U *sqrt(radius_x/U_radius_sqr);
   local_guess_S = local_guess_S *sqrt(radius_y/S_radius_sqr);
-    
+
     vector < IVector > output;
     output.push_back(local_guess_U);
     output.push_back(local_guess_S);
@@ -309,14 +311,19 @@ vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters
 
 vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable, int shots)
 {
+    //   Returns shot+2 points, the approximations at equally spaced points -T = t_0 < ... < t_shots+1 = +T  
+    //   The endpoints (near the manifolds) are given in eigencoordinates.
+    //   The middle points are of dimension 2*n-1, as they are on the 0-energy surface. 
     
-    //   We get the initial mid-points for multiple shooting
+    
+    //   We get the middle-points for multiple shooting
+    //     Get the approximations at equally spaced points -T < t_i < +T  
     vector < IVector > multiple_guess ;
     if (shots >0)
         multiple_guess = multipleShootingGuess(shots,T,dimension,All_parameters);
     
     
-    //   We throw away the last coordinate of each of our guesses  
+    //   We throw away the last coordinate of each of our guesses, because the live on the 0-energy surface
     for (int i = 0 ; i < shots ; i++)
     {
         IVector new_vector(dimension-1);
@@ -324,8 +331,6 @@ vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_pa
             new_vector[j]= multiple_guess[i][j];
         multiple_guess[i]=new_vector;
     }
-    
-
 
     //   We make our input points and nbd 
     vector <IVector> points(shots+2);
@@ -333,7 +338,7 @@ vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_pa
   
     for (int i =1;i<shots+1;i++)
     {
-        points[i]         =multiple_guess[i-1];
+        points[i]         = multiple_guess[i-1];
         neighborhoods[i]  = IVector(dimension-1);
     }
   

@@ -466,7 +466,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6; // TESTING DIMENSION
+	    dimension=4; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
