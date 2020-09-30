@@ -22,6 +22,10 @@ private:
   friend class boundaryValueProblem;
   friend class propagateManifold;
 public:
+//     We define psi(w) := p0 + A_0 w
+//                 f(w) :=    - A_0^-1 * J \grad H ( \psi( w)) 
+//           where    J  = [0 -I; I 0]
+//     In the program, f(x) = - J \grad H ( x )
   localVField(IMap &f_,IMatrix A_,IVector p_){f=&f_; A=A_; p=p_; Ainv=gaussInverseMatrix(A);}
   localVField(){}
   IVector image(IVector w){return Ainv*(*f)(p+A*w);}
