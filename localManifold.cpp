@@ -3,14 +3,19 @@
 
 IVector localManifold::constructU( IVector U_flat)
 {
+//     Input U_flat is in local coords, of length  n=dim/2
+//     Returns an interval vector in local coords 
+//      which encloses the cooresponding point on the stable/unstable manifold.
   IVector U(dimension);
   
-  interval norm = 0 ;
+//   Compute the Euclidean norm of U_flat
+  interval norm = 0;
   for (int i=0;i<dimension/2;i++)
   {
     norm += U_flat[i]^2;
   }
   norm = sqrt(norm);
+//   Defines the error as    +/- L* || U_flat|| 
   interval error = L*interval(-1,1)*norm; 
   
   for (int i = 0;i<dimension;i++)
@@ -18,16 +23,16 @@ IVector localManifold::constructU( IVector U_flat)
     if (stable)
     {
       if( i < dimension/2)
-	U[i]=error; 
+        U[i]=error; 
       else
-	U[i]=U_flat[i-dimension/2]; 
+        U[i]=U_flat[i-dimension/2]; 
     }
     else // Unstable case
     {
       if( i < dimension/2)
-	U[i]=U_flat[i]; 
+        U[i]=U_flat[i]; 
       else
-	U[i]=error;     
+        U[i]=error;     
     }
   }
   return U;
@@ -37,27 +42,27 @@ IVector localManifold::constructU( IVector U_flat)
 IVector localManifold::getPoint( IVector X_pt)  
 {
 //   This funtion takes input X_pt (length dimension /2), 
-//   It returns pt_out (length dimension)  putting X_pt into the stable/unstable coordinates
+//   It returns pt_out (length dimension)  putting X_pt into the (LOCAL) stable/unstable coordinates
   
   IVector pt_out(dimension);
  
   
   for (int i = 0;i<dimension;i++)
   {  
-  if (stable)
-  {
-    if( i < dimension/2)
-     pt_out[i]=0; 
-    else
-     pt_out[i]=X_pt[i-dimension/2]; 
-  }
-  else // Unstable case
-  {
-    if( i < dimension/2)
-     pt_out[i]=X_pt[i]; 
-    else
-     pt_out[i]=0;     
-  }
+    if (stable)
+    {
+        if( i < dimension/2)
+            pt_out[i]=0; 
+        else
+            pt_out[i]=X_pt[i-dimension/2]; 
+    }
+    else // Unstable case
+    {
+        if( i < dimension/2)
+            pt_out[i]=X_pt[i]; 
+        else
+            pt_out[i]=0;     
+    }
   }
   
 //    We return the output in LOCAL coordinates 
@@ -66,14 +71,17 @@ IVector localManifold::getPoint( IVector X_pt)
 
 vector < IVector > localManifold::getPointNbd( IVector XY_pt, IVector XY_nbd)
 {
+//     Receives as input a point and neighborhood of lengths n=dim/2 , in local coords
+//     Outputs the point in global coordinates, and the neighborhood in local.
   vector < IVector >  output;
   
-        //    We get the local linearization
+  //    We get the local linearization
   IMatrix A_i = (*pF).A;   
   //    We get the local point offset
   IVector local_pt = getPoint(XY_pt);
   //    We define p_i to be the equilibrium + offset
-  IVector p_i = (*pF).p + A_i*local_pt;    
+  IVector p_i = (*pF).p + A_i*local_pt;   
+  
   // 	We need to translate this neighborhood to get the right errorbounds. 
     IVector Uxy =constructU(XY_pt+XY_nbd);  
   //     We translate back to enclose zero
@@ -95,7 +103,7 @@ IVector localManifold::projectPoint( IVector XY_pt)
 {
 //     Takes an input point in ambient coordinates. 
 //     If at the stable (unstable) manifold, we project the point >> ( pt - equilibrium ) << onto the stable (unstable) eigenspace.
-//     Returns a vector of dimension n = dimension/2
+//     Returns a vector of length  n = dimension/2
   IVector local_coord(dimension/2);
   
   if (stable)
@@ -122,7 +130,12 @@ IVector localManifold::projectPoint( IVector XY_pt)
 
 void localManifold::constructDW( )
 {
-//   
+//   For the chart of the unstable manifold,   W(x)= (x , \omega^u (x)
+//     this function computes the derivative DW. 
+//     (And does the analogous thing for the stable manifold.) 
+//   (Might not be used)
+
+    
   int k= dimension;
   DW = IMatrix(k,k/2);
   
@@ -138,23 +151,23 @@ void localManifold::constructDW( )
   
     for (int i = 0;i<k;i++)
     {
-      for (int j=0;j<k/2;j++)
-      {
-	if (i< k/2)
-	{
-	  if (stable) //     We put the error on the top for stable	    
-	      DW[i][j] = error;
-	    else//     We put the identity on the top for unstable
-	      DW[i][j] = identity[i][j];
-	}
-	else
-	{
-	  if (stable)//     We put the identity on the bottom for stable
-	      DW[i][j] = identity[i-k/2][j];
-	  else //     We put the error on the bottom for unstable
-	      DW[i][j] = error;
-	}
-      }
+        for (int j=0;j<k/2;j++)
+            {
+            if (i< k/2)
+            {
+                if (stable) //     We put the error on the top for stable	    
+                    DW[i][j] = error;
+                else//     We put the identity on the top for unstable
+                    DW[i][j] = identity[i][j];
+            }
+            else
+            {
+                if (stable)//     We put the identity on the bottom for stable
+                    DW[i][j] = identity[i-k/2][j];
+                else //     We put the error on the bottom for unstable
+                    DW[i][j] = error;
+            }
+        }
     }
 //   cout << "DW" << DW << endl;
 }
@@ -162,9 +175,14 @@ void localManifold::constructDW( )
 
 IMatrix localManifold::boundDFU( IVector U)
 {
+    //   Divides U into N^n pieces and bounds DF on it.
+    //      N = subdivisionNUM
+    //      n = dimension/2
+    //   If part of the stable manifold, only divides the stable part / parity for unstable manifold.
+    
   int subdivision_dim = dimension/2;
   
-//   We Create the index list
+//   We create the index list ( either all the stable coords or all the unstable coords) 
   vector < int > index_list(dimension/2);
 
 //     We subdivide the stable part if we are looking at the stable manifold
@@ -184,7 +202,6 @@ IMatrix localManifold::boundDFU( IVector U)
     }
   }
 
-  
 //    We get a bound on the first part
   vector < int > part_list(dimension/2);
   
@@ -207,8 +224,8 @@ IMatrix localManifold::boundDFU( IVector U)
       part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
       if (i < n-1)
       {
-	sum += part_list[i]*N_to_i;
-	N_to_i = N_to_i * N;
+        sum += part_list[i]*N_to_i;
+        N_to_i = N_to_i * N;
       }
     }
 //     We get the part 
@@ -223,6 +240,9 @@ IMatrix localManifold::boundDFU( IVector U)
 
 interval localManifold::boundDFU_proj( IVector U)
 {
+//     spaghetti code modification of boundDFU. 
+//     Used to bound the function D F( \pi_u/s \circ \psi   U ) when determining the bound for L_-.
+    
   int subdivision_dim = dimension/2;
   
   IMatrix pi_1(dimension,dimension);                    // NOTE this line is different 
@@ -293,16 +313,6 @@ interval localManifold::boundDFU_proj( IVector U)
   return MaxDiff;
 }
 
-
-
-// Moved to Utls 
-// // // /////////////// -- From Capinski, Wasieczko-Zajac 2017
-// // // // This function computes the bound on the logarithmic min-norm of a matrix
-// // // interval ml(const IMatrix &A)
-// // // {
-// // // 	capd::vectalg::EuclLNorm<IVector,IMatrix> l;
-// // // 	return -l(-A);
-// // // }
 
 bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
 {

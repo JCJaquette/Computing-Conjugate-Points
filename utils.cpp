@@ -3,6 +3,7 @@
 interval part( interval x, int k, int N)
 {
 //   For an interval subdivided into N parts, we return, the k-th part
+//     0  \leq  k  \leq  N-1
   
   interval y = x.left() + k* ( x.right() - x.left())/N +(x-x.left())/N;
   return y;
@@ -78,7 +79,7 @@ void bubbleSortEigenvectors(DVector &v, DMatrix &A)
 
 DMatrix coordinateChange(DMatrix Df)
 {
-//     Returns sorted eigenvectors. 
+//     Returns eigenvectors sorted  by eigenvalue (from largest (+) to smallest (-) )
   int n=Df.numberOfColumns();
   DVector rE(n), iE(n);         	// real and imaginary parts of eigenvalues
   DMatrix rVec(n,n), iVec(n,n); 	// real and imaginary parts of eigenvectors
@@ -273,6 +274,7 @@ IVector getSubdivision(const IVector &U, const vector < int > &index_list , cons
 
 int int_pow(int base, int exp)
 {
+    // Computes the integer valued (base)^(exp)
  if (exp <0)
  {
    cout << " int_pow :: error :: negative exponent";

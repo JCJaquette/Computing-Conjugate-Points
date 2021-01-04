@@ -21,10 +21,10 @@ private:
   localVField *pF;  
   interval L; // For rate conditions 
   IMatrix DW;
-  int dimension;
+  int dimension;   //  dimension = 2*n
   bool stable; 	
-  int subdivisionNUM ;
-  IVector U_flat_global; // TODO Replace this in how class is called
+  int subdivisionNUM ; // Used to bounding the derivative of the function. Runtime scales like subdivNUM^(n)  
+  IVector U_flat_global; // Used in computing eigenvector error stuff TODO Replace this in how class is called
   interval xi;
   
   IVector eigenvalues;
