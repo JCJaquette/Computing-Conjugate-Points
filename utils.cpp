@@ -293,7 +293,7 @@ int int_pow(int base, int exp)
 
 vector < IMatrix > blockDecompose( const IMatrix M , int dimension)
 {
-//    We decompose a matrix M = [A,B;C,D]
+//    We decompose a square, even-dimensional matrix M = [A,B;C,D]
   vector < IMatrix > ABCD_out ; 
 
   

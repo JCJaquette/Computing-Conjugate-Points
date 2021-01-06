@@ -321,8 +321,8 @@ bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
 //    This check is the same for stable / unstable manifold
   capd::vectalg::EuclNorm<IVector,IMatrix> Norm;
   
-  interval r1 = abs(U[0]).right();
-  interval r2 = abs(U[dimension/2]).right();
+  interval r1 = abs(U[0]).right();              // r_u
+  interval r2 = abs(U[dimension/2]).right();    // r_s
   
   
   vector < IMatrix > ABCD = blockDecompose( DFU,dimension );
@@ -332,11 +332,11 @@ bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
   IMatrix Fyx = ABCD[2]; // C
   IMatrix Fyy = ABCD[3]; // D
   
-  IMatrix C11(dimension/2,dimension/2);
-  IMatrix C22(dimension/2,dimension/2);
+  IMatrix C11(dimension/2,dimension/2);  // mid( diag( Fxx ) )    -- matrix
+  IMatrix C22(dimension/2,dimension/2);  // mid( diag( Fyy ) )    -- matrix
   
-  IVector lambda(dimension/2);
-  IVector beta(dimension/2);
+  IVector lambda(dimension/2);           // mid( diag( Fxx ) )    -- vector
+  IVector beta(dimension/2);             // mid( diag( Fyy ) )    -- vector
   
   for(int i =0;i<dimension/2;i++)
   {
@@ -346,15 +346,16 @@ bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
     beta[i]   = Fyy[i][i].mid();
   }
   
+//   Define 'defect' terms
   IMatrix R11 = Fxx - C11;
   IMatrix R22 = Fyy - C22;
   IMatrix R12 = Fxy;
   IMatrix R21 = Fyx;
   
-  interval lambda_min = - getMax(-lambda);
-  interval beta_max = getMax(beta);
+  interval lambda_min = - getMax(-lambda);  // approx slow unstable eigen
+  interval beta_max = getMax(beta);         // approx slow stable   eigen
   
-  
+//   The local vector field has already moved the equilibrium to zero. 
   IVector F_of_zero = (*pF)(IVector(dimension)) ;
   
   
@@ -374,25 +375,30 @@ bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
   return output;
 }
 
-bool localManifold::checkRateCondition(IVector U_flat ) //TODO Separate this from the isolating block computuation
-{
-//    We calculate mu_1, mu_2, xi
+// bool localManifold::checkRateCondition(IVector U_flat ) 
+// {
+// //     NO LONGER USED I THINK (1/6/2021)
+// //    We calculate mu_1, mu_2, xi
+// 
+//   IVector U = constructU( U_flat);
+//   
+// //   cout << " U = " << U << endl;
+// 
+//   //   M  is DF[U]
+//   IMatrix M = boundDFU(U);
+//   
+// //   abort();
+//   
+//   return checkRateCondition(M);
+// }
 
-  IVector U = constructU( U_flat);
-  
-//   cout << " U = " << U << endl;
 
-  //   M  is DF[U]
-  IMatrix M = boundDFU(U);
-  
-  return checkRateCondition(M);
-}
-
-
-bool localManifold::checkRateCondition(IMatrix DFU) //TODO Separate this from the isolating block computuation
+bool localManifold::checkRateCondition(IMatrix DFU) 
 {
     
   vector < IMatrix > ABCD = blockDecompose( DFU,dimension );
+//   DFU = [ A B ]
+//         [ C D ]
   
 //   We block decompose our function
   IMatrix Fxx ;// A
@@ -425,25 +431,23 @@ bool localManifold::checkRateCondition(IMatrix DFU) //TODO Separate this from th
   capd::vectalg::EuclLNorm<IVector,IMatrix> l;
   capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;
   
+//   NOTE   The calculation here for mu and xi could be improved (maybe by 30%?) 
+//          if we were to subdivide Fxx, Fxy,Fyx,Fyy before taking the norm.
   
   interval mu = l(Fyy)+euclNorm(Fyx)/L;
-//   interval mu_2 = l(Fyy)+euclNorm(Fxy)/L;
   
-  xi = ml(Fxx) - L*euclNorm(Fxy); //This is a class variable. 
+  // xi - is a class variable. 
+  xi = ml(Fxx) - L*euclNorm(Fxy); 
   
-//   cout << " l(Fyy) = " << l(Fyy)<< endl ;
-//   cout << " euclNorm(Fyx) = " << euclNorm(Fyx)<< endl ;
   
   cout << "  mu  = " << mu << endl ;
   cout << "  xi  = " << xi << endl ;
-  
   
   bool conditions ;
   
   bool condition_1 = (mu <0);
   bool condition_2 = (0< xi);
-//   bool condition_3 = (mu_2< xi);
-  
+   
   if ( condition_1 && condition_2 )
     conditions = 1;
   else 

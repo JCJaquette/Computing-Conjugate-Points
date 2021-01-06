@@ -24,7 +24,7 @@ private:
   int dimension;   //  dimension = 2*n
   bool stable; 	
   int subdivisionNUM ; // Used to bounding the derivative of the function. Runtime scales like subdivNUM^(n)  
-  IVector U_flat_global; // Used in computing eigenvector error stuff TODO Replace this in how class is called
+  IVector U_flat_global; // Used in computing eigenvector error stuff NOTE Code could be improved by using this variable when checking conditions
   interval xi;
   
   IVector eigenvalues;
@@ -54,7 +54,7 @@ public:
   
   void constructDW( ); 
   
-  bool checkRateCondition(IVector U_flat );
+//   bool checkRateCondition(IVector U_flat );
   bool checkRateCondition(IMatrix DFU);
   
   vector < IVector > getPointNbd( IVector XY_pt, IVector XY_nbd);

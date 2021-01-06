@@ -25,13 +25,19 @@ using namespace capd::matrixAlgorithms;
 
 int test(int dimension,vector < double > All_parameters)
 {
+//  //  This program has 5 major parts: 
+//  //     (i)      Compute a standing wave \varphi // // // //
+//  //     (ii)     Determine L_-                   // // // //
+//  //     (iii)    Calculate a frame matrix        // // // //
+//  //     (iv)     Prove no conj pts past L_+      // // // //
+//  //     (v)      Count conjugate points          // // // //
   clock_t begin = clock();
   
   int order = 20;
   
   int manifold_subdivision = 15;
   int shots = 9;
-  int multiple_newton_steps = 0;
+  int multiple_newton_steps = 1;
   int single_newton_steps = 20;
  
   int grid = 14; // count zeros
@@ -52,6 +58,9 @@ int test(int dimension,vector < double > All_parameters)
   
   bool CHECK_MANIFOLD 		    = 1;
   bool CHECK_CONNECTING_ORBIT 	= 1;
+  
+//  //     (i)      Compute a standing wave \varphi // // // //
+
 
   vector <IMap> functions = constructFunctions(  dimension,All_parameters);
   vector <IFunction> energy_vec   = constructEnergy(dimension,  All_parameters);
@@ -274,6 +283,14 @@ int test(int dimension,vector < double > All_parameters)
 
 // return -5;
 
+
+
+
+
+//  //     (ii)     Determine L_-                   // // // //
+//  //     (iii)    Calculate a frame matrix        // // // //
+
+
 //  BEGIN globalize manifold
 //    -- We calculate the norm bounds 
 // IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
@@ -296,14 +313,22 @@ int test(int dimension,vector < double > All_parameters)
       Y_nbd[i]  = XY_nbd[i+dimension/2]; 
   }
   
-
   
   IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, T-L_plus,  STABLE) ;
   
   
   cout << " endPoint_LPlus = " << endPoint_LPlus -p_s << endl;
   cout << " endpoint eig = " << gauss(A_s,endPoint_LPlus -p_s) << endl;
-//   abort();
+  
+  
+  
+  
+  
+  
+  
+  
+//  //     (iv)     Prove no conj pts past L_+      // // // //
+//  //     (v)      Count conjugate points          // // // //
   
   int unstable_e_values = E_u.frameDet(T,L_plus,grid,endPoint_LPlus-p_s);
     
