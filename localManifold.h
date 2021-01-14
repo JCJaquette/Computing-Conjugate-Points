@@ -19,7 +19,7 @@ class localManifold
 {
 private:
   localVField *pF;  
-  interval L; // For rate conditions 
+  interval L; // This cooresponds to \vartheta in the paper. It is the angle of our cones. 
   IMatrix DW;
   int dimension;   //  dimension = 2*n
   bool stable; 	

@@ -27,8 +27,8 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
   
   cout << " Uxy = " << Uxy << endl;
   
-//   cout << "Eigenvector = " << EigenVector_component << endl;
-//   cout << "A           = " << A_i[1] << endl;
+  cout << "Eigenvector = " << EigenVector_component << endl;
+  cout << "A           = " << A_i[1] << endl;
   
   for (int i = 0 ; i< dimension;i++)
   {

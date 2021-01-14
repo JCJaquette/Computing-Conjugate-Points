@@ -33,6 +33,9 @@ int test(int dimension,vector < double > All_parameters)
 //  //     (v)      Count conjugate points          // // // //
   clock_t begin = clock();
   
+  
+  
+  
   int order = 20;
   
   int manifold_subdivision = 15;
@@ -67,6 +70,73 @@ int test(int dimension,vector < double > All_parameters)
   IMap f             = functions[0]; // For unstable manifold
   IMap f_minus       = functions[1]; // For stable manifold
   IMap f_linearize   = functions[2]; // For non-autonomous system
+  
+//   int noParam = All_parameters.size();
+//     IMap FFF(f,dimension,dimension,3,2);
+//     f.setDegree(2);
+// 
+// 
+//     
+//   IVector x(4);
+//   x[0]=0.00001;
+//   x[1]=0.00001;
+//   IMatrix Df(4,4);
+//   IHessian Hf(4,4);
+//   // simultaneous computation of value, derivative and normalized hessian
+//   // NOTE! Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
+//   IVector y = f(x,Df,Hf);
+//     // print value and derivative of f at x
+//   cout.precision(17);
+//   cout << "y=" << y << endl;
+//   cout << "Df=" << Df << endl;
+//   // print normalized second order derivatives
+//   for(int fi=0;fi<dimension;++fi)
+//     for(int dx1=0;dx1<dimension;++dx1)
+//       for(int dx2=dx1;dx2<dimension;++dx2)
+//         cout << "Hf(" << fi << "," << dx1 << "," << dx2 << ")=" << Hf(fi,dx1,dx2) << endl;
+//       
+//       
+//     IHessian DDDG_small = compressTensor(  Hf , dimension);    
+//     interval tensor_norm = tensorNorm( DDDG_small , dimension/2);
+  
+  
+  
+//       return 0;
+  ////////////////////////////////////
+  
+  
+//   int dimIn=4, dimOut=2, noParam=5;
+//   // this is the maximal order of derivative we request
+//   // default value is set to 1 if the argument is skipped
+//   int maxDerivativeOrder = 2;
+//   IMap fff(_f,dimIn,dimOut,noParam,maxDerivativeOrder);
+//   // set parameter value that encloses 1/9, 2/9, etc
+//   for(int i=0;i<noParam;++i)
+//     fff.setParameter(i, interval(i+1)/interval(9));
+//   interval v[] = {2,3,4,5};
+//   IVector x(dimIn,v);
+//   // declare an object for storing derivative and hessian
+//   
+//   
+//   IMatrix Df(dimOut,dimIn);
+//   IHessian Hf(dimOut,dimIn);
+//   // simultaneous computation of value, derivative and normalized hessian
+//   // NOTE! Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
+//   IVector y = f(x,Df,Hf);
+//   // print value and derivative of f at x
+//   cout.precision(17);
+//   cout << "y=" << y << endl;
+//   cout << "Df=" << Df << endl;
+//   // print normalized second order derivatives
+//   for(int fi=0;fi<dimOut;++fi)
+//     for(int dx1=0;dx1<dimIn;++dx1)
+//       for(int dx2=dx1;dx2<dimIn;++dx2)
+//         cout << "Hf(" << fi << "," << dx1 << "," << dx2 << ")=" << Hf(fi,dx1,dx2) << endl;
+
+// return -10;
+  ////////////////////////////////////
+  
+  
   
   IFunction energy   = energy_vec[0];  // Not sure if this gets used
   IFunction energy_projection   = energy_vec[1];

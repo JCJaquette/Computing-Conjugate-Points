@@ -474,3 +474,50 @@ IMatrix identityMat( int n){
     }
     return eye;
 }
+
+interval tensorNorm( IHessian DDDG , int n){
+    
+//     Matrix list 
+    vector < IMatrix > Matrix_list;
+    IMatrix A_local(n,n);
+    
+    for (int k = 0 ; k  < n;k++){// Outer loop
+        for (int i = 0 ; i  < n;i++){ 
+            for (int j = 0 ; j  < n;j++){
+                A_local[i][j] = DDDG(i,j,k);
+            }
+        }
+        Matrix_list.push_back(A_local);
+    }
+    
+    IVector sliced_norms(n);
+    IMatrix A_combo(n,n);
+    
+    for (int i = 0 ; i  < n;i++){ 
+        sliced_norms[i] = euclNorm(Matrix_list[i]);
+        A_combo += abs(Matrix_list[i]);
+        
+    }
+    //     A_combo = A_combo.right();
+//     cout << " A_combo  = " << A_combo  << endl;
+    
+    interval out = euclNorm(sliced_norms);
+    
+    cout << " Slice estimate  = " << out << endl;
+//     cout << " Combo estimate  = " << euclNorm(A_combo) << endl;
+    return out;
+}
+
+IHessian compressTensor( IHessian DDDG , int dimension){    
+    IHessian DDDG_out(dimension/2,dimension/2);
+    
+    for (int i = 0 ; i  < dimension/2;i++){
+        for (int j = 0 ; j  < dimension/2;j++){
+            for (int k = 0 ; k  < dimension/2;k++){
+                DDDG_out(i,j,k) = DDDG(i+dimension/2,j,k);
+            }
+        }
+    }
+
+    return DDDG_out;
+}

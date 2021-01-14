@@ -44,5 +44,7 @@ interval ml(const IMatrix &A);
  void print( vector <IMatrix> matrix_list);
  
  IMatrix symplecticNormalization(IMatrix A, int dimension );
+ interval tensorNorm( IHessian DDDG , int dimension);
+ IHessian compressTensor( IHessian DDDG , int dimension);
   
 #endif

@@ -331,7 +331,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   
   
   
-//    TODO THIS SHOULD BE A ZERO NBD
+//    NOTE THIS SHOULD BE A ZERO NBD
   IVector zero_nbd(dimension/2);
   
   IVector G_x = Gxy( X_pt, zero_nbd, T, 0); 
@@ -373,7 +373,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 
   IVector XY_out_nbd = gauss(DG,G); 
   
-// //   TODO Make a Krawczyk version of this!!
+// //   NOTE Make a Krawczyk version of this!!
 // //   
   //     Get approximate inverse
     IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DG)));
@@ -453,7 +453,7 @@ vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> &points, vect
   }
   IVector XY_out_nbd = gauss(DG,G); 
   
-//   cout << " Hello = "<< endl;
+
 //   TODO Reimpliment
   IVector initial_vector = Construct_Initial_Vector(points ,neighborhoods,integration_time,0);
   IVector initial_nbd    = Construct_Initial_Vector(points ,neighborhoods,(integration_time+time_nbd),1);

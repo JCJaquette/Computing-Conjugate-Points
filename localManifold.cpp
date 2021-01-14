@@ -298,8 +298,8 @@ interval localManifold::boundDFU_proj( IVector U)
       part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
       if (i < n-1)
       {
-	sum += part_list[i]*N_to_i;
-	N_to_i = N_to_i * N;
+        sum += part_list[i]*N_to_i;
+        N_to_i = N_to_i * N;
       }
     }
 //     We get the part 
@@ -508,12 +508,44 @@ interval localManifold::ErrorEigenfunction( void)
   IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ]           *pi_1;
   
   
+//   We compute the third derivative
+  // // // // // // // // // // // // // // // // // // // // // // // // //   
+  (*(*pF).f).setDegree(2);
+  
+  IMatrix Df(dimension,dimension);
+  IHessian Hf(dimension,dimension);
+  
+  // simultaneous computation of value, derivative and normalized hessian
+  // NOTE! Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
+  IVector y = (*(*pF).f)( (*pF).p +  pi1_A*U   ,Df,Hf);
+    // print value and derivative of f at x
+//   cout.precision(17);
+//   cout << "y=" << y << endl;
+//   cout << "Df=" << Df << endl;
+// //   // print normalized second order derivatives
+// //   for(int fi=0;fi<dimension;++fi)
+// //     for(int dx1=0;dx1<dimension;++dx1)
+// //       for(int dx2=dx1;dx2<dimension;++dx2)
+// //         cout << "Hf(" << fi << "," << dx1 << "," << dx2 << ")=" << Hf(fi,dx1,dx2) << endl;
+      
+      
+  IHessian DDDG_small = compressTensor(  Hf , dimension);    
+  interval tensor_norm = tensorNorm( DDDG_small , dimension/2);
+    
+  (*(*pF).f).setDegree(1);
+//   abort();
+// // // // // // // // // // // // // // // // // // // // // // // // //   
+  
+  
+  
   
   
   interval C_G = euclNorm(D2G_U - D2G_p);
   
 //   cout << " D2G_U = " << D2G_U << endl;
   
+  cout << " U " << U << endl; 
+  cout << " U_flat_global " << U_flat_global << endl; 
   
   cout << " C_G  = " << C_G << endl;  
   
@@ -521,14 +553,16 @@ interval localManifold::ErrorEigenfunction( void)
   
   cout << " C_G!!  = " << C_G_new << endl;  
   
-  C_G = C_G_new;
+  cout << " C_G with D^3 G   = " << tensor_norm*euclNorm(abs(U_flat_global)) << endl;  
+  
+  C_G = right( tensor_norm*euclNorm(abs(U_flat_global)) );  // TODO  Make sure that r_u is computed correctly here! 
   
 // //   cout << " C_G (new) = " << euclNorm(D3G_ru) << endl;  
   
   interval K = computeK(); 
 
   
-  interval eta = xi; // This needs xi to already have been computed. 
+  interval eta = xi; // This needs xi to already have been computed. TODO Get rid of this variable!
   interval norm_A0 = euclNorm((*pF).A);
   
   cout << " eta  = " << eta << endl;  
@@ -629,6 +663,8 @@ void localManifold::ErrorEigenfunctionTotal_minus_infty( void){
     IMatrix eye = identityMat(dimension/2);
     
     Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
+//         cout << "E_u = " << E_u << endl;
+//         cout << "E_s = " << E_s << endl;
      
     cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
 //     cout << "E_s = " << E_s << endl;
