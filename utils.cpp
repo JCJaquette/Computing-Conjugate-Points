@@ -95,6 +95,9 @@ DMatrix coordinateChange(DMatrix Df)
 
 void plot(interval x, interval y,ofstream &file)
 {
+//     Given two intervals x & y, writes to a file 
+//     the average left end points, and 
+//     the average right end points.
     file << (x.rightBound()+x.leftBound())/2. <<" ";
     file << (y.rightBound()+y.leftBound())/2. <<" ";
     file << (x.rightBound()-x.leftBound())/2. <<" ";

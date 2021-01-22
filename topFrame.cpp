@@ -17,7 +17,7 @@ void topFrame::initialize( void)
   constructTimeSeries();
   constructFrameSeries();
   constructDetSeries(); //TODO
-  improveDetBound();   //TODO
+//   improveDetBound();   //TODO
 }
 
 
@@ -190,10 +190,10 @@ void topFrame::adjugate( const IMatrix &A , IMatrix &matrix_out)
   
 }
 
-void topFrame::improveDetBound( void)
-{
-//   If the determinent is bounded away from zero, then we replace the det value by the hull of the endpoints
-}
+// void topFrame::improveDetBound( void)
+// {
+// //   If the determinent is bounded away from zero, then we replace the det value by the hull of the endpoints
+// }
 
 
 void topFrame::makePlot( void)
@@ -203,17 +203,13 @@ void topFrame::makePlot( void)
   file.open("plot_det.txt");
   file.precision(16);
 
-  
-  
-
   for(int i_time=0;i_time<series_length;i_time++)
   {
+//       Plots the determinent-value on the whole time interval. 
       plot(time_series[i_time],det_series[i_time][2],file);
-      
   }
   
   file.close();
-  
 }
 
 vector<int> topFrame::countZeros( void)
@@ -266,10 +262,11 @@ vector<int> topFrame::countZeros( void)
         {
         //   	if derivative is bounded away from zero
             derivative = calculateDerivative(frame_series[i_time][2], frame_series[i_time][3]);
-            if ((derivative>0)||(derivative<0))
-            zero_count++;
+            if ((derivative>0)||(derivative<0)){
+                zero_count++; 
+                cout << " Conjugate Point at x = " << time_series[i_time] << endl;}
             else
-            failure_count ++;
+                failure_count ++;
         }
         else
         {

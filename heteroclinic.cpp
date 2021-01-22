@@ -48,16 +48,18 @@ int test(int dimension,vector < double > All_parameters)
   interval L_plus = 13.55;
   interval T ;
   if (dimension ==4 ){
-    T = 16.3; // n=2
+    T = 16.2; // n=2
     L_plus = 13;
-    stepsize =6;
+    stepsize =5;
   }
   else{ 
     T = 20.; // n=3
     L_plus = 13.55;
-//     L_plus = 14;
+    L_plus = 14;
     stepsize =6;
   }
+  
+  bool USE_MULTIPLE_SHOOTING = 0;
   
   bool CHECK_MANIFOLD 		    = 1;
   bool CHECK_CONNECTING_ORBIT 	= 1;
@@ -71,70 +73,7 @@ int test(int dimension,vector < double > All_parameters)
   IMap f_minus       = functions[1]; // For stable manifold
   IMap f_linearize   = functions[2]; // For non-autonomous system
   
-//   int noParam = All_parameters.size();
-//     IMap FFF(f,dimension,dimension,3,2);
-//     f.setDegree(2);
-// 
-// 
-//     
-//   IVector x(4);
-//   x[0]=0.00001;
-//   x[1]=0.00001;
-//   IMatrix Df(4,4);
-//   IHessian Hf(4,4);
-//   // simultaneous computation of value, derivative and normalized hessian
-//   // NOTE! Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
-//   IVector y = f(x,Df,Hf);
-//     // print value and derivative of f at x
-//   cout.precision(17);
-//   cout << "y=" << y << endl;
-//   cout << "Df=" << Df << endl;
-//   // print normalized second order derivatives
-//   for(int fi=0;fi<dimension;++fi)
-//     for(int dx1=0;dx1<dimension;++dx1)
-//       for(int dx2=dx1;dx2<dimension;++dx2)
-//         cout << "Hf(" << fi << "," << dx1 << "," << dx2 << ")=" << Hf(fi,dx1,dx2) << endl;
-//       
-//       
-//     IHessian DDDG_small = compressTensor(  Hf , dimension);    
-//     interval tensor_norm = tensorNorm( DDDG_small , dimension/2);
-  
-  
-  
-//       return 0;
-  ////////////////////////////////////
-  
-  
-//   int dimIn=4, dimOut=2, noParam=5;
-//   // this is the maximal order of derivative we request
-//   // default value is set to 1 if the argument is skipped
-//   int maxDerivativeOrder = 2;
-//   IMap fff(_f,dimIn,dimOut,noParam,maxDerivativeOrder);
-//   // set parameter value that encloses 1/9, 2/9, etc
-//   for(int i=0;i<noParam;++i)
-//     fff.setParameter(i, interval(i+1)/interval(9));
-//   interval v[] = {2,3,4,5};
-//   IVector x(dimIn,v);
-//   // declare an object for storing derivative and hessian
-//   
-//   
-//   IMatrix Df(dimOut,dimIn);
-//   IHessian Hf(dimOut,dimIn);
-//   // simultaneous computation of value, derivative and normalized hessian
-//   // NOTE! Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
-//   IVector y = f(x,Df,Hf);
-//   // print value and derivative of f at x
-//   cout.precision(17);
-//   cout << "y=" << y << endl;
-//   cout << "Df=" << Df << endl;
-//   // print normalized second order derivatives
-//   for(int fi=0;fi<dimOut;++fi)
-//     for(int dx1=0;dx1<dimIn;++dx1)
-//       for(int dx2=dx1;dx2<dimIn;++dx2)
-//         cout << "Hf(" << fi << "," << dx1 << "," << dx2 << ")=" << Hf(fi,dx1,dx2) << endl;
 
-// return -10;
-  ////////////////////////////////////
   
   
   
@@ -204,96 +143,130 @@ int test(int dimension,vector < double > All_parameters)
     vector <IVector> neighborhoods  = Guess[1];
     interval integration_time = 2*T/(shots+1);
 //   END we construct an initial guess   
+    
+    
+    
+    
+// //     // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
+// //     cout.precision(10);
+// //     IVector Zero_n(dimension/2);
+// //     vector < IVector > Unstable_Global_pt_Coord =   localUnstable.getPointNbd( Guess[0][0], Zero_n);
+// //     vector < IVector > Stable_Global_pt_Coord   =   localStable.getPointNbd( Guess[0][shots+1], Zero_n);
+// //     cout << endl;
+// //     cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
+// //     cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
+// //     cout << endl;
+// //     cout.precision(6);
+// //     // // // // //    NOTE 
+    
+    
   
 // // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
 //   BEGIN Testing integration of middle points
   
+//     We define the XY_pt that will get used in the single-shooting newton's method. 
+  IVector XY_pt(dimension);  
   
   boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots );
   
   
-//   IVector XY_pt_T(dimension);  
-//   for (int i = 0 ; i < dimension / 2 ; i++)
-//   {
-//       XY_pt_T[i] = mid(points[0][i]);
-//       XY_pt_T[i+dimension/2] = mid( points.back()[i]);
-//   }
-//   interval T_new = BVP.FindTime(  XY_pt_T,  T);
-//   
-//   
-//   cout << " T old = " << T << endl; 
-//   cout << " T new = " << T_new << endl; 
-//   
-//   T = T_new;
-//   integration_time = 2*T/(shots+1);
-//   Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
-//   points         = Guess[0];
-//   neighborhoods  = Guess[1];
   
   
-//    We do the newton method
-  vector < IVector > regions;
-  interval time_nbd =0;
-  for (int i = 0 ; i<multiple_newton_steps ;i++)
-  {
-      integration_time = integration_time.mid();
-      cout << " integration_time " << integration_time <<endl;
-      regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
-      for (unsigned j=0;j<regions.size();j++)
-          points[j] = midVector(regions[j]);
-  }
-  
-  interval multiplier = 0.;
-  time_nbd = 0 * (integration_time - integration_time.mid());
-  
-  cout << " Time nbd " << time_nbd <<endl;
-  integration_time = integration_time.mid();
-  for (unsigned j=0;j<regions.size();j++){
-    neighborhoods[j] = multiplier *(regions[j] -  points[j]);
-  }
-
-  for (unsigned i = 0 ; i < regions.size();i++)
-        {
-            cout << " neighborhoods["<<i<<"] = " << neighborhoods[i] << endl;
-        }
-  cout << " Verifying .... " << endl;      
-  regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
-  cout << " Time nbd " << integration_time - integration_time.mid() <<endl;
-  
-    if (multiple_newton_steps>0)
+    
+    IVector XY_pt_T(dimension);  
+    for (int i = 0 ; i < dimension / 2 ; i++)
     {
-        cout << endl << "Final Guess " << endl;
-        
-        for (unsigned i = 0 ; i < regions.size();i++)
-        {
-//             cout << " Region["<<i<<"] = " << regions[i] << endl;
-        }
-        
-        cout << endl;
-        
-            for (unsigned i = 0 ; i < regions.size();i++)
-        {
-            cout << " Region["<<i<<"] width = " << regions[i] - midVector(regions[i]) << endl;
-        }
-        cout << "done testing " << endl;
+        XY_pt_T[i] = mid(points[0][i]);
+        XY_pt_T[i+dimension/2] = mid( points.back()[i]);
     }
-//     return -5;
+    interval T_new = BVP.FindTime(  XY_pt_T,  T);
     
-  cout << " Old T = " << T << endl;
-  T = (shots+1)*integration_time/2;
-  cout << " New T = " << T << endl;
     
-  IVector XY_pt(dimension);  
-  for (int i = 0 ; i < dimension / 2 ; i++)
-  {
-      XY_pt[i] = mid(regions[0][i]);
-      XY_pt[i+dimension/2] = mid( regions.back()[i]);
-  }
+    cout << " T old = " << T << endl; 
+    cout << " T new = " << T_new << endl; 
+    
+    
+    T = T_new;
+    integration_time = 2*T/(shots+1);
+    //   Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
+    //   points         = Guess[0];
+    //   neighborhoods  = Guess[1];
+    
+    
+    if (USE_MULTIPLE_SHOOTING==1){
+    
+    
+    //    We do the newton method
+    vector < IVector > regions;
+    interval time_nbd =0;
+    for (int i = 0 ; i<multiple_newton_steps ;i++)
+    {
+        integration_time = integration_time.mid();
+        cout << " integration_time " << integration_time <<endl;
+        regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
+        for (unsigned j=0;j<regions.size();j++)
+            points[j] = midVector(regions[j]);
+    }
+    
+    interval multiplier = 0.;
+    time_nbd = 0 * (integration_time - integration_time.mid());
+    
+    cout << " Time nbd " << time_nbd <<endl;
+    integration_time = integration_time.mid();
+    for (unsigned j=0;j<regions.size();j++){
+        neighborhoods[j] = multiplier *(regions[j] -  points[j]);
+    }
+
+    for (unsigned i = 0 ; i < regions.size();i++)
+            {
+                cout << " neighborhoods["<<i<<"] = " << neighborhoods[i] << endl;
+            }
+    cout << " Verifying .... " << endl;      
+    regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
+    cout << " Time nbd " << integration_time - integration_time.mid() <<endl;
+    
+        if (multiple_newton_steps>0)
+        {
+            cout << endl << "Final Guess " << endl;
+            
+            for (unsigned i = 0 ; i < regions.size();i++)
+            {
+    //             cout << " Region["<<i<<"] = " << regions[i] << endl;
+            }
+            
+            cout << endl;
+            
+                for (unsigned i = 0 ; i < regions.size();i++)
+            {
+                cout << " Region["<<i<<"] width = " << regions[i] - midVector(regions[i]) << endl;
+            }
+            cout << "done testing " << endl;
+        }
+    //     return -5;
+        
+    cout << " Old T = " << T << endl;
+    T = (shots+1)*integration_time/2;
+    cout << " New T = " << T << endl;
   
-  cout << " XY_pt = " << XY_pt << endl;
+  
+    
+    
+    for (int i = 0 ; i < dimension / 2 ; i++)
+    {
+        XY_pt[i] = mid(regions[0][i]);
+        XY_pt[i+dimension/2] = mid( regions.back()[i]);
+    }
+    
+    cout << " XY_pt = " << XY_pt << endl;
 
   //   END Testing integration of middle points
+  
+  }// Multiple Shooting 
+  else{
+      XY_pt = XY_pt_T;
+  }
+  
   
   
   
@@ -336,6 +309,24 @@ int test(int dimension,vector < double > All_parameters)
   cout << " Answ T       = " << T<< endl;
   cout << " Answ XY pt   = " << XY_pt<< endl;
   cout << " Answ XY nbd  = " << XY_nbd<< endl;
+  
+  
+// // // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
+// //   cout.precision(10);
+// // IVector X_pt_final(dimension/2); 
+// // IVector Y_pt_final(dimension/2);
+// //   for( int i = 0 ; i < dimension/2;i++){
+// //       X_pt_final[i] = XY_pt[i];
+// //       Y_pt_final[i] = XY_pt[i+dimension/2];
+// //   }
+// // Unstable_Global_pt_Coord =   localUnstable.getPointNbd( X_pt_final, Zero_n);
+// // Stable_Global_pt_Coord   =   localStable.getPointNbd( Y_pt_final, Zero_n);
+// // cout << endl;
+// // cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
+// // cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
+// // cout << endl;
+// // cout.precision(6);
+// // // // // // //    NOTE 
 
 //   TODO We need to make sure that our initial conditions are inside the verified manifold.
   if (BVP.checkProof())
@@ -351,7 +342,7 @@ int test(int dimension,vector < double > All_parameters)
     
 //      END single shooting 
 
-// return -5;
+
 
 
 
@@ -365,7 +356,7 @@ int test(int dimension,vector < double > All_parameters)
 //    -- We calculate the norm bounds 
 // IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
 //   IVector norm_bounds = BVP.NormBound(XY,T);
-//   cout << "Norm Bounds = " << norm_bounds << endl;
+// //   cout << "Norm Bounds = " << norm_bounds << endl;
   
   
   cout << endl << "Globalizing Manifold ... " << endl;
@@ -561,23 +552,26 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4; // TESTING DIMENSION
+	    dimension=6; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
             Input.push_back(1); // a
-            Input.push_back(.95);// b 
+            Input.push_back(.97);// b 
             Input.push_back(.05);// c
             test(dimension,Input);
         }
         else if (dimension ==6)
         {            
             Input.push_back(1); // b1
-            Input.push_back(.98);// b2 
-            Input.push_back(.95);// b3
+            Input.push_back(.97);// b2              0.98 previous
+            Input.push_back(.95);// b3              0.95 previous
                         
-            Input.push_back(.05);// c12                         (.050,.015)                     L_+ = 13.55
-            Input.push_back(.015);// c23         0 - unstable   (-.015,.050) & (-.015,-.050)    L_+ = 14
+            Input.push_back(-.05);// c12                         (.050,.015)                     L_+ = 13.55
+            Input.push_back(-.015);// c23         0 - unstable   (-.015,.050) & (-.015,-.050)    L_+ = 14
+            
+            //  Finding computational parameters which get (+.015,-.050) to work is difficult / not yet successful. 
+            //   -- For this, it is probably best to perturb up from the n=2 case.            
             
 
             test(dimension,Input);

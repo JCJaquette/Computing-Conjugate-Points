@@ -4,6 +4,8 @@
  
  void boundaryValueProblem::Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IVector &vector_out, IMatrix &derivative_out)  
  {
+     //     <<>> Multiple Shooting Function <<>>
+     
 //      we assume that coord_pt & coord_nbd are IVectors of size (dimension-1)
 //      vector_out and derivative_out are the output, should not have dimension set 
 //      TODO Not sure what to do about derivative!!
@@ -94,6 +96,7 @@ derivative_out = output_matrix;
 
 IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) 
 { 
+    //     <<>> Single Shooting Function <<>>
   
   //   We Create our solvers 
   ITaylor* solver;
@@ -137,7 +140,8 @@ IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, boo
 
 IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) // TODO Point separated copy
 {
-  
+  //     <<>> Single Shooting Function <<>>
+    
   //   We Create our solvers 
   ITaylor* solver;
   localManifold *pManifold;
@@ -185,10 +189,18 @@ IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bo
 
 interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
 {
-  int repetitions = 10;
+    //     <<>> Single Shooting Function <<>>
     
-  vector < IVector > XY_vect_pt  = breakUpXY_gen( XY_pt );
+//     For fixed points x and y on the unstable/stable manifolds, 
+//     this function finds T such that the distance || Phi(x,T) - Phi(y,T) || is minimized 
   
+//     We use 10 steps of a Newton's method. 
+    int repetitions = 10;
+//     If Newton's method does not decrease the distance, we return the original T.
+    interval T_original = T; 
+    
+//     We get the input points on the manifolds. 
+  vector < IVector > XY_vect_pt  = breakUpXY_gen( XY_pt );
   
   IVector X_pt = XY_vect_pt[0];
   IVector Y_pt = XY_vect_pt[1];
@@ -196,57 +208,78 @@ interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
   
 //   IVector X_mid = XY_vect[2];
   
+//   Flowed points
   IVector phi_T_x ;
   IVector phi_T_x_deriv ;
+//   First Derivative
   IVector phi_T_y ;
   IVector phi_T_y_deriv ;
+//   Second Derivative
+  IMatrix phi_T_x_DD;
+  IMatrix phi_T_y_DD;
+  
+  interval distance_D0 =0;
+  interval distance_D1 =0;
+  interval distance_D2 =0;
   
   IVector zero(dimension/2);
+  interval original_dist;
   
   for (int i = 0 ; i< repetitions;i++)
   {
-//     cout << " T = " << T << endl;
-    phi_T_x = Gxy( X_pt, zero,T, 0);
-    phi_T_x_deriv = (*pf)(phi_T_x);
+//   We try to minimize   || Phi(x,T)-Phi(y,-T) ||^2 /2
+//   let Gx = Phi(x,T)   and Gy = Phi(y,-T)
+      
+//   This is equivalent to finding a zero of 
+//      F(T) =  \sum_{1<=i<=2n} ( Gx _i - Gy _i) ( f( Gx )_i -  f( Gy)_i )
+      
+//   We use a Newton's method, having defined F'(T) as 
+//      F'(T) = \sum_{1<=i<=2n} ( f( Gx )_i -  f( Gy)_i )^2 + ( Gx _i - Gy _i) ( [ DF( Gx)f( Gx )]_i -  [ DF( Gy)f( Gy )]_i )
+
+//       We get the flowed points and their 1st and 2nd derivatives. 
+    phi_T_x         = Gxy( X_pt, zero,T, 0);
+    phi_T_x_deriv   = (*pf)(phi_T_x);
+    phi_T_x_DD      = (*pf)[phi_T_x];
     
-    phi_T_y = Gxy( Y_pt,zero, T, 1);
-    phi_T_y_deriv = (*pf)(phi_T_y);
+    phi_T_y         = Gxy( Y_pt,zero, T, 1);
+    phi_T_y_deriv   = -(*pf)(phi_T_y); // Negative, because we flow backwards
+    phi_T_y_DD      = -(*pf)[phi_T_y]; // Negative, because we flow backwards
     
-//     cout << "Phi_T(x) = " << phi_T_x << endl;
-//     cout << "Phi_T(y) = " << phi_T_y << endl;
+//     We take the difference between the the Flowed points 
     
-    interval sum = phi_T_x[0] + phi_T_x[1];
-    interval D_sum = phi_T_x_deriv[0] + phi_T_x_deriv[1];
+    IVector diff_Val    = phi_T_x   -phi_T_y;
+    IVector diff_D1     = phi_T_x_deriv - phi_T_y_deriv;
+    IVector diff_D2     = phi_T_x_DD*phi_T_x_deriv - phi_T_y_DD*phi_T_y_deriv;  
     
-    interval sum1=0;// =  phi_T_x[0] + phi_T_x[2];
-    interval sum2 =0;//  phi_T_y[0] + phi_T_y[2];
-    interval D_sum1 =0;// phi_T_x_deriv[0] + phi_T_x_deriv[2];
-    interval D_sum2 =0;// phi_T_y_deriv[0] + phi_T_y_deriv[2];
+    distance_D0 =0;
+    distance_D1 =0;
+    distance_D2 =0;
     
     for (int i = 0; i<dimension;i++)
     {
-      sum1 	= sum1 	 + phi_T_x[i];
-      sum2 	= sum2 	 + phi_T_y[i];
-      D_sum1 	= D_sum1 + phi_T_x_deriv[i];
-      D_sum2 	= D_sum2 + phi_T_y_deriv[i];
+        distance_D0 += sqr(diff_Val[i]);
+        distance_D1 += diff_Val[i]*diff_D1[i];
+        distance_D2 += sqr(diff_D1[i])+ diff_Val[i]*diff_D2[i];
     }
-      
     
-    interval diff   = sum1 - sum2;
-    interval D_diff = D_sum1 + D_sum2;
+    if (i==0){
+        original_dist = distance_D0;}
     
-//     cout << " Diff = " << diff << endl;
-//     cout << " D_diff = " << D_diff << endl;
+    T = T - (1/distance_D2.mid())*distance_D1.mid();
     
-//     T = T - (1/D_sum)*(sum-1);
-    T = T - (1/D_diff)*(diff);
     T=T.mid();
 
-
   }
-//       cout << "Phi_T (x)      = " << phi_T_x << endl;
-  cout << " T   = " << T << endl;
-  return T;
+  
+  if (original_dist < distance_D0)
+    {
+      return T_original;
+    }
+  else
+    {
+      return T;
+    }
+  
 }
 
 
@@ -314,7 +347,8 @@ vector < IVector > boundaryValueProblem::breakUpXY_gen( IVector XY)
 
 IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) 
 {
-
+//     <<>> Single Shooting Function <<>>
+    
   //    We assume we fail
   SUCCESS =0; 
   
@@ -421,6 +455,8 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 
 vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> &points, vector <IVector> &neighborhoods ,interval &integration_time, interval time_nbd) 
 { 
+    //     <<>> Multiple Shooting Function <<>>
+    
 //     We Assume that we verify the newton step, and update this if we fail.
     bool verify = 1;
     
@@ -503,6 +539,8 @@ integration_time = out_vector[(1+num_middle_points)*(dimension-1)+1];
 
 IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval integration_time) 
 {
+    //     <<>> Multiple Shooting Function <<>>
+    
   bool STABLE    = 1;
   bool UNSTABLE  = 0;
   bool FORWARD   = 1;
@@ -531,7 +569,7 @@ IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval 
   G_forward[0]       = Gxy( X_pt, zero_nbd, integration_time , UNSTABLE); 
   G_backwards.back() = Gxy( Y_pt, zero_nbd, time_zero  , STABLE);
   
-  cout << "Hello" << endl;
+  
       // We initialize output for integating the middle points. 
     IVector forward_vector;
     IMatrix forward_derivative;
@@ -563,6 +601,8 @@ IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval 
 
 IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const vector <IVector> &neighborhoods , interval integration_time) 
 {
+//     <<>> Multiple Shooting Function <<>>
+//     
      // We initialize output for integating the middle points. 
     IVector forward_vector;
     IMatrix forward_derivative;
@@ -627,36 +667,12 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
   
 }
 
-IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods) // TODO I think we can delete this function
-{
-    
-    
-    int num_regions = points.size();
-    int num_middle_points = num_regions-2; // The number of points between our stable/unstable coordinates.
-    
-//     We add the poitn and the neighborhood together
-    for (int i=0;i<num_regions;i++)
-        points[i] = points[i] + neighborhoods[i];
 
-    IVector initial_vector( num_middle_points*(dimension-1)+dimension);
-    
-    int counter = 0;
-    
-    for (int i=0;i<num_regions;i++)
-    {
-        int region_length = points[i].dimension();
-        for (int j = 0;j<region_length ;j++)
-        {
-            initial_vector[counter] = points[i][j];
-            counter ++;
-        }
-    }
-
-    return initial_vector;   
-}
 
 IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods, interval integration_time, bool ADD)
 {
+    //     <<>> Multiple Shooting Function <<>>
+    
 //     We construct one big vector, adding the points to the neighborhoods, and including the integration time. 
     
     int num_regions = points.size();
@@ -691,34 +707,10 @@ IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,c
 
     return initial_vector;   
 }
-IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points, interval integration_time) // TODO Delete?
-{
-//     We construct one big vector,  including the integration time. 
-    
-//     We erase the middle, middle point TODO this is not very efficient :( 
-    points.erase( points.begin()+ 1+floor(num_middle_points/2));
-    
-    IVector initial_vector( num_middle_points*(dimension-1)+2);
-    
-    initial_vector[num_middle_points*(dimension-1)+1]=integration_time;
 
-    int counter = 0;
-    
-    for (int i=0;i<num_middle_points+1;i++)
-    {
-        int region_length = points[i].dimension();
-        for (int j = 0;j<region_length ;j++)
-        {
-            initial_vector[counter] = points[i][j];
-            counter ++;
-        }
-    }
-    
-
-    return initial_vector;   
-}
 vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector_in)
 {
+    //     <<>> Multiple Shooting Function <<>>
     
   vector <IVector> points_out(num_middle_points+2); //THIS IS THE OUTPUT
   
@@ -777,6 +769,8 @@ vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector
 
 IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points) // TODO replace with "COMPUTE G" 
 {
+    //     <<>> Multiple Shooting Function <<>>
+    
     int N = G_forward.size();
     IVector G(N*(dimension-1)+2);
     
@@ -811,6 +805,7 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
 
 IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, const  vector <IMatrix> &DG_backwards, const  vector <IVector> &points, const vector <IVector> &neighborhoods, const vector < IVector> &time_derivatives )//TODO Revise
 {
+    //     <<>> Multiple Shooting Function <<>>
     
     
     int N =  (num_middle_points+1)*(dimension-1)+2;
@@ -915,7 +910,8 @@ IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt
 
 IVector boundaryValueProblem::NormBound( IVector XY,interval T)
 {
-
+//     <<>> Auxillary Function <<>>
+    
 //   We break up XY into X and Y
   
   
@@ -941,6 +937,7 @@ IVector boundaryValueProblem::NormBound( IVector XY,interval T)
 
 IVector boundaryValueProblem::localNormBound( IVector XY,interval T, bool STABLE )
 {
+    //     <<>> Auxillary Function <<>>
 
     //   We Create our solvers 
   ITaylor* solver;
@@ -988,9 +985,5 @@ IVector boundaryValueProblem::localNormBound( IVector XY,interval T, bool STABLE
     total_bound = intervalHull(total_bound,local_trajectory[i]);
   }
   
-  
   return total_bound ;
-  
-
 }
-

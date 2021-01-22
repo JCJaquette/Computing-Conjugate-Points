@@ -517,7 +517,9 @@ interval localManifold::ErrorEigenfunction( void)
   
   // simultaneous computation of value, derivative and normalized hessian
   // NOTE! Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
-  IVector y = (*(*pF).f)( (*pF).p +  pi1_A*U   ,Df,Hf);
+  IVector y = (*(*pF).f)( (*pF).p +  pi1_A*U   ,Df,Hf); // TODO Right multiply by pi_1 ???
+  
+  
     // print value and derivative of f at x
 //   cout.precision(17);
 //   cout << "y=" << y << endl;

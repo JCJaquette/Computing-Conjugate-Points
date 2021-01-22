@@ -40,19 +40,15 @@ public:
   IMatrix DGxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE);  
   
   IMatrix DG_combine(IMatrix DGX, IMatrix DGY,IVector X_pt, IVector X_nbd); 
-  IVector calcG(IVector X, IVector Y, interval T);
-  IVector calcDG(IVector X, IVector Y, interval T);
   interval FindTime( IVector X_mid, interval T);
-  IVector NormBound( IVector XY,interval T); // TODO pt/nbd Form
+  IVector NormBound( IVector XY,interval T);            // TODO pt/nbd Form
   IVector localNormBound( IVector XY,interval T, bool STABLE ); // TODO pt/nbd Form
   
-  IVector Compute_G(const vector <IVector> &points,interval T);
-  IMatrix Compute_DG(const vector <IVector> &points,const vector <IVector> &neighborhoods,interval integration_time);
+  IVector Compute_G(const vector <IVector> &points,interval T);                                                         //     <<>> Multiple Shooting Function <<>>
+  IMatrix Compute_DG(const vector <IVector> &points,const vector <IVector> &neighborhoods,interval integration_time);   //     <<>> Multiple Shooting Function <<>>
   IVector Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points);
   IMatrix Construct_DG(const vector <IMatrix> &DG_forward, const vector <IMatrix> &DG_backwards,const  vector <IVector> &points, const vector <IVector> &neighborhoods,const vector < IVector> &time_derivatives);
-  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods);// TODO REMOVE
-  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods,interval integration_time, bool ADD); 
-  IVector Construct_Initial_Vector(vector <IVector> points, interval integration_time);// TODO REMOVE
+  IVector Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods,interval integration_time, bool ADD); //     <<>> Multiple Shooting Function <<>> 
   vector <IVector> Deconstruct_Output_Vector(IVector initial_vector);
   
   

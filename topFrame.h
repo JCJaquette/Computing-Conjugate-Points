@@ -73,7 +73,7 @@ public:
   
   void constructFrameSeries( void);
   
-  void improveDetBound( void);
+//   void improveDetBound( void);
   
   
    interval calculateDerivative( const IMatrix &A , const IMatrix &A_prime);
