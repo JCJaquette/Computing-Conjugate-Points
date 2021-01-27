@@ -1,98 +1,12 @@
  #include "boundaryValueProblem.h"
-
-
  
- void boundaryValueProblem::Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IVector &vector_out, IMatrix &derivative_out)  
- {
-     //     <<>> Multiple Shooting Function <<>>
-     
-//      we assume that coord_pt & coord_nbd are IVectors of size (dimension-1)
-//      vector_out and derivative_out are the output, should not have dimension set 
-//      TODO Not sure what to do about derivative!!
-     
-  //   We Create our solvers 
-  ITaylor* solver;
-  ITaylor solver_minus((*pf_minus),order);
-  ITaylor solver_plus((*pf),order);
-  
-  if (FORWARD)
-    solver = &solver_plus;
-  else
-    solver = &solver_minus;
-  ITimeMap Phi((*solver));
-  
-//   We get global (size dimension) vectors for the point and the neighborhood 
-  IVector global_pt(dimension);
-  IVector global_nbd(dimension);
-  for(int i =0;i<dimension-1;i++)
-  {
-      global_pt[i]  = coord_pt[i];
-      global_nbd[i] = coord_nbd[i];
-  }
-  global_pt[dimension-1]=(*p_energy_proj)(coord_pt);
-//   We add the last velocity which gets us on the zero-energy surface
-//   TODO Turn this into a point, and add the thick interval to the nbd
+ 
+// // // // // // // // // // // // // // // // // // // // // // // // 
+// // // //         SINGLE SHOOTING CLASS FUNCTIONS         // // // // 
+// // // // // // // // // // // // // // // // // // // // // // // // 
 
-//   We compute the gradient of the projection in the neighborhood of our point. 
-  IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd); // Maybe optimize this using second derivative
-  
-//   cout << " grad = " << projection_grad <<endl;
-  
-//   TODO Make this a thin matrix
-//   We compute the local frame for this energy section
-  IMatrix A_energy(dimension,dimension);
-  for(int i = 0;i<dimension-1;i++)
-  {
-      A_energy[i][i] =1;
-      A_energy[dimension-1][i] = projection_grad[i];
-  }
-  A_energy[dimension-1][dimension-1]=1;
+// BEGIN        SINGLE SHOOTING CLASS FUNCTIONS
 
-  
-  IMatrix A_energy_error = A_energy - midVector(A_energy);
-  A_energy = midVector(A_energy);  
-  global_nbd = global_nbd +  gauss(A_energy,A_energy_error*global_nbd) ;
-  
-  
-//   We create the set we will integrate  
-  C1Rect2Set S_XY(global_pt,A_energy,global_nbd);  
-    
-  // Forward/backwards image of our point  w/ derivatives 
-  IVector XY_new(dimension);
-
-  IMatrix monodromy_matrix(dimension,dimension);
-  vector_out = Phi(T,S_XY,monodromy_matrix);   
-  
-  
-//   cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
-//   We pre-multiply the monodromy_matrix by the derivative of the 0-energy section chart
-//     cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
-    IMatrix Test1 = monodromy_matrix * A_energy;
-    IMatrix Test2 = monodromy_matrix * (A_energy + A_energy_error);
-    monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
-    
-//     cout << "monodromy_matrix1 = " << Test1 - midVector(Test1)<< endl;
-//     cout << "monodromy_matrix2 = " << Test2 - midVector(Test2)<< endl;
-//     cout << "monodromy_matrix0 = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
-//   monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
-//   We get rid of the last column & row
-//   * * * X
-//   * * * X
-//   * * * X
-//   X X X X
-IMatrix output_matrix(dimension-1,dimension-1);
-for( int i =0;i<dimension-1;i++)
-{
-    for( int j =0;j<dimension-1;j++)
-    {
-        output_matrix[i][j] = monodromy_matrix[i][j];
-    }
-}
-// cout << " output_matrix = " << output_matrix - midVector(output_matrix)<< endl;
-derivative_out = output_matrix;
-
-     return;
- }
 
 IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) 
 { 
@@ -136,7 +50,6 @@ IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, boo
   
   return XY_new ;
 }
-
 
 IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) // TODO Point separated copy
 {
@@ -283,6 +196,86 @@ interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
 }
 
 
+IVector boundaryValueProblem::NormBound( IVector XY,interval T)
+{
+//     <<>> Auxillary Function <<>>
+    
+//   We break up XY into X and Y
+  
+  
+  vector < IVector > XY_vect = breakUpXY( XY);
+  
+  IVector X = XY_vect[0];
+  IVector Y = XY_vect[1];
+
+//   We get the bound from integrating forward, 
+//   then we get the bound from integrating backwards
+  
+  IVector bound_forward 	= localNormBound( X,T,0);
+  IVector bound_backwards 	= localNormBound( Y,T,1);
+  
+ 
+  
+  IVector Bounds_out = intervalHull(bound_forward,bound_backwards);
+
+  
+  return Bounds_out;
+
+}
+
+IVector boundaryValueProblem::localNormBound( IVector XY,interval T, bool STABLE )
+{
+    //     <<>> Auxillary Function <<>>
+
+    //   We Create our solvers 
+  ITaylor* solver;
+  localManifold *pManifold;
+  ITaylor solver_minus((*pf_minus),order);
+  ITaylor solver_plus((*pf),order);
+  
+  if (STABLE)
+  {
+    solver = &solver_minus;
+    pManifold = pStable;
+  }
+  else
+  {
+    pManifold = pUnstable; 
+    solver = &solver_plus;
+  }
+    ITimeMap Phi((*solver));
+    
+
+  IVector Uxy = (*pManifold).constructU(XY);  
+  IMatrix A_i = (*(*pManifold).pF).A; 
+  IVector p_i = (*(*pManifold).pF).p;    
+  
+  C0Rect2Set S_XY(p_i,A_i,Uxy);  
+    
+  // Forward/backwards image of Xinit & Yinit  w/ derivatives 
+  IVector XY_new(dimension);
+//   IMatrix XY_deriv(dimension,dimension);
+
+//   XY_new = Phi(T,S_XY,XY_deriv); 
+  int grid = 64;
+  
+//   vector<IVector> getTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMap,IOdeSolver &solver)
+  vector<IVector> local_trajectory = getTrajectory(S_XY, T, grid,Phi,(*solver));
+
+  
+
+//    We compute the bound 
+  IVector total_bound = local_trajectory[0]; 
+  int length =  local_trajectory.size();
+  
+  for (int i = 1;i< length ; i++)
+  {
+    total_bound = intervalHull(total_bound,local_trajectory[i]);
+  }
+  
+  return total_bound ;
+}
+
 vector < IVector > boundaryValueProblem::breakUpXY( IVector XY)
 {
 //   This function takes a vector XY and turns it into vectors X & Y of half the length
@@ -342,8 +335,6 @@ vector < IVector > boundaryValueProblem::breakUpXY_gen( IVector XY)
   
   return XY_out;
 }
-
-
 
 IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) 
 {
@@ -450,6 +441,130 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
     
   return XY_out;
 }
+
+
+// END          SINGLE SHOOTING CLASS FUNCTIONS
+
+
+// BEGIN        MULTIPLE SHOOTING CLASS FUNCTIONS
+
+
+// Constructor
+bvpMultipleShooting::bvpMultipleShooting(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int num_middle_points_)
+:boundaryValueProblem(pf_, pf_minus_, p_energy_proj_,pStable_,pUnstable_, order_, num_middle_points_)
+{
+    0;
+}
+
+// boundaryValueProblem
+
+// boundaryValueProblem(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int num_middle_points_){pf = &pf_;pf_minus = &pf_minus_;p_energy_proj=&p_energy_proj_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_; num_middle_points = num_middle_points_;dimension = (*pStable).dim();SUCCESS=0;}
+
+
+
+
+
+
+
+
+
+
+ void boundaryValueProblem::Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IVector &vector_out, IMatrix &derivative_out)  
+ {
+     //     <<>> Multiple Shooting Function <<>>
+     
+//      we assume that coord_pt & coord_nbd are IVectors of size (dimension-1)
+//      vector_out and derivative_out are the output, should not have dimension set 
+//      TODO Not sure what to do about derivative!!
+     
+  //   We Create our solvers 
+  ITaylor* solver;
+  ITaylor solver_minus((*pf_minus),order);
+  ITaylor solver_plus((*pf),order);
+  
+  if (FORWARD)
+    solver = &solver_plus;
+  else
+    solver = &solver_minus;
+  ITimeMap Phi((*solver));
+  
+//   We get global (size dimension) vectors for the point and the neighborhood 
+  IVector global_pt(dimension);
+  IVector global_nbd(dimension);
+  for(int i =0;i<dimension-1;i++)
+  {
+      global_pt[i]  = coord_pt[i];
+      global_nbd[i] = coord_nbd[i];
+  }
+  global_pt[dimension-1]=(*p_energy_proj)(coord_pt);
+//   We add the last velocity which gets us on the zero-energy surface
+//   TODO Turn this into a point, and add the thick interval to the nbd
+
+//   We compute the gradient of the projection in the neighborhood of our point. 
+  IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd); // Maybe optimize this using second derivative
+  
+//   cout << " grad = " << projection_grad <<endl;
+  
+//   TODO Make this a thin matrix
+//   We compute the local frame for this energy section
+  IMatrix A_energy(dimension,dimension);
+  for(int i = 0;i<dimension-1;i++)
+  {
+      A_energy[i][i] =1;
+      A_energy[dimension-1][i] = projection_grad[i];
+  }
+  A_energy[dimension-1][dimension-1]=1;
+
+  
+  IMatrix A_energy_error = A_energy - midVector(A_energy);
+  A_energy = midVector(A_energy);  
+  global_nbd = global_nbd +  gauss(A_energy,A_energy_error*global_nbd) ;
+  
+  
+//   We create the set we will integrate  
+  C1Rect2Set S_XY(global_pt,A_energy,global_nbd);  
+    
+  // Forward/backwards image of our point  w/ derivatives 
+  IVector XY_new(dimension);
+
+  IMatrix monodromy_matrix(dimension,dimension);
+  vector_out = Phi(T,S_XY,monodromy_matrix);   
+  
+  
+//   cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
+//   We pre-multiply the monodromy_matrix by the derivative of the 0-energy section chart
+//     cout << "monodromy_matrix = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
+    IMatrix Test1 = monodromy_matrix * A_energy;
+    IMatrix Test2 = monodromy_matrix * (A_energy + A_energy_error);
+    monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
+    
+//     cout << "monodromy_matrix1 = " << Test1 - midVector(Test1)<< endl;
+//     cout << "monodromy_matrix2 = " << Test2 - midVector(Test2)<< endl;
+//     cout << "monodromy_matrix0 = " << monodromy_matrix - midVector(monodromy_matrix)<< endl;
+//   monodromy_matrix = monodromy_matrix *A_energy + monodromy_matrix* A_energy_error;
+//   We get rid of the last column & row
+//   * * * X
+//   * * * X
+//   * * * X
+//   X X X X
+IMatrix output_matrix(dimension-1,dimension-1);
+for( int i =0;i<dimension-1;i++)
+{
+    for( int j =0;j<dimension-1;j++)
+    {
+        output_matrix[i][j] = monodromy_matrix[i][j];
+    }
+}
+// cout << " output_matrix = " << output_matrix - midVector(output_matrix)<< endl;
+derivative_out = output_matrix;
+
+     return;
+ }
+
+
+
+
+
 
 
 
@@ -908,82 +1023,5 @@ IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt
 }
 
 
-IVector boundaryValueProblem::NormBound( IVector XY,interval T)
-{
-//     <<>> Auxillary Function <<>>
-    
-//   We break up XY into X and Y
-  
-  
-  vector < IVector > XY_vect = breakUpXY( XY);
-  
-  IVector X = XY_vect[0];
-  IVector Y = XY_vect[1];
 
-//   We get the bound from integrating forward, 
-//   then we get the bound from integrating backwards
-  
-  IVector bound_forward 	= localNormBound( X,T,0);
-  IVector bound_backwards 	= localNormBound( Y,T,1);
-  
- 
-  
-  IVector Bounds_out = intervalHull(bound_forward,bound_backwards);
-
-  
-  return Bounds_out;
-
-}
-
-IVector boundaryValueProblem::localNormBound( IVector XY,interval T, bool STABLE )
-{
-    //     <<>> Auxillary Function <<>>
-
-    //   We Create our solvers 
-  ITaylor* solver;
-  localManifold *pManifold;
-  ITaylor solver_minus((*pf_minus),order);
-  ITaylor solver_plus((*pf),order);
-  
-  if (STABLE)
-  {
-    solver = &solver_minus;
-    pManifold = pStable;
-  }
-  else
-  {
-    pManifold = pUnstable; 
-    solver = &solver_plus;
-  }
-    ITimeMap Phi((*solver));
-    
-
-  IVector Uxy = (*pManifold).constructU(XY);  
-  IMatrix A_i = (*(*pManifold).pF).A; 
-  IVector p_i = (*(*pManifold).pF).p;    
-  
-  C0Rect2Set S_XY(p_i,A_i,Uxy);  
-    
-  // Forward/backwards image of Xinit & Yinit  w/ derivatives 
-  IVector XY_new(dimension);
-//   IMatrix XY_deriv(dimension,dimension);
-
-//   XY_new = Phi(T,S_XY,XY_deriv); 
-  int grid = 64;
-  
-//   vector<IVector> getTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMap,IOdeSolver &solver)
-  vector<IVector> local_trajectory = getTrajectory(S_XY, T, grid,Phi,(*solver));
-
-  
-
-//    We compute the bound 
-  IVector total_bound = local_trajectory[0]; 
-  int length =  local_trajectory.size();
-  
-  for (int i = 1;i< length ; i++)
-  {
-    total_bound = intervalHull(total_bound,local_trajectory[i]);
-  }
-  
-  return total_bound ;
-}
+// END        MULTIPLE SHOOTING CLASS FUNCTIONS

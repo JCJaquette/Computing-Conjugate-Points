@@ -164,7 +164,7 @@ int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector en
  
   A_frame.initialize();
   
-  A_frame.makePlot();
+//   A_frame.makePlot();
 
   
   bool L_PLUS = lastEuFrame( A_frame,endPoint_LPlus);

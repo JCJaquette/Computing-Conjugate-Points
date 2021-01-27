@@ -137,6 +137,7 @@ int test(int dimension,vector < double > All_parameters)
 //   END we construct the manifolds
  
   
+//   TODO Clean up how we get the initial points 
 //  BEGIN  We Get our initial condition 
     vector <vector < IVector > > Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
     vector <IVector> points         = Guess[0];
@@ -168,10 +169,13 @@ int test(int dimension,vector < double > All_parameters)
 //     We define the XY_pt that will get used in the single-shooting newton's method. 
   IVector XY_pt(dimension);  
   
-  boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots );
+//   boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots ); // Single Shooting 
+  
+  bvpMultipleShooting BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots ); // Multiple Shooting 
   
   
   
+//   return -10;
   
     
     IVector XY_pt_T(dimension);  
@@ -343,6 +347,9 @@ int test(int dimension,vector < double > All_parameters)
 //      END single shooting 
 
 
+
+cout << " Done with BVP at line ~350 " << endl;
+return -20;
 
 
 

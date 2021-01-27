@@ -19,6 +19,8 @@ using namespace capd::matrixAlgorithms;
 class boundaryValueProblem 
 {
 private:
+    
+protected:
   IMap *pf;
   IMap *pf_minus;
   IFunction *p_energy_proj;
@@ -54,13 +56,29 @@ public:
   
   IVector NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) ; 
   vector <IVector> NewtonStep(vector <IVector> &XY_pt, vector <IVector> &XY_nbd  ,interval &T, interval time_nbd);   
-  bool Verify( IVector XY_pt, IVector XY_nbd  ,interval T){return 0;};// TODO Write this function 
+  
   bool checkProof(void){return SUCCESS;};
   void setMiddlePoints(int shots){num_middle_points = shots;};
   
   vector < IVector > breakUpXY( IVector XY);
   vector < IVector > breakUpXY_gen( IVector XY);
 };
+
+
+// simple derived class
+class bvpMultipleShooting : public boundaryValueProblem
+{
+private:
+//     int num_middle_points2;  // This NEEDS to be \geq 1 
+public:
+    bvpMultipleShooting(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int num_middle_points_);
+    
+    
+    
+    bool Verify( IVector XY_pt, IVector XY_nbd  ,interval T){return 0;};// TODO Write this function 
+};
+    
+
 
 
 #endif
