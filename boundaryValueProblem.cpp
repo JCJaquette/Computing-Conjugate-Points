@@ -1,9 +1,7 @@
  #include "boundaryValueProblem.h"
  
  
-// // // // // // // // // // // // // // // // // // // // // // // // 
-// // // //         SINGLE SHOOTING CLASS FUNCTIONS         // // // // 
-// // // // // // // // // // // // // // // // // // // // // // // // 
+
 
 // BEGIN        SINGLE SHOOTING CLASS FUNCTIONS
 
@@ -443,33 +441,58 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 }
 
 
+IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt, IVector X_nbd)
+{
+    
+
+  IMatrix DG(dimension,dimension);
+  for (int i = 0; i< dimension;i++)
+  {
+    for (int j =0;j<dimension;j++)
+    {
+      if (j<dimension/2) // 	Add unstable
+      {
+        DG[i][j] = DGX[i][j];
+      }
+      else// 	Add stable
+      {
+        DG[i][j] = DGY[i][j-dimension/2];
+      }
+    }
+  }
+  
+//   Adds derivative from moving the point on the unstable manifold to the last row
+    for ( int i = 0 ; i< dimension; i++)
+    {
+        if (i < dimension/2)
+            DG[dimension-1][i]=2 * (X_pt[i]+X_nbd[i]);
+        else
+            DG[dimension-1][i] = 0;                
+    }
+  
+  return DG;
+}
+
 // END          SINGLE SHOOTING CLASS FUNCTIONS
 
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // 
 
 // BEGIN        MULTIPLE SHOOTING CLASS FUNCTIONS
 
 
 // Constructor
 bvpMultipleShooting::bvpMultipleShooting(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int num_middle_points_)
-:boundaryValueProblem(pf_, pf_minus_, p_energy_proj_,pStable_,pUnstable_, order_, num_middle_points_)
+:boundaryValueProblem(pf_, pf_minus_,pStable_,pUnstable_, order_)
 {
-    0;
+    num_middle_points = num_middle_points_;
+    p_energy_proj=&p_energy_proj_;
 }
 
-// boundaryValueProblem
 
-// boundaryValueProblem(IMap &pf_,IMap &pf_minus_, IFunction &p_energy_proj_,localManifold &pStable_,localManifold &pUnstable_, int order_, int num_middle_points_){pf = &pf_;pf_minus = &pf_minus_;p_energy_proj=&p_energy_proj_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_; num_middle_points = num_middle_points_;dimension = (*pStable).dim();SUCCESS=0;}
-
-
-
-
-
-
-
-
-
-
- void boundaryValueProblem::Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IVector &vector_out, IMatrix &derivative_out)  
+ void bvpMultipleShooting::Integrate_point( IVector coord_pt, IVector coord_nbd,interval T, bool FORWARD,IVector &vector_out, IMatrix &derivative_out)  
  {
      //     <<>> Multiple Shooting Function <<>>
      
@@ -562,13 +585,7 @@ derivative_out = output_matrix;
  }
 
 
-
-
-
-
-
-
-vector <IVector> boundaryValueProblem::NewtonStep(vector <IVector> &points, vector <IVector> &neighborhoods ,interval &integration_time, interval time_nbd) 
+vector <IVector> bvpMultipleShooting::NewtonStep(vector <IVector> &points, vector <IVector> &neighborhoods ,interval &integration_time, interval time_nbd) 
 { 
     //     <<>> Multiple Shooting Function <<>>
     
@@ -652,7 +669,7 @@ integration_time = out_vector[(1+num_middle_points)*(dimension-1)+1];
 
 
 
-IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval integration_time) 
+IVector bvpMultipleShooting::Compute_G(const vector <IVector> &points,interval integration_time) 
 {
     //     <<>> Multiple Shooting Function <<>>
     
@@ -714,7 +731,7 @@ IVector boundaryValueProblem::Compute_G(const vector <IVector> &points,interval 
     
 }
 
-IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const vector <IVector> &neighborhoods , interval integration_time) 
+IMatrix bvpMultipleShooting::Compute_DG(const vector <IVector> &points, const vector <IVector> &neighborhoods , interval integration_time) 
 {
 //     <<>> Multiple Shooting Function <<>>
 //     
@@ -784,7 +801,7 @@ IMatrix boundaryValueProblem::Compute_DG(const vector <IVector> &points, const v
 
 
 
-IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods, interval integration_time, bool ADD)
+IVector bvpMultipleShooting::Construct_Initial_Vector(vector <IVector> points,const vector <IVector> &neighborhoods, interval integration_time, bool ADD)
 {
     //     <<>> Multiple Shooting Function <<>>
     
@@ -823,7 +840,7 @@ IVector boundaryValueProblem::Construct_Initial_Vector(vector <IVector> points,c
     return initial_vector;   
 }
 
-vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector_in)
+vector <IVector>  bvpMultipleShooting::Deconstruct_Output_Vector(IVector vector_in)
 {
     //     <<>> Multiple Shooting Function <<>>
     
@@ -882,7 +899,7 @@ vector <IVector>  boundaryValueProblem::Deconstruct_Output_Vector(IVector vector
     return points_out;   
 }
 
-IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points) // TODO replace with "COMPUTE G" 
+IVector bvpMultipleShooting::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points) // TODO replace with "COMPUTE G" 
 {
     //     <<>> Multiple Shooting Function <<>>
     
@@ -918,7 +935,7 @@ IVector boundaryValueProblem::Construct_G( vector < IVector > G_forward, vector 
     return G;   
 }
 
-IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, const  vector <IMatrix> &DG_backwards, const  vector <IVector> &points, const vector <IVector> &neighborhoods, const vector < IVector> &time_derivatives )//TODO Revise
+IMatrix bvpMultipleShooting::Construct_DG( const vector <IMatrix> &DG_forward, const  vector <IMatrix> &DG_backwards, const  vector <IVector> &points, const vector <IVector> &neighborhoods, const vector < IVector> &time_derivatives )//TODO Revise
 {
     //     <<>> Multiple Shooting Function <<>>
     
@@ -990,38 +1007,7 @@ IMatrix boundaryValueProblem::Construct_DG( const vector <IMatrix> &DG_forward, 
   return DG;   
 }
 
-IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt, IVector X_nbd)
-{
-    
 
-  IMatrix DG(dimension,dimension);
-  for (int i = 0; i< dimension;i++)
-  {
-    for (int j =0;j<dimension;j++)
-    {
-      if (j<dimension/2) // 	Add unstable
-      {
-        DG[i][j] = DGX[i][j];
-      }
-      else// 	Add stable
-      {
-        DG[i][j] = DGY[i][j-dimension/2];
-      }
-    }
-  }
-  
-//   Adds derivative from moving the point on the unstable manifold to the last row
-    for ( int i = 0 ; i< dimension; i++)
-    {
-        if (i < dimension/2)
-            DG[dimension-1][i]=2 * (X_pt[i]+X_nbd[i]);
-        else
-            DG[dimension-1][i] = 0;                
-    }
-  
-  return DG;
-}
-
-
+void bvpMultipleShooting::setMiddlePoints(int shots){num_middle_points = shots;};
 
 // END        MULTIPLE SHOOTING CLASS FUNCTIONS

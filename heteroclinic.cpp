@@ -169,13 +169,11 @@ int test(int dimension,vector < double > All_parameters)
 //     We define the XY_pt that will get used in the single-shooting newton's method. 
   IVector XY_pt(dimension);  
   
-//   boundaryValueProblem BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots ); // Single Shooting 
-  
-  bvpMultipleShooting BVP(f,f_minus,energy_projection,localStable,localUnstable,order ,shots ); // Multiple Shooting 
-  
+  boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order); // Single Shooting   
+  bvpMultipleShooting BVP_ms(f,f_minus,energy_projection,localStable,localUnstable,order ,shots ); // Multiple Shooting 
   
   
-//   return -10;
+  
   
     
     IVector XY_pt_T(dimension);  
@@ -208,7 +206,7 @@ int test(int dimension,vector < double > All_parameters)
     {
         integration_time = integration_time.mid();
         cout << " integration_time " << integration_time <<endl;
-        regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
+        regions = BVP_ms.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
         for (unsigned j=0;j<regions.size();j++)
             points[j] = midVector(regions[j]);
     }
@@ -227,7 +225,7 @@ int test(int dimension,vector < double > All_parameters)
                 cout << " neighborhoods["<<i<<"] = " << neighborhoods[i] << endl;
             }
     cout << " Verifying .... " << endl;      
-    regions = BVP.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
+    regions = BVP_ms.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
     cout << " Time nbd " << integration_time - integration_time.mid() <<endl;
     
         if (multiple_newton_steps>0)
@@ -276,7 +274,7 @@ int test(int dimension,vector < double > All_parameters)
   
   
 //   BEGIN  do the single-shooting newton method // TODO Remove this
-  BVP.setMiddlePoints(0);
+  
   
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
@@ -559,7 +557,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6; // TESTING DIMENSION
+	    dimension=4; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
