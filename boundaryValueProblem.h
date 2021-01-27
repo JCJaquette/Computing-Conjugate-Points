@@ -24,7 +24,6 @@ protected:
   IMap *pf;
   IMap *pf_minus;
   
-
   bool SUCCESS;
   
   localManifold *pStable;
@@ -63,7 +62,9 @@ public:
 };
 
 
-// simple derived class
+// This derived class implements a multiple shooting method for solving the boundary value problem. 
+// Currently, this class is not substantially better than the single shooting approach. 
+// It is not being used in the larger program, and has not been vetted for reliability.
 class bvpMultipleShooting : public boundaryValueProblem
 {
 private:
@@ -82,8 +83,6 @@ public:
     
     IVector Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points);
     IMatrix Construct_DG(const vector <IMatrix> &DG_forward, const vector <IMatrix> &DG_backwards,const  vector <IVector> &points, const vector <IVector> &neighborhoods,const vector < IVector> &time_derivatives);    
-    
-    bool Verify( IVector XY_pt, IVector XY_nbd  ,interval T){return 0;};// TODO Write this function 
     
     void setMiddlePoints(int shots);
 };

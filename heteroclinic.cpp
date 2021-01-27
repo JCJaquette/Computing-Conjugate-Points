@@ -39,8 +39,8 @@ int test(int dimension,vector < double > All_parameters)
   int order = 20;
   
   int manifold_subdivision = 15;
-  int shots = 9;
-  int multiple_newton_steps = 1;
+  int shots = 9;  // TODO remove
+//   int multiple_newton_steps = 1;
   int single_newton_steps = 20;
  
   int grid = 14; // count zeros
@@ -59,7 +59,7 @@ int test(int dimension,vector < double > All_parameters)
     stepsize =6;
   }
   
-  bool USE_MULTIPLE_SHOOTING = 0;
+//   bool USE_MULTIPLE_SHOOTING = 0;
   
   bool CHECK_MANIFOLD 		    = 1;
   bool CHECK_CONNECTING_ORBIT 	= 1;
@@ -72,13 +72,9 @@ int test(int dimension,vector < double > All_parameters)
   IMap f             = functions[0]; // For unstable manifold
   IMap f_minus       = functions[1]; // For stable manifold
   IMap f_linearize   = functions[2]; // For non-autonomous system
-  
-
-  
-  
-  
-  IFunction energy   = energy_vec[0];  // Not sure if this gets used
-  IFunction energy_projection   = energy_vec[1];
+    
+//   IFunction energy   = energy_vec[0];  // Not sure if this gets used
+//   IFunction energy_projection   = energy_vec[1];
 
  
   //   Cone angle
@@ -142,7 +138,7 @@ int test(int dimension,vector < double > All_parameters)
     vector <vector < IVector > > Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
     vector <IVector> points         = Guess[0];
     vector <IVector> neighborhoods  = Guess[1];
-    interval integration_time = 2*T/(shots+1);
+
 //   END we construct an initial guess   
     
     
@@ -170,107 +166,22 @@ int test(int dimension,vector < double > All_parameters)
   IVector XY_pt(dimension);  
   
   boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order); // Single Shooting   
-  bvpMultipleShooting BVP_ms(f,f_minus,energy_projection,localStable,localUnstable,order ,shots ); // Multiple Shooting 
   
-  
-  
-  
-    
-    IVector XY_pt_T(dimension);  
+//   We f 
     for (int i = 0 ; i < dimension / 2 ; i++)
     {
-        XY_pt_T[i] = mid(points[0][i]);
-        XY_pt_T[i+dimension/2] = mid( points.back()[i]);
+        XY_pt[i] = mid(points[0][i]);
+        XY_pt[i+dimension/2] = mid( points.back()[i]);
     }
-    interval T_new = BVP.FindTime(  XY_pt_T,  T);
+    
+//  We adjust the integration time to minimize the distance between our initial points. 
+    interval T_new = BVP.FindTime(  XY_pt,  T);
     
     
     cout << " T old = " << T << endl; 
     cout << " T new = " << T_new << endl; 
     
-    
     T = T_new;
-    integration_time = 2*T/(shots+1);
-    //   Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
-    //   points         = Guess[0];
-    //   neighborhoods  = Guess[1];
-    
-    
-    if (USE_MULTIPLE_SHOOTING==1){
-    
-    
-    //    We do the newton method
-    vector < IVector > regions;
-    interval time_nbd =0;
-    for (int i = 0 ; i<multiple_newton_steps ;i++)
-    {
-        integration_time = integration_time.mid();
-        cout << " integration_time " << integration_time <<endl;
-        regions = BVP_ms.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
-        for (unsigned j=0;j<regions.size();j++)
-            points[j] = midVector(regions[j]);
-    }
-    
-    interval multiplier = 0.;
-    time_nbd = 0 * (integration_time - integration_time.mid());
-    
-    cout << " Time nbd " << time_nbd <<endl;
-    integration_time = integration_time.mid();
-    for (unsigned j=0;j<regions.size();j++){
-        neighborhoods[j] = multiplier *(regions[j] -  points[j]);
-    }
-
-    for (unsigned i = 0 ; i < regions.size();i++)
-            {
-                cout << " neighborhoods["<<i<<"] = " << neighborhoods[i] << endl;
-            }
-    cout << " Verifying .... " << endl;      
-    regions = BVP_ms.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
-    cout << " Time nbd " << integration_time - integration_time.mid() <<endl;
-    
-        if (multiple_newton_steps>0)
-        {
-            cout << endl << "Final Guess " << endl;
-            
-            for (unsigned i = 0 ; i < regions.size();i++)
-            {
-    //             cout << " Region["<<i<<"] = " << regions[i] << endl;
-            }
-            
-            cout << endl;
-            
-                for (unsigned i = 0 ; i < regions.size();i++)
-            {
-                cout << " Region["<<i<<"] width = " << regions[i] - midVector(regions[i]) << endl;
-            }
-            cout << "done testing " << endl;
-        }
-    //     return -5;
-        
-    cout << " Old T = " << T << endl;
-    T = (shots+1)*integration_time/2;
-    cout << " New T = " << T << endl;
-  
-  
-    
-    
-    for (int i = 0 ; i < dimension / 2 ; i++)
-    {
-        XY_pt[i] = mid(regions[0][i]);
-        XY_pt[i+dimension/2] = mid( regions.back()[i]);
-    }
-    
-    cout << " XY_pt = " << XY_pt << endl;
-
-  //   END Testing integration of middle points
-  
-  }// Multiple Shooting 
-  else{
-      XY_pt = XY_pt_T;
-  }
-  
-  
-  
   
   
 //   BEGIN  do the single-shooting newton method // TODO Remove this
@@ -285,6 +196,7 @@ int test(int dimension,vector < double > All_parameters)
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
 //     cout << "XY_pt " << XY_pt << endl;
+//     T = BVP.FindTime(  XY_pt,  T);
 
   }
   
@@ -311,6 +223,32 @@ int test(int dimension,vector < double > All_parameters)
   cout << " Answ T       = " << T<< endl;
   cout << " Answ XY pt   = " << XY_pt<< endl;
   cout << " Answ XY nbd  = " << XY_nbd<< endl;
+  
+  
+  interval x_rad=0;
+  interval y_rad=0;
+  
+  
+  
+  for (int i = 0 ; i< dimension/2 ; i++){
+      x_rad  += sqr(XY_pt[i]);
+      y_rad  += sqr(XY_pt[i+dimension/2]); 
+  }
+  cout << " X rad = " << sqrt(x_rad) << endl ; 
+  cout << " Y rad = " << sqrt(y_rad) << endl ; 
+  cout << " scale = " << scale << endl ; 
+  
+  
+  bool OUTSIDE_BOX =0;
+  for (int i = 0 ; i< dimension ; i++){
+      if ( !(abs(XY_pt[i]) < scale)  ){
+          OUTSIDE_BOX = 1;
+          break;
+          cout << " Endpoints of heteroclinic lie outside the (un)stable manifolds. " << endl ; 
+      }
+  }
+
+  
   
   
 // // // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
@@ -346,8 +284,8 @@ int test(int dimension,vector < double > All_parameters)
 
 
 
-cout << " Done with BVP at line ~350 " << endl;
-return -20;
+// cout << " Done with BVP at line ~350 " << endl;
+// return -20;
 
 
 
@@ -407,6 +345,10 @@ return -20;
   
   cout << " Result " << unstable_e_values  << endl;
   
+    if (OUTSIDE_BOX )
+      cout << endl << " Endpoints of heteroclinic lie outside the (un)stable manifolds :( " << endl ; 
+  
+    
   return unstable_e_values;
   
 //   END
@@ -546,7 +488,7 @@ int main(int argc, char* argv[])
 {
 //     SampleParameters();
 //     return 0;
-  	cout.precision(6);
+  	cout.precision(16);
 	try
 	{
 // 	  plotDemo();

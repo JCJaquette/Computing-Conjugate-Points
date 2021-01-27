@@ -394,9 +394,10 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   G[dimension-1] = x_radius_sqr - radius; //TODO Remove --- why?
 
 
+  // //   NOTE Make a Krawczyk version of this. 
   IVector XY_out_nbd = gauss(DG,G); 
   
-// //   NOTE Make a Krawczyk version of this!!
+// //   NOTE Make a Krawczyk version of this. 
 // //   
   //     Get approximate inverse
     IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DG)));
@@ -498,7 +499,7 @@ bvpMultipleShooting::bvpMultipleShooting(IMap &pf_,IMap &pf_minus_, IFunction &p
      
 //      we assume that coord_pt & coord_nbd are IVectors of size (dimension-1)
 //      vector_out and derivative_out are the output, should not have dimension set 
-//      TODO Not sure what to do about derivative!!
+//      NOTE  Not sure what to do about derivative!!
      
   //   We Create our solvers 
   ITaylor* solver;
@@ -521,14 +522,14 @@ bvpMultipleShooting::bvpMultipleShooting(IMap &pf_,IMap &pf_minus_, IFunction &p
   }
   global_pt[dimension-1]=(*p_energy_proj)(coord_pt);
 //   We add the last velocity which gets us on the zero-energy surface
-//   TODO Turn this into a point, and add the thick interval to the nbd
+//   NOTE  Turn this into a point, and add the thick interval to the nbd
 
 //   We compute the gradient of the projection in the neighborhood of our point. 
   IVector projection_grad = (*p_energy_proj).gradient(coord_pt+coord_nbd); // Maybe optimize this using second derivative
   
 //   cout << " grad = " << projection_grad <<endl;
   
-//   TODO Make this a thin matrix
+//   NOTE  Make this a thin matrix
 //   We compute the local frame for this energy section
   IMatrix A_energy(dimension,dimension);
   for(int i = 0;i<dimension-1;i++)
@@ -622,7 +623,7 @@ vector <IVector> bvpMultipleShooting::NewtonStep(vector <IVector> &points, vecto
   IVector XY_out_nbd = gauss(DG,G); 
   
 
-//   TODO Reimpliment
+//   NOTE Reimpliment
   IVector initial_vector = Construct_Initial_Vector(points ,neighborhoods,integration_time,0);
   IVector initial_nbd    = Construct_Initial_Vector(points ,neighborhoods,(integration_time+time_nbd),1);
 
@@ -639,7 +640,7 @@ integration_time = out_vector[(1+num_middle_points)*(dimension-1)+1];
 //   BEGIN Verify the newton step
 
   
-//   TODO Implement Verification
+//   NOTE  Implement Verification
 //   We check to see if we have a proof of existence/uniqueness
 // //  We check that the image is in the interior of the domain (Except in the frozen variable)
   
@@ -792,7 +793,7 @@ IMatrix bvpMultipleShooting::Compute_DG(const vector <IVector> &points, const ve
   }
 
   
-  IMatrix DG = Construct_DG( DG_forward, DG_backwards, points,neighborhoods,time_derivatives);//TODO Add G_forward
+  IMatrix DG = Construct_DG( DG_forward, DG_backwards, points,neighborhoods,time_derivatives);//NOTE  Add G_forward
   
   
   return DG;
@@ -816,7 +817,7 @@ IVector bvpMultipleShooting::Construct_Initial_Vector(vector <IVector> points,co
             points[i] = points[i] + neighborhoods[i];
     }
     
-//     We erase the middle, middle point TODO this is not very efficient :( 
+//     We erase the middle, middle point NOTE this is not very efficient :( 
 //     points.erase( points.begin()+ 1+floor(num_middle_points/2));
     
     IVector initial_vector( (num_middle_points+1)*(dimension-1)+2);
@@ -859,7 +860,7 @@ vector <IVector>  bvpMultipleShooting::Deconstruct_Output_Vector(IVector vector_
   {
       IVector middle_point(dimension-1);
 
-      //     We add the middle points coordinates // TODO This is messy
+      //     We add the middle points coordinates // NOTE  This is messy
 //       if ( i !=   floor(num_middle_points/2))
 //       {
         int start_index=0;
@@ -899,7 +900,7 @@ vector <IVector>  bvpMultipleShooting::Deconstruct_Output_Vector(IVector vector_
     return points_out;   
 }
 
-IVector bvpMultipleShooting::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points) // TODO replace with "COMPUTE G" 
+IVector bvpMultipleShooting::Construct_G( vector < IVector > G_forward, vector < IVector > G_backwards, vector <IVector> points) // NOTE  replace with "COMPUTE G" 
 {
     //     <<>> Multiple Shooting Function <<>>
     
@@ -935,7 +936,7 @@ IVector bvpMultipleShooting::Construct_G( vector < IVector > G_forward, vector <
     return G;   
 }
 
-IMatrix bvpMultipleShooting::Construct_DG( const vector <IMatrix> &DG_forward, const  vector <IMatrix> &DG_backwards, const  vector <IVector> &points, const vector <IVector> &neighborhoods, const vector < IVector> &time_derivatives )//TODO Revise
+IMatrix bvpMultipleShooting::Construct_DG( const vector <IMatrix> &DG_forward, const  vector <IMatrix> &DG_backwards, const  vector <IVector> &points, const vector <IVector> &neighborhoods, const vector < IVector> &time_derivatives )//NOTE  Revise
 {
     //     <<>> Multiple Shooting Function <<>>
     
@@ -1011,3 +1012,116 @@ IMatrix bvpMultipleShooting::Construct_DG( const vector <IMatrix> &DG_forward, c
 void bvpMultipleShooting::setMiddlePoints(int shots){num_middle_points = shots;};
 
 // END        MULTIPLE SHOOTING CLASS FUNCTIONS
+
+
+
+
+
+// // // // // // // // // // // // // // // // //   
+
+//  Below is the code from heteroclinic.cpp used to run the multiple shooting feature. 
+
+// // // //   BEGIN OLD CODE  :::  Testing integration of middle points
+// // //   
+// // // //     We define the XY_pt that will get used in the single-shooting newton's method. 
+// // //   IVector XY_pt(dimension);  
+// // //   
+// // //   boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order); // Single Shooting   
+// // //   bvpMultipleShooting BVP_ms(f,f_minus,energy_projection,localStable,localUnstable,order ,shots ); // Multiple Shooting 
+// // //   
+// // //   
+// // //   
+// // //   
+// // //     
+// // //     IVector XY_pt_T(dimension);  
+// // //     for (int i = 0 ; i < dimension / 2 ; i++)
+// // //     {
+// // //         XY_pt_T[i] = mid(points[0][i]);
+// // //         XY_pt_T[i+dimension/2] = mid( points.back()[i]);
+// // //     }
+// // //     interval T_new = BVP.FindTime(  XY_pt_T,  T);
+// // //     
+// // //     
+// // //     cout << " T old = " << T << endl; 
+// // //     cout << " T new = " << T_new << endl; 
+// // //     
+// // //     
+// // //     T = T_new;
+// // //     integration_time = 2*T/(shots+1);
+// // //     //   Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
+// // //     //   points         = Guess[0];
+// // //     //   neighborhoods  = Guess[1];
+// // //     
+// // //     
+// // //     if (USE_MULTIPLE_SHOOTING==1){
+// // //     
+// // //     
+// // //     //    We do the newton method
+// // //     vector < IVector > regions;
+// // //     interval time_nbd =0;
+// // //     for (int i = 0 ; i<multiple_newton_steps ;i++)
+// // //     {
+// // //         integration_time = integration_time.mid();
+// // //         cout << " integration_time " << integration_time <<endl;
+// // //         regions = BVP_ms.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
+// // //         for (unsigned j=0;j<regions.size();j++)
+// // //             points[j] = midVector(regions[j]);
+// // //     }
+// // //     
+// // //     interval multiplier = 0.;
+// // //     time_nbd = 0 * (integration_time - integration_time.mid());
+// // //     
+// // //     cout << " Time nbd " << time_nbd <<endl;
+// // //     integration_time = integration_time.mid();
+// // //     for (unsigned j=0;j<regions.size();j++){
+// // //         neighborhoods[j] = multiplier *(regions[j] -  points[j]);
+// // //     }
+// // // 
+// // //     for (unsigned i = 0 ; i < regions.size();i++)
+// // //             {
+// // //                 cout << " neighborhoods["<<i<<"] = " << neighborhoods[i] << endl;
+// // //             }
+// // //     cout << " Verifying .... " << endl;      
+// // //     regions = BVP_ms.NewtonStep(points, neighborhoods ,integration_time, time_nbd ) ;
+// // //     cout << " Time nbd " << integration_time - integration_time.mid() <<endl;
+// // //     
+// // //         if (multiple_newton_steps>0)
+// // //         {
+// // //             cout << endl << "Final Guess " << endl;
+// // //             
+// // //             for (unsigned i = 0 ; i < regions.size();i++)
+// // //             {
+// // //     //             cout << " Region["<<i<<"] = " << regions[i] << endl;
+// // //             }
+// // //             
+// // //             cout << endl;
+// // //             
+// // //                 for (unsigned i = 0 ; i < regions.size();i++)
+// // //             {
+// // //                 cout << " Region["<<i<<"] width = " << regions[i] - midVector(regions[i]) << endl;
+// // //             }
+// // //             cout << "done testing " << endl;
+// // //         }
+// // //     //     return -5;
+// // //         
+// // //     cout << " Old T = " << T << endl;
+// // //     T = (shots+1)*integration_time/2;
+// // //     cout << " New T = " << T << endl;
+// // //   
+// // //   
+// // //     
+// // //     
+// // //     for (int i = 0 ; i < dimension / 2 ; i++)
+// // //     {
+// // //         XY_pt[i] = mid(regions[0][i]);
+// // //         XY_pt[i+dimension/2] = mid( regions.back()[i]);
+// // //     }
+// // //     
+// // //     cout << " XY_pt = " << XY_pt << endl;
+// // // 
+// // //   
+// // //     
+// // //   }// Multiple Shooting 
+// // // //   END Testing integration of middle points
+  
+  
