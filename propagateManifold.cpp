@@ -84,16 +84,8 @@ IMatrix propagateManifold::construct_A_lin(void)
 vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, interval T, int grid)
 {
 
-  
-//     int thread_id =omp_get_thread_num();
-//     if (thread_id ==1 ){
-//         cout << "  Using multiple processors " << endl;
-//         abort();
-//     }
-  
   interval timeStep = interval(pow(2,-step_size)); 
     //   We Create our solvers 
-//   ITaylor lin_solver(list_of_maps[thread_id ],order);
   ITaylor lin_solver((*pf),order);
   
   lin_solver.setStep(timeStep);
@@ -113,14 +105,10 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 //   cout << "Initial Eigenvector nbd = " << lin_init_nbd << endl;
   
   
-  
-  IMatrix A_lin 	= construct_A_lin();
-  
-  
+  IMatrix A_lin 	= construct_A_lin(); 
   
   C0Rect2Set S_X_init_0(lin_init_pt,A_lin,lin_init_nbd);  
-
-  
+ 
     
   // Forward image of Xinit w/ derivatives 
   IMatrix X_lin_deriv(dimension,dimension);

@@ -8,9 +8,17 @@
 
 IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) 
 { 
-    //     <<>> Single Shooting Function <<>>
-  
-  //   We Create our solvers 
+    
+//   Input: 
+//     XY_pt    - A vector of length n=dim/2, in local coords on the (un)stable manifold 
+//     XY_nbd   - The error of the initial point, in local coords, within the (un)stable manifold. 
+//     T        - The amount of time to integrate forward. 
+//     STABLE   - Specifies whether the input is on stable or unstable manifold. 
+//   Output: 
+//     A vector, - a validated enclosure of the *IMAGE* of the time-T map of the input point under the flow.
+    
+    
+  //   We Create our validated solvers, using high order  Taylor method
   ITaylor* solver;
   localManifold *pManifold;
   ITaylor solver_minus((*pf_minus),order);
@@ -26,14 +34,15 @@ IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, boo
     pManifold = pUnstable; 
     solver = &solver_plus;
   }
-    ITimeMap Phi((*solver));
+  
+  ITimeMap Phi((*solver));
     
   
   //    We get the local linearization
   IMatrix A_i = (*(*pManifold).pF).A; 
   
-//   cout << " XY_nbd = " << XY_nbd << endl;
-  vector < IVector >  global_pt_nbd = (*pManifold).getPointNbd(  XY_pt,  XY_nbd);
+//   Constructs an enclosure of XY_pt/XY_nbd on the manifold with error bounds. 
+  vector < IVector >  global_pt_nbd = pManifold -> getPointNbd(  XY_pt,  XY_nbd);
   IVector p_i = global_pt_nbd[0];
   IVector Uxy = global_pt_nbd[1];
 
@@ -49,9 +58,16 @@ IVector boundaryValueProblem::Gxy( IVector XY_pt, IVector XY_nbd,interval T, boo
   return XY_new ;
 }
 
-IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) // TODO Point separated copy
+IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) 
 {
-  //     <<>> Single Shooting Function <<>>
+  
+//   Input: 
+//     XY_pt    - A vector of length n=dim/2, in local coords on the (un)stable manifold 
+//     XY_nbd   - The error of the initial point, in local coords, within the (un)stable manifold. 
+//     T        - The amount of time to integrate forward. 
+//     STABLE   - Specifies whether the input is on stable or unstable manifold. 
+//   Output: 
+//     A matrix, - a validated enclosure of the *DERIVATIVE* of the time-T map of the input point under the flow.
     
   //   We Create our solvers 
   ITaylor* solver;
@@ -75,6 +91,7 @@ IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bo
       //    We get the local linearization
   IMatrix A_i = (*(*pManifold).pF).A;   
   
+  //   Constructs an enclosure of XY_pt/XY_nbd on the manifold with error bounds. 
   vector < IVector >  global_pt_nbd = (*pManifold).getPointNbd(  XY_pt,  XY_nbd);
   IVector p_i = global_pt_nbd[0];
   IVector Uxy = global_pt_nbd[1];
@@ -84,14 +101,14 @@ IMatrix boundaryValueProblem::DGxy( IVector XY_pt, IVector XY_nbd,interval T, bo
     
   C1Rect2Set S_XY(p_i,A_i,Uxy);  
     
-  // Forward/backwards image of Xinit & Yinit  w/ derivatives 
+  // Forward/backwards image of Xinit/Yinit  w/ derivatives 
   IVector XY_new(dimension);
   IMatrix XY_deriv(dimension,dimension);
 
   XY_new = Phi(T,S_XY,XY_deriv); 
   
-  
-  IMatrix DG_XY = XY_deriv*A_i*((*pManifold).DW);
+//   Apply chain rule
+  IMatrix DG_XY = XY_deriv*A_i*( pManifold -> DW );
   
   
   return DG_XY ;
@@ -111,7 +128,7 @@ interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
     interval T_original = T; 
     
 //     We get the input points on the manifolds. 
-  vector < IVector > XY_vect_pt  = breakUpXY_gen( XY_pt );
+  vector < IVector > XY_vect_pt  = breakUpXY( XY_pt );
   
   IVector X_pt = XY_vect_pt[0];
   IVector Y_pt = XY_vect_pt[1];
@@ -194,127 +211,10 @@ interval boundaryValueProblem::FindTime( IVector XY_pt, interval T)
 }
 
 
-IVector boundaryValueProblem::NormBound( IVector XY,interval T)
-{
-//     <<>> Auxillary Function <<>>
-    
-//   We break up XY into X and Y
-  
-  
-  vector < IVector > XY_vect = breakUpXY( XY);
-  
-  IVector X = XY_vect[0];
-  IVector Y = XY_vect[1];
-
-//   We get the bound from integrating forward, 
-//   then we get the bound from integrating backwards
-  
-  IVector bound_forward 	= localNormBound( X,T,0);
-  IVector bound_backwards 	= localNormBound( Y,T,1);
-  
- 
-  
-  IVector Bounds_out = intervalHull(bound_forward,bound_backwards);
-
-  
-  return Bounds_out;
-
-}
-
-IVector boundaryValueProblem::localNormBound( IVector XY,interval T, bool STABLE )
-{
-    //     <<>> Auxillary Function <<>>
-
-    //   We Create our solvers 
-  ITaylor* solver;
-  localManifold *pManifold;
-  ITaylor solver_minus((*pf_minus),order);
-  ITaylor solver_plus((*pf),order);
-  
-  if (STABLE)
-  {
-    solver = &solver_minus;
-    pManifold = pStable;
-  }
-  else
-  {
-    pManifold = pUnstable; 
-    solver = &solver_plus;
-  }
-    ITimeMap Phi((*solver));
-    
-
-  IVector Uxy = (*pManifold).constructU(XY);  
-  IMatrix A_i = (*(*pManifold).pF).A; 
-  IVector p_i = (*(*pManifold).pF).p;    
-  
-  C0Rect2Set S_XY(p_i,A_i,Uxy);  
-    
-  // Forward/backwards image of Xinit & Yinit  w/ derivatives 
-  IVector XY_new(dimension);
-//   IMatrix XY_deriv(dimension,dimension);
-
-//   XY_new = Phi(T,S_XY,XY_deriv); 
-  int grid = 64;
-  
-//   vector<IVector> getTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMap,IOdeSolver &solver)
-  vector<IVector> local_trajectory = getTrajectory(S_XY, T, grid,Phi,(*solver));
-
-  
-
-//    We compute the bound 
-  IVector total_bound = local_trajectory[0]; 
-  int length =  local_trajectory.size();
-  
-  for (int i = 1;i< length ; i++)
-  {
-    total_bound = intervalHull(total_bound,local_trajectory[i]);
-  }
-  
-  return total_bound ;
-}
-
 vector < IVector > boundaryValueProblem::breakUpXY( IVector XY)
 {
-//   This function takes a vector XY and turns it into vectors X & Y of half the length
-//   It also makes a copy of the midpoint objects
-  
-  //   We construct X and Y 
-  IVector XY_mid(dimension);
-  XY_mid = midVector(XY);
-  
-
-  IVector X(dimension/2);
-  IVector Y(dimension/2);
-  IVector X_mid(dimension/2);
-  IVector Y_mid(dimension/2);
-  
-  for(int i =0;i<dimension/2;i++)
-  {
-    X[i]=XY[i];
-    X_mid[i]=XY_mid[i];
-    Y[i]=XY[i+dimension/2];
-    Y_mid[i]=XY_mid[i+dimension/2];
-  }
-
-  vector < IVector > XY_out;
-  
-  XY_out.push_back(X);
-  XY_out.push_back(Y);
-  XY_out.push_back(X_mid);
-  XY_out.push_back(Y_mid);
-  XY_out.push_back(XY_mid);
-  
-  
-  return XY_out;
-}
-
-
-vector < IVector > boundaryValueProblem::breakUpXY_gen( IVector XY)
-{
-//   This function takes a vector XY_pt OR XY_nbd
-//   	and turns it into vectors X & Y of half the length
-
+//   This function takes a vector XY --- XY_pt OR XY_nbd, doesn't matter;
+//   	and turns it into two vectors X & Y of half the length
   
   //   We construct X and Y 
   IVector X(dimension/2);
@@ -343,8 +243,8 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   
   
 // //   We start the new things 
-  vector < IVector > XY_vect_pt  = breakUpXY_gen( XY_pt);
-  vector < IVector > XY_vect_nbd = breakUpXY_gen( XY_nbd);
+  vector < IVector > XY_vect_pt  = breakUpXY( XY_pt);
+  vector < IVector > XY_vect_nbd = breakUpXY( XY_nbd);
   
   IVector X_pt = XY_vect_pt[0];
   IVector Y_pt = XY_vect_pt[1];
@@ -474,12 +374,98 @@ IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt
   return DG;
 }
 
+
+
+IVector boundaryValueProblem::ComponentBound( IVector XY,interval T)
+{
+//     <<>> Auxillary Function <<>>
+    
+//     !!! Vet getTrajectory and getTotalTrajectory first !!! 
+    
+//   We break up XY into X and Y
+  
+  vector < IVector > XY_vect = breakUpXY( XY);
+  
+  IVector X = XY_vect[0];
+  IVector Y = XY_vect[1];
+
+//   We get the bound from integrating forward, 
+//   then we get the bound from integrating backwards
+  
+  IVector bound_forward 	= localComponentBound( X,T,0);
+  IVector bound_backwards 	= localComponentBound( Y,T,1);
+  
+ 
+  
+  IVector Bounds_out = intervalHull(bound_forward,bound_backwards);
+
+  
+  return Bounds_out;
+
+}
+
+IVector boundaryValueProblem::localComponentBound( IVector XY,interval T, bool STABLE )
+{
+    //     <<>> Auxillary Function <<>>
+//     !!! Vet getTrajectory and getTotalTrajectory first !!! 
+    //   We Create our solvers 
+  ITaylor* solver;
+  localManifold *pManifold;
+  ITaylor solver_minus((*pf_minus),order);
+  ITaylor solver_plus((*pf),order);
+  
+  if (STABLE)
+  {
+    solver = &solver_minus;
+    pManifold = pStable;
+  }
+  else
+  {
+    pManifold = pUnstable; 
+    solver = &solver_plus;
+  }
+    ITimeMap Phi((*solver));
+    
+
+  IVector Uxy = (*pManifold).constructU(XY);  
+  IMatrix A_i = (*(*pManifold).pF).A; 
+  IVector p_i = (*(*pManifold).pF).p;    
+  
+  C0Rect2Set S_XY(p_i,A_i,Uxy);  
+    
+  // Forward/backwards image of Xinit & Yinit  w/ derivatives 
+  IVector XY_new(dimension);
+//   IMatrix XY_deriv(dimension,dimension);
+
+//   XY_new = Phi(T,S_XY,XY_deriv); 
+  int grid = 64;
+  
+  vector<IVector> local_trajectory = getTrajectory(S_XY, T, grid,Phi,(*solver));
+
+//    We compute the bound 
+  IVector total_bound = local_trajectory[0]; 
+  int length =  local_trajectory.size();
+  
+  for (int i = 1;i< length ; i++)
+  {
+    total_bound = intervalHull(total_bound,local_trajectory[i]);
+  }
+  
+  return total_bound ;
+}
+
+
 // END          SINGLE SHOOTING CLASS FUNCTIONS
 
+
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // 
+
 
 // BEGIN        MULTIPLE SHOOTING CLASS FUNCTIONS
 

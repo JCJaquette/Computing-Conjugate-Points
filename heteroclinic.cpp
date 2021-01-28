@@ -297,10 +297,12 @@ int test(int dimension,vector < double > All_parameters)
 
 //  BEGIN globalize manifold
 //    -- We calculate the norm bounds 
-// IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
-//   IVector norm_bounds = BVP.NormBound(XY,T);
-// //   cout << "Norm Bounds = " << norm_bounds << endl;
+  interval T_nn = 10;
+  IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
+  IVector component_bounds = BVP.ComponentBound(XY,T_nn);
+  cout << "Component Bounds = " << component_bounds << endl;
   
+//   return -4;
   
   cout << endl << "Globalizing Manifold ... " << endl;
   

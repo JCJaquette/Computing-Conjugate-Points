@@ -37,7 +37,7 @@ protected:
 //   IVector verified_XY_nbd;
   
 public:
-  boundaryValueProblem(IMap &pf_,IMap &pf_minus_,localManifold &pStable_,localManifold &pUnstable_, int order_){pf = &pf_;pf_minus = &pf_minus_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_;dimension = (*pStable).dim();SUCCESS=0;}
+  boundaryValueProblem(IMap &pf_,IMap &pf_minus_,localManifold &pStable_,localManifold &pUnstable_, int order_){pf = &pf_;pf_minus = &pf_minus_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_;dimension = pStable->dim();SUCCESS=0;}
 
   
   IVector Gxy( IVector XY_pt, IVector XY_nbd,interval T, bool STABLE) ; 
@@ -45,8 +45,7 @@ public:
   
   
   interval FindTime( IVector X_mid, interval T);
-  IVector NormBound( IVector XY,interval T);            // TODO pt/nbd Form
-  IVector localNormBound( IVector XY,interval T, bool STABLE ); // TODO pt/nbd Form
+  
   
   IMatrix DG_combine(IMatrix DGX, IMatrix DGY,IVector X_pt, IVector X_nbd); 
   
@@ -56,9 +55,11 @@ public:
   
   bool checkProof(void){return SUCCESS;};
   
-  
   vector < IVector > breakUpXY( IVector XY);
-  vector < IVector > breakUpXY_gen( IVector XY);
+  
+  IVector ComponentBound( IVector XY,interval T);            // TODO pt/nbd Form
+  IVector localComponentBound( IVector XY,interval T, bool STABLE ); // TODO pt/nbd Form
+  
 };
 
 

@@ -5,7 +5,8 @@ IVector localManifold::constructU( IVector U_flat)
 {
 //     Input U_flat is in local coords, of length  n=dim/2
 //     Returns an interval vector in local coords 
-//      which encloses the cooresponding point on the stable/unstable manifold.
+//      which encloses the cooresponding point/nbd on the stable/unstable manifold.
+//      (with error bounds)
   IVector U(dimension);
   
 //   Compute the Euclidean norm of U_flat
@@ -73,6 +74,8 @@ vector < IVector > localManifold::getPointNbd( IVector XY_pt, IVector XY_nbd)
 {
 //     Receives as input a point and neighborhood of lengths n=dim/2 , in local coords
 //     Outputs the point in global coordinates, and the neighborhood in local.
+
+//      (with error bounds)
   vector < IVector >  output;
   
   //    We get the local linearization

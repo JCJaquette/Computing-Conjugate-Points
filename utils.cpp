@@ -152,7 +152,7 @@ vector<IMatrix> getTotalTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &t
   //   4 -- Bound on function Derivative  
   
   
-//   This does not seem to work if solver has been used before
+//   NOTE This does not seem to work if solver has been used before
 //   (in the sense that it does not make intermediate steps, not that it gives a wrong anwer)
     timeMap.stopAfterStep(true);
     interval prevTime(0.);
@@ -225,6 +225,10 @@ vector<IMatrix> getTotalTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &t
 
 vector<IVector> getTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMap,IOdeSolver &solver)
 {
+//     Only used in          boundaryValueProblem::localNormBound
+//     
+//     Not used for verified computing
+    
     timeMap.stopAfterStep(true);
     interval prevTime(0.);
     vector<IVector> V(0);
@@ -243,15 +247,19 @@ vector<IVector> getTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMa
 
         intersection(domain,subsetOfDomain,subsetOfDomain);
         IVector v = curve(subsetOfDomain);
+        cout << " v = " << v << endl;
 	
-	interval localTime = prevTime + subsetOfDomain;
+        interval localTime = prevTime + subsetOfDomain;
 
 
-	IVector v_aug(dim+1);
-	for(int j = 0 ; j<dim+1;j++)	{	  v_aug[j]=v[j];	}
-	v_aug[dim]=localTime;
+        IVector v_aug(dim+1);
+        
+        for(int j = 0 ; j<dim+1;j++)	{	  v_aug[j]=v[j];	}
+        
+        v_aug[dim]=localTime;
 
-	V.push_back(v_aug); // add v to the stack
+        V.push_back(v_aug); // add v to the stack
+        
       }
       prevTime = timeMap.getCurrentTime();
 
