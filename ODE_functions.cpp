@@ -288,11 +288,11 @@ vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters
   IVector local_guess_U = localUnstable.projectPoint(  guess_U);
   IVector local_guess_S = localStable.projectPoint(  guess_S); 
 
-// We then uniformly rescale the approximate point so that it is on the edge of the local stable/unstable manifold's radius of validity.
+// We then uniformly rescale the approximate point so that it is on the edge of the local stable/unstable manifold's radius of validity. NOTE This could be improved
   
 //   Gets ~the radius of the nbd at the end points - stable/unstable manifolds.
-  interval radius_x = sqr(localUnstable.getRadius())*dimension/2;
-  interval radius_y = sqr(localStable.getRadius())*dimension/2;
+  interval radius_x = sqr(localUnstable.getRadius());
+  interval radius_y = sqr(localStable.getRadius());
   
   interval U_radius_sqr = 0;   
   interval S_radius_sqr = 0;  
@@ -309,6 +309,7 @@ vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters
     
 }
 
+// NOTE "Guess_pt_nbd" was used with the "bvpMultipleShooting" class, which is not currently being used.  
 vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable, int shots)
 {
     //   Returns shot+2 points, the approximations at equally spaced points -T = t_0 < ... < t_shots+1 = +T  
@@ -356,4 +357,22 @@ vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_pa
     
     return output;
     
+}
+
+
+interval approxT( int dimension, vector < double> All_parameters , interval scale){
+//     We compute the largest time so that each component of the initial approximate guess will be of magnitude less than 'scale'.
+    
+    IVector b_list(dimension/2);
+    for (int i = 0 ; i < dimension/2 ; i++){
+        b_list[i] = All_parameters[i];
+    }
+    
+// We find the minimum *b* parameter. 
+    interval b_min = -getMax(-b_list);
+    
+//   We find an approximate time
+    interval T = log(1/scale-1)/sqrt(b_min/2);
+
+    return T; 
 }

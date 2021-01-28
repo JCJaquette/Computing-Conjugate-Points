@@ -21,6 +21,7 @@ IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interv
 vector <IFunction> constructEnergy(int dimension,  vector < double > All_parameters);
 vector < IMap > constructFunctions( int dimension, vector < double > All_parameters);
 
+interval approxT( int dimension, vector < double> All_parameters,interval scale);
 vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable);
 vector <vector < IVector > >Guess_pt_nbd( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable, int shots);
 #endif

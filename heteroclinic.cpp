@@ -39,21 +39,21 @@ int test(int dimension,vector < double > All_parameters)
   int order = 20;
   
   int manifold_subdivision = 15;
-  int shots = 9;  // TODO remove
+//   int shots = 9;  // TODO remove
 //   int multiple_newton_steps = 1;
   int single_newton_steps = 20;
  
   int grid = 14; // count zeros
   int stepsize = 7;
   interval L_plus = 13.55;
-  interval T ;
+//   interval T ;
   if (dimension ==4 ){
-    T = 16.2; // n=2
+//     T = 16.2; // n=2
     L_plus = 13;
     stepsize =5;
   }
   else{ 
-    T = 20.; // n=3
+//     T = 20.; // n=3
     L_plus = 13.55;
     L_plus = 14;
     stepsize =6;
@@ -87,8 +87,8 @@ int test(int dimension,vector < double > All_parameters)
   if (dimension ==4)
   {
       initial_box =interval(-.000001,.000001);
-      L = interval(.00007); // n=2
-      scale = 0.00001;
+      L = interval(.00008); // n=2
+      scale = 0.000016;
   }
   else if (dimension ==6)
   {
@@ -96,6 +96,10 @@ int test(int dimension,vector < double > All_parameters)
       scale = 0.000001;
       initial_box =interval(-.000001,.000001);
   }
+//   We compute an approximate value of T, for determining the initial guess.
+  interval T = approxT(dimension, All_parameters,scale);
+
+  
   
 
     //   BEGIN we construct the manifolds  
@@ -135,26 +139,29 @@ int test(int dimension,vector < double > All_parameters)
   
 //   TODO Clean up how we get the initial points 
 //  BEGIN  We Get our initial condition 
-    vector <vector < IVector > > Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
-    vector <IVector> points         = Guess[0];
-    vector <IVector> neighborhoods  = Guess[1];
+
+
+vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);
+//     vector <vector < IVector > > Guess = Guess_pt_nbd( dimension, All_parameters, T, localUnstable,  localStable, shots);
+//     vector <IVector> points         = Guess[0];
+//     vector <IVector> neighborhoods  = Guess[1];
 
 //   END we construct an initial guess   
     
     
     
     
-// //     // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
-// //     cout.precision(10);
-// //     IVector Zero_n(dimension/2);
-// //     vector < IVector > Unstable_Global_pt_Coord =   localUnstable.getPointNbd( Guess[0][0], Zero_n);
-// //     vector < IVector > Stable_Global_pt_Coord   =   localStable.getPointNbd( Guess[0][shots+1], Zero_n);
-// //     cout << endl;
-// //     cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
-// //     cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
-// //     cout << endl;
-// //     cout.precision(6);
-// //     // // // // //    NOTE 
+    // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
+    cout.precision(10);
+    IVector Zero_n(dimension/2);
+    vector < IVector > Unstable_Global_pt_Coord =   localUnstable.getPointNbd( Guess[0], Zero_n);
+    vector < IVector > Stable_Global_pt_Coord   =   localStable.getPointNbd( Guess[1], Zero_n);
+    cout << endl;
+    cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
+    cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
+    cout << endl;
+    cout.precision(6);
+    // // // // //    NOTE 
     
     
   
@@ -165,14 +172,19 @@ int test(int dimension,vector < double > All_parameters)
 //     We define the XY_pt that will get used in the single-shooting newton's method. 
   IVector XY_pt(dimension);  
   
-  boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order); // Single Shooting   
-  
-//   We f 
+  //   We f 
     for (int i = 0 ; i < dimension / 2 ; i++)
     {
-        XY_pt[i] = mid(points[0][i]);
-        XY_pt[i+dimension/2] = mid( points.back()[i]);
+        XY_pt[i] = mid(Guess[0][i]);
+        XY_pt[i+dimension/2] = mid( Guess.back()[i]);
     }
+  
+  boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order); // Single Shooting   
+  
+  // // //     We fix the radius of the point on the unstable manifold // TODO Fix this !!!!
+    interval r_u_sqr = sqr(localUnstable.getRadius());
+  
+
     
 //  We adjust the integration time to minimize the distance between our initial points. 
     interval T_new = BVP.FindTime(  XY_pt,  T);
@@ -192,7 +204,7 @@ int test(int dimension,vector < double > All_parameters)
   for (int i = 0 ; i<single_newton_steps ;i++)
   {
     
-    Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T);
+    Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T,r_u_sqr);
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
 //     cout << "XY_pt " << XY_pt << endl;
@@ -211,7 +223,7 @@ int test(int dimension,vector < double > All_parameters)
   
   
     for (int i = 0 ; i<single_newton_steps ;i++){
-        Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T);
+        Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T,r_u_sqr);
     //     cout << "Answ XY_pt 	= " << XY_pt << endl;
         XY_pt = midVector(Newton_out);
         XY_nbd = (Newton_out - XY_pt)*interval(1.5);
@@ -219,7 +231,7 @@ int test(int dimension,vector < double > All_parameters)
 //         cout << "XY_nbd " << XY_nbd << endl;
     }
 
-  Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T);
+  Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T,r_u_sqr);
   cout << " Answ T       = " << T<< endl;
   cout << " Answ XY pt   = " << XY_pt<< endl;
   cout << " Answ XY nbd  = " << XY_nbd<< endl;
@@ -277,9 +289,7 @@ int test(int dimension,vector < double > All_parameters)
     if (CHECK_CONNECTING_ORBIT )
       return -2;
   }
-    
 
-    
 //      END single shooting 
 
 
@@ -297,10 +307,10 @@ int test(int dimension,vector < double > All_parameters)
 
 //  BEGIN globalize manifold
 //    -- We calculate the norm bounds 
-  interval T_nn = 10;
-  IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
-  IVector component_bounds = BVP.ComponentBound(XY,T_nn);
-  cout << "Component Bounds = " << component_bounds << endl;
+//   interval T_nn = 10;
+//   IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
+//   IVector component_bounds = BVP.ComponentBound(XY,T_nn);
+//   cout << "Component Bounds = " << component_bounds << endl;
   
 //   return -4;
   
@@ -501,7 +511,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4; // TESTING DIMENSION
+	    dimension=6; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
@@ -513,8 +523,8 @@ int main(int argc, char* argv[])
         else if (dimension ==6)
         {            
             Input.push_back(1); // b1
-            Input.push_back(.97);// b2              0.98 previous
-            Input.push_back(.95);// b3              0.95 previous
+            Input.push_back(.98);// b2              0.98 previous
+            Input.push_back(.96);// b3              0.95 previous
                         
             Input.push_back(-.05);// c12                         (.050,.015)                     L_+ = 13.55
             Input.push_back(-.015);// c23         0 - unstable   (-.015,.050) & (-.015,-.050)    L_+ = 14

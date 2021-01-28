@@ -50,15 +50,15 @@ public:
   IMatrix DG_combine(IMatrix DGX, IMatrix DGY,IVector X_pt, IVector X_nbd); 
   
   
-  IVector NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) ; 
+  IVector NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T, interval r_u_sqr) ; 
   
   
   bool checkProof(void){return SUCCESS;};
   
   vector < IVector > breakUpXY( IVector XY);
   
-  IVector ComponentBound( IVector XY,interval T);            // TODO pt/nbd Form
-  IVector localComponentBound( IVector XY,interval T, bool STABLE ); // TODO pt/nbd Form
+  IVector ComponentBound( IVector XY,interval T);            
+  IVector localComponentBound( IVector XY,interval T, bool STABLE ); 
   
 };
 

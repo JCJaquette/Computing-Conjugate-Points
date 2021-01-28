@@ -234,7 +234,7 @@ vector < IVector > boundaryValueProblem::breakUpXY( IVector XY)
   return XY_out;
 }
 
-IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T) 
+IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T , interval r_u_sqr ) 
 {
 //     <<>> Single Shooting Function <<>>
     
@@ -283,8 +283,11 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   
    
 //   cout <<  " DG = " << DG << endl;
-// // //     We fix the radius of the point on the unstable manifold 
-    interval radius = sqr((*pUnstable).getRadius())*dimension/2;
+// // // //     We fix the radius of the point on the unstable manifold 
+//     interval radius = sqr((*pUnstable).getRadius())*dimension/2;
+    
+    interval radius = r_u_sqr;
+    
   interval x_radius_sqr = 0;
   for(int i = 0 ; i<dimension/2;i++){x_radius_sqr += sqr(X_pt[i]);}
   
@@ -303,7 +306,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
     IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DG)));
 //     cout << "ApproxInverse = " << ApproxInverse  << endl;
 // //     Define identity matrix
-    IMatrix eye(dimension,dimension);
+    IMatrix eye(dimension,dimension); // TODO Replace by identity matrix function 
     for (int i =0;i<dimension+1;i++){ eye[i][i]=1;}
     IVector new_Nbd     = - ApproxInverse*G + ( eye - ApproxInverse*DG )*XY_nbd;
     IVector kraw_image  = XY_pt + new_Nbd ;
@@ -380,6 +383,8 @@ IVector boundaryValueProblem::ComponentBound( IVector XY,interval T)
 {
 //     <<>> Auxillary Function <<>>
     
+// NOTE This would be improved by rewriting it to use the pt/nbd form
+    
 //     !!! Vet getTrajectory and getTotalTrajectory first !!! 
     
 //   We break up XY into X and Y
@@ -407,6 +412,9 @@ IVector boundaryValueProblem::ComponentBound( IVector XY,interval T)
 IVector boundaryValueProblem::localComponentBound( IVector XY,interval T, bool STABLE )
 {
     //     <<>> Auxillary Function <<>>
+    
+    // NOTE This would be improved by rewriting it to use the pt/nbd form
+    
 //     !!! Vet getTrajectory and getTotalTrajectory first !!! 
     //   We Create our solvers 
   ITaylor* solver;

@@ -247,7 +247,6 @@ vector<IVector> getTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMa
 
         intersection(domain,subsetOfDomain,subsetOfDomain);
         IVector v = curve(subsetOfDomain);
-        cout << " v = " << v << endl;
 	
         interval localTime = prevTime + subsetOfDomain;
 
