@@ -234,7 +234,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     int adjust_L = 10;
     bool conditions_S;
     for (int i = 0 ; i< adjust_L;i++){
-        conditions_S = localStableBig.checkConditions( U_flat_new ); 
+        conditions_S = localStableBig.checkConditions(  ); 
         if (conditions_S )
             break;
         else

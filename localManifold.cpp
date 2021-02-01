@@ -461,10 +461,10 @@ bool localManifold::checkRateCondition(IMatrix DFU)
 }
 
 
- bool  localManifold::checkConditions( IVector U_flat )
+ bool  localManifold::checkConditions( void  )
 {
 
-  IVector U = constructU( U_flat);
+  IVector U = constructU( U_flat_global );
   
   
   cout << " U = " << U << endl;
@@ -598,6 +598,8 @@ interval localManifold::computeK( void )
     
     IMatrix Lambda = gaussInverseMatrix(A_u)*A_infty*A_u;   // Eigenvalues     
     eigenvalues = boundEigenvalues( Lambda);
+    
+    cout << " eigenvalues =" << eigenvalues << endl;
     IVector Lambda_vec(dimension) ;
     for (int i =0;i<dimension;i++){ Lambda_vec[i]=Lambda[i][i];}
     
@@ -711,3 +713,15 @@ IVector localManifold::getEigenError_minus_infty(int columnNumber){
     return v_out;
 }
 
+
+IVector localManifold::containmentRatios( IVector point_test){
+    IVector ratios(dimension/2);
+
+    for (int i = 0 ; i<dimension/2;i++){
+        if ( point_test[i] > 0 )
+            ratios[i] = point_test[i]/(U_flat_global[i].right());
+        else
+            ratios[i] = point_test[i]/(U_flat_global[i].left());
+    }
+    return ratios;
+}

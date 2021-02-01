@@ -287,19 +287,25 @@ vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters
 //     Gets the eigen-coordinates of the approximation in the dominant eigenspace.
   IVector local_guess_U = localUnstable.projectPoint(  guess_U);
   IVector local_guess_S = localStable.projectPoint(  guess_S); 
+  
+//   cout << " Initial local_guess_U = " << local_guess_U << endl; 
+//   cout << " Initial local_guess_S = " << local_guess_S << endl << endl; 
+  
+  IVector x_Ratios = localUnstable.containmentRatios(local_guess_U);
+  IVector y_Ratios = localStable.containmentRatios(local_guess_S);
+//   cout << " x_Ratios  = " << x_Ratios  << endl;
+//   cout << " y_Ratios  = " << y_Ratios  << endl;
 
-// We then uniformly rescale the approximate point so that it is on the edge of the local stable/unstable manifold's radius of validity. NOTE This could be improved
+// We then uniformly rescale the approximate point so that it is on the edge of the local stable/unstable manifold's radius of validity. 
+//   NOTE This could be improved, although for n=3, the eigenvalues are ~( .68 & .69 & .72 ), so the uniform scaling is a decent approximation. 
+  local_guess_U = local_guess_U /getMax(x_Ratios);
+  local_guess_S = local_guess_S /getMax(y_Ratios);
   
-//   Gets ~the radius of the nbd at the end points - stable/unstable manifolds.
-  interval radius_x = sqr(localUnstable.getRadius());
-  interval radius_y = sqr(localStable.getRadius());
+  x_Ratios = localUnstable.containmentRatios(local_guess_U);
+  y_Ratios = localStable.containmentRatios(local_guess_S);
   
-  interval U_radius_sqr = 0;   
-  interval S_radius_sqr = 0;  
-  for(int i = 0 ; i<dimension/2;i++){U_radius_sqr += sqr(local_guess_U[i]);}
-  for(int i = 0 ; i<dimension/2;i++){S_radius_sqr += sqr(local_guess_S[i]);}
-  local_guess_U = local_guess_U *sqrt(radius_x/U_radius_sqr);
-  local_guess_S = local_guess_S *sqrt(radius_y/S_radius_sqr);
+//   cout << " x_Ratios  = " << x_Ratios  << endl;
+//   cout << " y_Ratios  = " << y_Ratios  << endl;
 
     vector < IVector > output;
     output.push_back(local_guess_U);

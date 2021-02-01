@@ -284,7 +284,7 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
    
 //   cout <<  " DG = " << DG << endl;
 // // // //     We fix the radius of the point on the unstable manifold 
-//     interval radius = sqr((*pUnstable).getRadius())*dimension/2;
+
     
     interval radius = r_u_sqr;
     
@@ -332,6 +332,9 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
         if (verify_local ==0)
             verify=0;
     }
+//     cout << " verify = " << verify << endl;
+//     verify = subsetInterior(-XY_out_nbd,XY_nbd);
+//     cout << " verify = " << verify << "  (New Method) " << endl;
   if (verify ==1)
   {
     SUCCESS = 1;
@@ -911,10 +914,12 @@ IVector bvpMultipleShooting::Construct_G( vector < IVector > G_forward, vector <
     
 //     cout << "G = " << G << endl;
     
-    //     We try to fix the radius of the unstable coordinate
+    //     We getRadiustry to fix the radius of the unstable coordinate
     IVector X_pt = points[0];
     IVector Y_pt = points.back();
 
+//     NOTE This depends on all radii of the (un)stable manifolds being the same width.
+//          this should get changed to take the radius for greater relibability. 
     interval radius_x = sqr((*pUnstable).getRadius())*dimension/2;
     interval radius_y = sqr((*pStable).getRadius())*dimension/2;
   

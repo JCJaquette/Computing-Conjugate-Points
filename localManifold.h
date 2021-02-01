@@ -24,7 +24,7 @@ private:
   int dimension;   //  dimension = 2*n
   bool stable; 	
   int subdivisionNUM ; // Used to bounding the derivative of the function. Runtime scales like subdivNUM^(n)  
-  IVector U_flat_global; // Used in computing eigenvector error stuff NOTE Code could be improved by using this variable when checking conditions
+  IVector U_flat_global; // The size of the manifold; Used in computing eigenvector error stuff and checkConditions 
   interval xi;
   
   IVector eigenvalues;
@@ -74,9 +74,13 @@ public:
   
   interval getRadius( void ){ return getMax( abs(U_flat_global));};
   
-  bool checkConditions( IVector U_flat );
+  bool checkConditions( void );
   
   interval computeK( void );
+  
+  IVector containmentRatios( IVector point_test);
+  
+  void updateSize( IVector U_flat_new){U_flat_global = U_flat_new;};
   
 };
 
