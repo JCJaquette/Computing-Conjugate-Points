@@ -236,11 +236,16 @@ vector < IVector > boundaryValueProblem::breakUpXY( IVector XY)
 
 IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,interval T , interval r_u_sqr ) 
 {
-//     <<>> Single Shooting Function <<>>
+//  This function performs a Newton-like method, 
+//  Namely it computes the interval-Krawczyk operator. 
     
-  //    We assume we fail
-  SUCCESS =0; 
-  
+//  Inputs:
+//     XY_pt    the center point of the input. 
+//     XY_nbd   the neighborhood of the input, assumed to contain 0. 
+//     <><> the total input is assumed to be the region  ** XY_pt + XY_nbd **  <><>
+//     T        The integration time 
+//     r_u_sqr  the squared radius for the point on the unstable manifold.
+    
   
 // //   We start the new things 
   vector < IVector > XY_vect_pt  = breakUpXY( XY_pt);
@@ -253,124 +258,74 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
   IVector Y_nbd = XY_vect_nbd[1];
   
   
-  
-//    NOTE THIS SHOULD BE A ZERO NBD
-  IVector zero_nbd(dimension/2);
-  
+//   We calculate Phi_T (X) and Phi_-T (Y) for points X and Y. 
+  IVector zero_nbd(dimension/2);  
   IVector G_x = Gxy( X_pt, zero_nbd, T, 0); 
   IVector G_y = Gxy( Y_pt, zero_nbd, T, 1); 
-  
-//   cout << " Phi_T (X) = " << G_x << endl;
-//   cout << " Phi_T (Y) = " << G_y << endl;
-  
-  
+
+// We define the function output G  
   IVector G = G_x - G_y; 
+    
+// The last component of G is, the radius-squared of the X component, minus the input radius-squared.
+  interval x_radius_sqr = 0;
+  for(int i = 0 ; i<dimension/2;i++){
+      x_radius_sqr += sqr(X_pt[i]);
+  }
+//    We replace the last term of G with point^2 - radius^2 
+  G[dimension-1] = x_radius_sqr - r_u_sqr;
   
-//   cout << " X = " << X << endl;
-//   cout << " Y = " << Y << endl;  
-//   cout << " Phi_T (X) - Phi_T (Y) = " << G << endl << endl;
   
-//       cout << " X_pt = " << X_pt << endl;
-//   cout << " Y_pt = " << Y_pt << endl;
-//   cout << " X_nbd = " << X_nbd << endl;
-//   cout << " Y_nbd = " << Y_nbd << endl;
-  
+//   We then calculate the derivate of the map G on the entire neighborhood 
   IMatrix  DG_x =  DGxy( X_pt, X_nbd, T, 0);
   IMatrix  DG_y = -DGxy( Y_pt, Y_nbd, T, 1);
-  
-  
-  IMatrix DG = DG_combine(DG_x,DG_y,X_pt, X_nbd);// TODO Make pt/nbd version // Maybe?
-  
-   
-//   cout <<  " DG = " << DG << endl;
-// // // //     We fix the radius of the point on the unstable manifold 
-
+// We get the total derivative, including the modified last-line.
+  IMatrix DG = DG_combine(DG_x,DG_y,X_pt, X_nbd); 
     
-    interval radius = r_u_sqr;
-    
-  interval x_radius_sqr = 0;
-  for(int i = 0 ; i<dimension/2;i++){x_radius_sqr += sqr(X_pt[i]);}
-  
-//   cout << " x_radius^2 = " << x_radius_sqr << endl;
-//   cout << "   radius^2 = " << radius << endl;
-// // //    We replace the last term of G with point^2 - radius^2 
-  G[dimension-1] = x_radius_sqr - radius; //TODO Remove --- why?
 
+//    We compute the fixed, approximate inverse of DG. 
+    IMatrix  ApproxInverse = midMatrix(krawczykInverse(midMatrix(DG)));    
 
-  // //   NOTE Make a Krawczyk version of this. 
-  IVector XY_out_nbd = gauss(DG,G); 
-  
-// //   NOTE Make a Krawczyk version of this. 
-// //   
-  //     Get approximate inverse
-    IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DG)));
-//     cout << "ApproxInverse = " << ApproxInverse  << endl;
-// //     Define identity matrix
-    IMatrix eye(dimension,dimension); // TODO Replace by identity matrix function 
-    for (int i =0;i<dimension+1;i++){ eye[i][i]=1;}
+    IMatrix eye = identityMat(dimension); // identity matrix
     IVector new_Nbd     = - ApproxInverse*G + ( eye - ApproxInverse*DG )*XY_nbd;
     IVector kraw_image  = XY_pt + new_Nbd ;
 
   
+//   We check to see if we have a proof of existence/uniqueness; 
+//      This is done by checking if the Krawczyk-image is in the interior of the domain
+//      Note, the centerpoint XY_pt cancel, so we only compare the neighborhoods
+  SUCCESS  = subsetInterior(new_Nbd ,XY_nbd); 
   
-//   IVector XY_out = XY_pt - XY_out_nbd;
-  IVector XY_out = kraw_image;
-  XY_out_nbd = new_Nbd;
-  
-  
-//     cout << "output nbd " << XY_out_nbd << endl;
-//     cout << "output nbd!" << new_Nbd << endl;
-  
-//   We check to see if we have a proof of existence/uniqueness
-// //  We check that the image is in the interior of the domain (Except in the frozen variable)
-  bool verify = 1;
-  bool verify_local;
-  
-    for (int i = 0 ; i< dimension;i++)
-    {
-        verify_local = subsetInterior(-XY_out_nbd[i],XY_nbd[i]);
-        if (verify_local ==0)
-            verify=0;
-    }
-//     cout << " verify = " << verify << endl;
-//     verify = subsetInterior(-XY_out_nbd,XY_nbd);
-//     cout << " verify = " << verify << "  (New Method) " << endl;
-  if (verify ==1)
-  {
-    SUCCESS = 1;
-  }
-  
-//   cout << "Domain = " << XY_nbd << endl;
-//   cout << " Image = " << -XY_out_nbd << endl;
-
     
-  return XY_out;
+  return kraw_image;
 }
 
 
 IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt, IVector X_nbd)
-{
+{    
+//     Take as input    DGX = D Phi_T(x) and  DGY = - D Phi_-T(y) 
+//     These matrices have size (2n x n). 
+   
+//     We creates a matrix 
     
-
+//     [          |             ]
+//     [    DGX   |     DGY     ]
+//     [ _________|____________ ]
+//     [     2X   |      0      ]
+    
   IMatrix DG(dimension,dimension);
-  for (int i = 0; i< dimension;i++)
-  {
-    for (int j =0;j<dimension;j++)
-    {
-      if (j<dimension/2) // 	Add unstable
-      {
+  for (int i = 0; i< dimension;i++){
+    for (int j =0;j<dimension;j++){
+      if (j<dimension/2){ // 	  Add unstable
         DG[i][j] = DGX[i][j];
       }
-      else// 	Add stable
-      {
+      else{// 	                  Add stable
         DG[i][j] = DGY[i][j-dimension/2];
       }
     }
   }
   
 //   Adds derivative from moving the point on the unstable manifold to the last row
-    for ( int i = 0 ; i< dimension; i++)
-    {
+    for ( int i = 0 ; i< dimension; i++){
         if (i < dimension/2)
             DG[dimension-1][i]=2 * (X_pt[i]+X_nbd[i]);
         else
@@ -607,7 +562,7 @@ vector <IVector> bvpMultipleShooting::NewtonStep(vector <IVector> &points, vecto
   cout <<  "___ det " << det(DG) << endl;  
   
   cout << " size( DG)  = " << DG.dimension( ) << endl;
-  cout << " size( G)  = " << G.dimension( ) << endl;
+  cout << " size( G)   = " << G.dimension( ) << endl;
 //   cout <<  "___ DGw= " << DG - midVector(DG)<< endl;  
   
 //   If |G| is large, we do a non-rigorous newton step
@@ -674,7 +629,6 @@ IVector bvpMultipleShooting::Compute_G(const vector <IVector> &points,interval i
   bool STABLE    = 1;
   bool UNSTABLE  = 0;
   bool FORWARD   = 1;
-  bool BACKWARDS = 0;
 
   
 //   int points_length = points.size();
@@ -742,7 +696,6 @@ IMatrix bvpMultipleShooting::Compute_DG(const vector <IVector> &points, const ve
   bool STABLE    = 1;
   bool UNSTABLE  = 0;
   bool FORWARD   = 1;
-  bool BACKWARDS = 0;
   
    
 //   int points_length = points.size();

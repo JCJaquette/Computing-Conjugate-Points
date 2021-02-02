@@ -31,10 +31,11 @@ int test(int dimension,vector < double > All_parameters)
 //  //     (iii)    Calculate a frame matrix        // // // //
 //  //     (iv)     Prove no conj pts past L_+      // // // //
 //  //     (v)      Count conjugate points          // // // //
+    
+  bool CHECK_MANIFOLD 		    = 1;
+  bool CHECK_CONNECTING_ORBIT 	= 1;
+  
   clock_t begin = clock();
-  
-  
-  
   
   int order = 20;               //  High order Taylor method of validated integration
   
@@ -42,23 +43,27 @@ int test(int dimension,vector < double > All_parameters)
   int single_newton_steps = 20;
  
   int grid = 14;                //  Grid for counting conjugate points
-  int stepsize = 7;             //  Fixed stepsize for counting conjugate points
+  int stepsize = 5;             //  Fixed stepsize for counting conjugate points
   interval L_plus = 13.55;      //  Distance to integrate forward when finding unstable eigenspace.
-//   interval T ;
+  
+  interval scale;                           //  initial size of the (un)stable manifold;
+  interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'
+  interval L;                               //  Cone angle  --  \vartheta in the paper -- 
+  
   if (dimension ==4 ){
+    scale = 0.000016;     // n=2
+    L = interval(.00008); // cone angle
     L_plus = 13;
     stepsize =5;
   }
   else{ 
-    L_plus = 13.55;
+    scale = 0.000001;     // n=3      
+    L = interval(.000015); // cone angle
+//     L_plus = 13.55;
     L_plus = 14;
     stepsize =6;
   }
-  
-//   bool USE_MULTIPLE_SHOOTING = 0;
-  
-  bool CHECK_MANIFOLD 		    = 1;
-  bool CHECK_CONNECTING_ORBIT 	= 1;
+    
   
 //  //     (i)      Compute a standing wave \varphi // // // //
 
@@ -68,36 +73,16 @@ int test(int dimension,vector < double > All_parameters)
   IMap f             = functions[0]; // For unstable manifold
   IMap f_minus       = functions[1]; // For stable manifold
   IMap f_linearize   = functions[2]; // For non-autonomous system
- 
-  //   We define the box used for the boundary value problem
-  
-  interval scale;       //  size of the (un)stable manifold
-  interval initial_box; //  validation nbd for BVP problem 
-  interval L;           //  Cone angle  --  \vartheta in the paper -- 
-  
-  if (dimension ==4)
-  {
-      scale = 0.000016;     // n=2
-      L = interval(.00008); 
-      initial_box =interval(-.000001,.000001);
-  }
-  else if (dimension ==6)
-  {
-      scale = 0.000001;     // n=3
-      
-      L = interval(.000015); 
-      initial_box =interval(-.000001,.000001);
-  }
   
 //  We compute an approximate value of T, for determining the initial guess. 
-//  This is chosen so that the uncoupled standing front is a distance 'scale' from the equilibria at time +/- T in global coordinates. 
+//  This is chosen so that the uncoupled standing front is a distance 'scale' from the equilibria (in global coordinates) at time +/- T . 
   interval T = approxT(dimension, All_parameters,scale);
 
-  
-  
 
-    //   BEGIN we construct the manifolds  
-  IVector U_flat(dimension/2);
+    //   BEGIN We construct the manifolds  
+    //              -- The size of these manifolds may be adjusted after we find the approximate heteroclinic orbit, and verified again. 
+  
+  IVector U_flat(dimension/2);  // The size of the initial manifolds.
   for (int i =0;i<dimension/2;i++){ U_flat[i]=scale*interval(-1,1);}
   
 //   Create local Unstable Manifold
@@ -108,8 +93,6 @@ int test(int dimension,vector < double > All_parameters)
   A_u = midMatrix(  symplecticNormalization(A_u,dimension)  );                      //   Impose symplecticNormalization  
   localVField F_u(f,A_u,p_u);                                                       //   We create the local vector field object  
   localManifold localUnstable(F_u,U_flat, L, UNSTABLE,manifold_subdivision);        //   We create the local manifold object
-  
-  
 
   
   //   Create local Stable Manifold
@@ -135,31 +118,24 @@ int test(int dimension,vector < double > All_parameters)
 //   END we construct the manifolds
  
   
-
-//  BEGIN  We Get our initial condition 
-
-
 //  We produce a guess in the local eigen-coordinates of the boundary points of our heteroclinic orbit. 
 //  This is chosen and rescaled so that the guess will just barely fit inside manifolds <>localUnstable<> and <>localStable<>. 
 vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);
+    
+    
+// BEGIN    TESTING This block may be used to find better guesses for obstinant parameters. 
 
-//   END we construct an initial guess   
-    
-    
-    
-    
-    // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
-    cout.precision(16);
-    IVector Zero_n(dimension/2);
-    vector < IVector > Unstable_Global_pt_Coord =   localUnstable.getPointNbd( Guess[0], Zero_n);
-    vector < IVector > Stable_Global_pt_Coord   =   localStable.getPointNbd( Guess[1], Zero_n);
-    cout << endl;
-    cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
-    cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
-    cout << endl;
-//     cout.precision(6);
-    // // // // //    NOTE 
-    
+//     // // // // //      Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
+//     cout.precision(16);
+//     IVector Zero_n(dimension/2);
+//     vector < IVector > Unstable_Global_pt_Coord =   localUnstable.getPointNbd( Guess[0], Zero_n);
+//     vector < IVector > Stable_Global_pt_Coord   =   localStable.getPointNbd( Guess[1], Zero_n);
+//     cout << endl;
+//     cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
+//     cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
+//     cout << endl;
+// //     cout.precision(6);
+// END     // // // // //    
     
   
 // // // // // // // // // // // // // // // // //   
@@ -167,9 +143,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 //   BEGIN Testing integration of guess 
   
 //     We define the XY_pt that will get used in the single-shooting newton's method. 
-  IVector XY_pt(dimension);  
-  
-  //   We f 
+    IVector XY_pt(dimension);  
     for (int i = 0 ; i < dimension / 2 ; i++)
     {
         XY_pt[i] = mid(Guess[0][i]);
@@ -177,75 +151,55 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
     }
     cout << " XY pt   = " << XY_pt<< endl;
     
-    
-    
 //     When we solve the BVP, we fix the radius away from the equilibrium, of the point on the unstable manifold. 
-//     This value we choose for the radius r_u is just the initial radius of our guess on the unstable manifold. 
+//     This value we choose for the radius r_u is the initial radius of our guess on the unstable manifold. 
 //     To be more precise, we fix the square of the radius. 
+//     In any case, this value is fixed and not readjusted. If necessary, the manifold validation nbd is increased to contain the boundary values of the heteroclinic.
     interval r_u_sqr;
     for (int i = 0 ; i < dimension / 2 ; i++){
         r_u_sqr += sqr(XY_pt[i]);
     }
     r_u_sqr=r_u_sqr.left();
     
-    
-  boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order); 
+//      We create the object of the BVP class
+    boundaryValueProblem BVP(f,f_minus,localStable,localUnstable,order); 
 
-    
 //  We adjust the integration time to minimize the distance between our initial points. 
+//  This time is then fixed for the rest of the program. 
     interval T_new = BVP.FindTime(  XY_pt,  T);
     
     
     cout << " T old = " << T << endl; 
     cout << " T new = " << T_new << endl;     
     T = T_new;
-    
-    
   
   
-//   BEGIN  do the single-shooting newton method 
+//   BEGIN  Perform a single-shooting Newton-like method 
   
   
+//     Here, we perform a non-rigorous Newton method; we use intervals of zero-width.
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
   for (int i = 0 ; i<single_newton_steps ;i++)
   {
-    
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T,r_u_sqr);
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
-
   }
   
     
-    // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
-    cout.precision(10);
-    IVector X_pt_final(dimension/2); 
-    IVector Y_pt_final(dimension/2);
-    for( int i = 0 ; i < dimension/2;i++){
-        X_pt_final[i] = XY_pt[i];
-        Y_pt_final[i] = XY_pt[i+dimension/2];
-    }
-    Unstable_Global_pt_Coord =   localUnstable.getPointNbd( X_pt_final, Zero_n);
-    Stable_Global_pt_Coord   =   localStable.getPointNbd( Y_pt_final, Zero_n);
-    cout << endl;
-    cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
-    cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
-    cout << endl;
-    cout.precision(6);
-    // // // // //    NOTE 
-  
-    
-    
-//   We update the validity size of the neighborhoods of the manifolds
+// BEGIN  We update the validity size of the neighborhoods of the manifolds
 //      This is done such that the final 'approximate' solution is just inside the neighborhood 
 //      'just inside' here being 0.1% larger than the approximate solution. 
 
+  IVector X_pt_final(dimension/2); 
+  IVector Y_pt_final(dimension/2);
+  for( int i = 0 ; i < dimension/2;i++){
+      X_pt_final[i] = XY_pt[i];
+      Y_pt_final[i] = XY_pt[i+dimension/2];
+  }
   IVector x_Ratios = localUnstable.containmentRatios(X_pt_final);
   IVector y_Ratios = localStable.containmentRatios(Y_pt_final);
-  cout << " x_Ratios  = " << x_Ratios  << endl;
-  cout << " y_Ratios  = " << y_Ratios  << endl;
-  
   
   IVector U_flat_U_new(dimension/2);
   IVector U_flat_S_new(dimension/2);
@@ -265,36 +219,38 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
       cout << " Cannot verify stable/unstable manifolds after resizing for approximate solution." << endl;
       return -1;
   }
+//   END
   
+  cout << endl<< "Validating BVP ... " << endl << endl;
   
-//    We inflate our neighborhood and try to verify
-    IVector XY_nbd(dimension);
-    
+//   BEGIN We validate the solution to our BVP using the Krawczyk method. 
+
+//    First, we obtain a neighborhood about our approximate solution, which should map into itself under the Krawczyk operator. 
+  IVector XY_nbd(dimension);
   for (int i = 0 ; i< dimension;i++)
   {
       XY_nbd[i] = scale * initial_box; 
   }
   
-  
+//    We map this neighborhood several times under the Krawczyk operator. This should get a near optimal nbd to be verified. 
     for (int i = 0 ; i<single_newton_steps ;i++){
         Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T,r_u_sqr);
-    //     cout << "Answ XY_pt 	= " << XY_pt << endl;
         XY_pt = midVector(Newton_out);
-        XY_nbd = (Newton_out - XY_pt)*interval(1.5);
+        XY_nbd = (Newton_out - XY_pt);
 //         cout << "XY_pt " << XY_pt << endl;
 //         cout << "XY_nbd " << XY_nbd << endl;
-    }
+    }    
+//     We slightly inflate the neighborhood so that it will ensure proper containment. 
+    XY_nbd = XY_nbd *interval(1.5);
 
+    //     We perform a final Newton/Krawczyk step and check for proper containment. 
   Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T,r_u_sqr);
-  cout << " Answ T       = " << T<< endl;
   cout << " Answ XY pt   = " << XY_pt<< endl;
   cout << " Answ XY nbd  = " << XY_nbd<< endl;
   
-  
+//   BEGIN We check to see that the boundry value of our heteroclinic orbits lie inside the validated neighborhood of the manifold. 
   IVector X_pt_nbd(dimension/2);
   IVector Y_pt_nbd(dimension/2);
-  
-  
   
   for (int i = 0 ; i< dimension/2 ; i++){
       X_pt_nbd[i] = XY_pt[i]+XY_nbd[i];
@@ -304,15 +260,15 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   bool X_pt_INSIDE = subsetInterior(X_pt_nbd,U_flat_U_new);
   bool Y_pt_INSIDE = subsetInterior(Y_pt_nbd,U_flat_S_new);
   bool INSIDE_BOX = X_pt_INSIDE && Y_pt_INSIDE;
-    
-    
   
   if ( !(INSIDE_BOX)  ){
     cout << " Endpoints of heteroclinic lie outside the (un)stable manifolds. " << endl ; 
+    return -1;
   }
+//   END
 
   if (BVP.checkProof())
-      cout << "We are verified!!!!! :) " << endl <<endl;
+    cout << endl <<  "We have verified the connecting orbit!!  " << endl <<endl;
   else
   {
     cout << "Cannot verify connecting orbit" << endl;
@@ -324,7 +280,21 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 
 
 
-cout << " Done with BVP at line ~350 " << endl;
+// BEGIN This block may be used to find better guesses for obstinant parameters. 
+//     // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
+//     cout.precision(10);
+
+//     Unstable_Global_pt_Coord =   localUnstable.getPointNbd( X_pt_final, Zero_n);
+//     Stable_Global_pt_Coord   =   localStable.getPointNbd( Y_pt_final, Zero_n);
+//     cout << endl;
+//     cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
+//     cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
+//     cout << endl;
+//     cout.precision(6);
+//  END   // // // // //    
+
+
+cout << " Done with BVP at line ~330 " << endl;
 return -20;
 
 
@@ -482,7 +452,7 @@ void SampleParameters( void)
     int no_params = Parameter_list.size();
     vector < int > Unstable_EigenValues(no_params);
     
-    int dimension =6;
+    int dimension =4;
     for (int i = 0 ; i< no_params; i++)
     {
         cout <<endl<<endl<< "Trial #"<<i+1<< " of " << no_params<<endl;
@@ -541,7 +511,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4; // TESTING DIMENSION
+	    dimension=6; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
@@ -554,15 +524,17 @@ int main(int argc, char* argv[])
         {            
             Input.push_back(1); // b1
             Input.push_back(.98);// b2              0.98 previous
-            Input.push_back(.96);// b3              0.95 previous
+            Input.push_back(.97);// b3              0.95 previous
                         
             Input.push_back(.05);// c12                         (.050,.015)                     L_+ = 13.55
-            Input.push_back(.015);// c23         0 - unstable   (-.015,.050) & (-.015,-.050)    L_+ = 14
+            Input.push_back(.05);// c23         0 - unstable   (-.015,.050) & (-.015,-.050)    L_+ = 14
             
             //  Finding computational parameters which get (+.015,-.050) to work is difficult / not yet successful. 
             //   -- For this, it is probably best to perturb up from the n=2 case.   
             
-            //  -- NOTE UPDATE! This works for b = ( 1, .98, .97 ) and c = ( -0.05, 0.015 ) .            
+            //  -- NOTE UPDATE! This works for b = ( 1, .98, .97 ) and c = ( -0.05, 0.015 ) .   ~~~~ Not sure about this anymore. 
+            
+            // 2/2/21 ~ It also looks like a damped Newton's method will help it converge for more difficult parameters. 
             
 
             test(dimension,Input);

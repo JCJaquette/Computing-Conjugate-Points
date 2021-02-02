@@ -32,9 +32,7 @@ protected:
   int dimension;
   
   int order;
-  
-//   IVector verified_XY_pt;
-//   IVector verified_XY_nbd;
+
   
 public:
   boundaryValueProblem(IMap &pf_,IMap &pf_minus_,localManifold &pStable_,localManifold &pUnstable_, int order_){pf = &pf_;pf_minus = &pf_minus_; pStable = &pStable_; pUnstable = &pUnstable_;order = order_;dimension = pStable->dim();SUCCESS=0;}
