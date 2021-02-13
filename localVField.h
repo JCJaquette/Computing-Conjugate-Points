@@ -19,6 +19,7 @@ private:
   IVector p;
   IMatrix Ainv;
   friend class localManifold;
+  friend class localManifold_Eig;
   friend class boundaryValueProblem;
   friend class propagateManifold;
 public:

@@ -1,6 +1,7 @@
  
 #include "localManifold.h"
 
+// BEGIN Base class: "localManifold" methods
 IVector localManifold::constructU( IVector U_flat)
 {
 //     Input U_flat is in local coords, of length  n=dim/2
@@ -136,7 +137,6 @@ void localManifold::constructDW( )
 //   For the chart of the unstable manifold,   W(x)= (x , \omega^u (x)
 //     this function computes the derivative DW. 
 //     (And does the analogous thing for the stable manifold.) 
-//   (Might not be used)
 
     
   int k= dimension;
@@ -176,145 +176,6 @@ void localManifold::constructDW( )
 }
   
 
-IMatrix localManifold::boundDFU( IVector U)
-{
-    //   Divides U into N^n pieces and bounds DF on it.
-    //      N = subdivisionNUM
-    //      n = dimension/2
-    //   If part of the stable manifold, only divides the stable part / parity for unstable manifold.
-    
-  int subdivision_dim = dimension/2;
-  
-//   We create the index list ( either all the stable coords or all the unstable coords) 
-  vector < int > index_list(dimension/2);
-
-//     We subdivide the stable part if we are looking at the stable manifold
-  if (stable)
-  {
-    for (int i=0;i<dimension/2;i++)
-    {
-      index_list[i] = i +dimension/2;
-    }
-  }
-//     We subdivide the unstable part if we are looking at the unstable manifold
-  else
-  {
-    for (int i=0;i<dimension/2;i++)
-    {
-      index_list[i] = i;
-    }
-  }
-
-//    We get a bound on the first part
-  vector < int > part_list(dimension/2);
-  
-  IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-  IMatrix A = (*pF)[U_part];
-  
-  
-//    We make a single for loop to go through all the subdivision dimensions
-  int sum;
-  int N = subdivisionNUM;
-  int n = subdivision_dim;
-  int N_to_i;
-  for (int j = 0;j< (int_pow(N,n));j++)
-  {
-//     We index the part we want
-    sum = 0;
-    N_to_i = 1;
-    for (int i = 0 ; i<n;i++)
-    {
-      part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
-      if (i < n-1)
-      {
-        sum += part_list[i]*N_to_i;
-        N_to_i = N_to_i * N;
-      }
-    }
-//     We get the part 
-    U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-    A = intervalHull(A,(*pF)[U_part]);
-
-  }
-  
-  return A;
-}
-
-
-interval localManifold::boundDFU_proj( IVector U)
-{
-//     spaghetti code modification of boundDFU. 
-//     Used to bound the function D F( \pi_u/s \circ \psi   U ) when determining the bound for L_-.
-    
-  int subdivision_dim = dimension/2;
-  
-  IMatrix pi_1(dimension,dimension);                    // NOTE this line is different 
-  for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}      // NOTE this line is different 
-  IMatrix pi1_A = pi_1 * (*pF).A;                       // NOTE this line is different 
-  
-  IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ] *pi_1;         // NOTE this line is different 
-  
-  
-//   We Create the index list
-  vector < int > index_list(dimension/2);
-
-//     We subdivide the stable part if we are looking at the stable manifold
-  if (stable)
-  {
-    for (int i=0;i<dimension/2;i++)
-    {
-      index_list[i] = i +dimension/2;
-    }
-  }
-//     We subdivide the unstable part if we are looking at the unstable manifold
-  else
-  {
-    for (int i=0;i<dimension/2;i++)
-    {
-      index_list[i] = i;
-    }
-  }
-
-  
-//    We get a bound on the first part
-  vector < int > part_list(dimension/2);
-  
-  IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-//   IMatrix A = (*pF)[U_part];
-  IMatrix A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;  // NOTE this line is different 
-  
-  interval MaxDiff;                                         // NOTE this line is different 
-  MaxDiff = euclNorm(A-D2G_p);                              // NOTE this line is different 
-  
-//    We make a single for loop to go through all the subdivision dimensions
-  int sum;
-  int N = subdivisionNUM;
-  int n = subdivision_dim;
-  int N_to_i;
-  for (int j = 0;j< (int_pow(N,n));j++)
-  {
-//     We index the part we want
-    sum = 0;
-    N_to_i = 1;
-    for (int i = 0 ; i<n;i++)
-    {
-      part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
-      if (i < n-1)
-      {
-        sum += part_list[i]*N_to_i;
-        N_to_i = N_to_i * N;
-      }
-    }
-//     We get the part 
-    U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-//     A = intervalHull(A,(*pF)[U_part]);
-    A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;        // NOTE this line is different 
-    MaxDiff =  intervalHull(MaxDiff , euclNorm(A-D2G_p));   // NOTE this line is different 
-
-  }
-  
-  return MaxDiff;
-}
 
 
 bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
@@ -377,23 +238,6 @@ bool localManifold::checkIsolatingBlock( IMatrix DFU, const IVector &U)
   
   return output;
 }
-
-// bool localManifold::checkRateCondition(IVector U_flat ) 
-// {
-// //     NO LONGER USED I THINK (1/6/2021)
-// //    We calculate mu_1, mu_2, xi
-// 
-//   IVector U = constructU( U_flat);
-//   
-// //   cout << " U = " << U << endl;
-// 
-//   //   M  is DF[U]
-//   IMatrix M = boundDFU(U);
-//   
-// //   abort();
-//   
-//   return checkRateCondition(M);
-// }
 
 
 bool localManifold::checkRateCondition(IMatrix DFU) 
@@ -487,7 +331,174 @@ bool localManifold::checkRateCondition(IMatrix DFU)
   
 
 
-interval localManifold::ErrorEigenfunction( void)
+IVector localManifold::containmentRatios( IVector point_test){
+    IVector ratios(dimension/2);
+
+    for (int i = 0 ; i<dimension/2;i++){
+        if ( point_test[i] > 0 )
+            ratios[i] = point_test[i]/(U_flat_global[i].right());
+        else
+            ratios[i] = point_test[i]/(U_flat_global[i].left());
+    }
+    return ratios;
+}
+
+
+IMatrix localManifold::boundDFU( IVector U)
+{
+    //   Divides U into N^n pieces and bounds DF on it.
+    //      N = subdivisionNUM
+    //      n = dimension/2
+    //   If part of the stable manifold, only divides the stable part / parity for unstable manifold.
+    
+  int subdivision_dim = dimension/2;
+  
+//   We create the index list ( either all the stable coords or all the unstable coords) 
+  vector < int > index_list(dimension/2);
+
+//     We subdivide the stable part if we are looking at the stable manifold
+  if (stable)
+  {
+    for (int i=0;i<dimension/2;i++)
+    {
+      index_list[i] = i +dimension/2;
+    }
+  }
+//     We subdivide the unstable part if we are looking at the unstable manifold
+  else
+  {
+    for (int i=0;i<dimension/2;i++)
+    {
+      index_list[i] = i;
+    }
+  }
+
+//    We get a bound on the first part
+  vector < int > part_list(dimension/2);
+  
+  IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+  IMatrix A = (*pF)[U_part];
+  
+  
+//    We make a single for loop to go through all the subdivision dimensions
+  int sum;
+  int N = subdivisionNUM;
+  int n = subdivision_dim;
+  int N_to_i;
+  for (int j = 0;j< (int_pow(N,n));j++)
+  {
+//     We index the part we want
+    sum = 0;
+    N_to_i = 1;
+    for (int i = 0 ; i<n;i++)
+    {
+      part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
+      if (i < n-1)
+      {
+        sum += part_list[i]*N_to_i;
+        N_to_i = N_to_i * N;
+      }
+    }
+//     We get the part 
+    U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+    A = intervalHull(A,(*pF)[U_part]);
+
+  }
+  
+  return A;
+}
+
+// END
+
+// // // // // // // // // // // // // 
+// BEGIN Derived class: " localManifold_Eig "  methods
+// // // // // // // // // // // // // 
+
+localManifold_Eig::localManifold_Eig(localVField &pF_, IVector U_flat_global_,interval L_, bool stable_, int subdivisionNUM_)
+    : localManifold( pF_, U_flat_global_,L_, stable_, subdivisionNUM_){}
+
+localManifold_Eig::localManifold_Eig(const localManifold & lM_)
+    : localManifold( lM_ ){}
+        
+
+interval localManifold_Eig::boundDFU_proj( IVector U)
+{
+//     spaghetti code modification of boundDFU. 
+//     Used to bound the function D F( \pi_u/s \circ \psi   U ) when determining the bound for L_-.
+    
+  int subdivision_dim = dimension/2;
+  
+  IMatrix pi_1(dimension,dimension);                    // NOTE this line is different 
+  for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}      // NOTE this line is different 
+  IMatrix pi1_A = pi_1 * (*pF).A;                       // NOTE this line is different 
+  
+  IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ] *pi_1;         // NOTE this line is different 
+  
+  
+//   We Create the index list
+  vector < int > index_list(dimension/2);
+
+//     We subdivide the stable part if we are looking at the stable manifold
+  if (stable)
+  {
+    for (int i=0;i<dimension/2;i++)
+    {
+      index_list[i] = i +dimension/2;
+    }
+  }
+//     We subdivide the unstable part if we are looking at the unstable manifold
+  else
+  {
+    for (int i=0;i<dimension/2;i++)
+    {
+      index_list[i] = i;
+    }
+  }
+
+  
+//    We get a bound on the first part
+  vector < int > part_list(dimension/2);
+  
+  IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+//   IMatrix A = (*pF)[U_part];
+  IMatrix A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;  // NOTE this line is different 
+  
+  interval MaxDiff;                                         // NOTE this line is different 
+  MaxDiff = euclNorm(A-D2G_p);                              // NOTE this line is different 
+  
+//    We make a single for loop to go through all the subdivision dimensions
+  int sum;
+  int N = subdivisionNUM;
+  int n = subdivision_dim;
+  int N_to_i;
+  for (int j = 0;j< (int_pow(N,n));j++)
+  {
+//     We index the part we want
+    sum = 0;
+    N_to_i = 1;
+    for (int i = 0 ; i<n;i++)
+    {
+      part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
+      if (i < n-1)
+      {
+        sum += part_list[i]*N_to_i;
+        N_to_i = N_to_i * N;
+      }
+    }
+//     We get the part 
+    U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+//     A = intervalHull(A,(*pF)[U_part]);
+    A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;        // NOTE this line is different 
+    MaxDiff =  intervalHull(MaxDiff , euclNorm(A-D2G_p));   // NOTE this line is different 
+
+  }
+  
+  return MaxDiff;
+}
+
+
+
+interval localManifold_Eig::ErrorEigenfunction( void)
 {  
   
 //   We estimate A(U) -A(p) --- TODO this could be improved BY SUBDIVISION! TODO
@@ -583,7 +594,6 @@ interval localManifold::ErrorEigenfunction( void)
   interval error = lambda/(1-lambda);
   eps_unscaled = error;
   
-// // //   abort();
   
     cout << " !error = " << error<< endl;
   
@@ -591,7 +601,7 @@ interval localManifold::ErrorEigenfunction( void)
 }
 
 
-interval localManifold::computeK( void )
+interval localManifold_Eig::computeK( void )
 {    
     IMatrix A_u = (*pF).A;                                  // Eigenvectors
     IMatrix A_infty = (*(*pF).f)[(*pF).p];                  // Asymptotic Matrix
@@ -633,7 +643,7 @@ interval localManifold::computeK( void )
 }
 
 
-void localManifold::ErrorEigenfunctionTotal_minus_infty( void){
+void localManifold_Eig::ErrorEigenfunctionTotal_minus_infty( void){
 //     Computes the Eigenfunction error, and puts it all in the stable modes. 
     
     IMatrix Error_mat(dimension,dimension/2);
@@ -681,7 +691,7 @@ void localManifold::ErrorEigenfunctionTotal_minus_infty( void){
 //     return 0
 }
 
-void localManifold::ErrorEigenfunctionTotal_plus_infty( void){
+void localManifold_Eig::ErrorEigenfunctionTotal_plus_infty( void){
         
     IMatrix Error_mat(dimension,dimension);     // All eigenfunction error
     
@@ -703,7 +713,7 @@ void localManifold::ErrorEigenfunctionTotal_plus_infty( void){
 }
 
 
-IVector localManifold::getEigenError_minus_infty(int columnNumber){
+IVector localManifold_Eig::getEigenError_minus_infty(int columnNumber){
     IVector v_out(dimension);
     
     for (int i = 0 ; i<dimension/2;i++){
@@ -714,14 +724,4 @@ IVector localManifold::getEigenError_minus_infty(int columnNumber){
 }
 
 
-IVector localManifold::containmentRatios( IVector point_test){
-    IVector ratios(dimension/2);
-
-    for (int i = 0 ; i<dimension/2;i++){
-        if ( point_test[i] > 0 )
-            ratios[i] = point_test[i]/(U_flat_global[i].right());
-        else
-            ratios[i] = point_test[i]/(U_flat_global[i].left());
-    }
-    return ratios;
-}
+// END

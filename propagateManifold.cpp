@@ -175,14 +175,14 @@ int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector en
   }
   else 
       return conjugate_points[0];
-  
-  
  
 }
 
+//  TODO This function is too long :-(
 
 bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 {
+//     TODO Somewhere in here, we need to check that, when we remove one unstable eigenfucntion and replace it with the derivative of the standing wave, this produces a system with full rank. 
     int STABLE = 1;
     int manifold_subdivision = 15;
   
@@ -229,7 +229,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     
     
       
-    localManifold localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            //   We create the local manifold object, which encloses our final trajectory;
+    localManifold_Eig localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            //   We create the local manifold object, which encloses our final trajectory;
     
     int adjust_L = 10;
     bool conditions_S;

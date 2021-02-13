@@ -70,7 +70,7 @@ vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda,
     }
     if (verify == 0 ){
         cout << "Could not validate eigenvectors" << endl;
-        abort();
+        throw -344;
     }
     
 //     Get the vector part.

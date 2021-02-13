@@ -16,7 +16,7 @@ CXXFLAGS += ${CAPDFLAGS} -O2 -Wall
 # directory where object and dependancy files will be created
 OBJDIR = .obj/
 
-CXX = g++ -fopenmp -lgomp
+CXX = g++ 
 #============ the following should not be changed =========
 OTHERS_OBJ = ${OTHERS:%=${OBJDIR}%.o}
 OBJ_FILES = ${OTHERS_OBJ} ${PROGS:%=${OBJDIR}%.o}

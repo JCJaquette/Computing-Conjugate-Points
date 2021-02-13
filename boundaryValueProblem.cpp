@@ -339,11 +339,10 @@ IMatrix boundaryValueProblem::DG_combine( IMatrix DGX, IMatrix DGY, IVector X_pt
 
 IVector boundaryValueProblem::ComponentBound( IVector XY,interval T)
 {
-//     <<>> Auxillary Function <<>>
+//     <<>> Auxillary Function, not used in the proof <<>>
+//          
+//      This would be improved by rewriting it to use the pt/nbd form
     
-// NOTE This would be improved by rewriting it to use the pt/nbd form
-    
-//     !!! Vet getTrajectory and getTotalTrajectory first !!! 
     
 //   We break up XY into X and Y
   
@@ -369,11 +368,10 @@ IVector boundaryValueProblem::ComponentBound( IVector XY,interval T)
 
 IVector boundaryValueProblem::localComponentBound( IVector XY,interval T, bool STABLE )
 {
-    //     <<>> Auxillary Function <<>>
+//     <<>> Auxillary Function, not used in the proof <<>>
+//     
+//  This would be improved by rewriting it to use the pt/nbd form
     
-    // NOTE This would be improved by rewriting it to use the pt/nbd form
-    
-//     !!! Vet getTrajectory and getTotalTrajectory first !!! 
     //   We Create our solvers 
   ITaylor* solver;
   localManifold *pManifold;
@@ -401,9 +399,7 @@ IVector boundaryValueProblem::localComponentBound( IVector XY,interval T, bool S
     
   // Forward/backwards image of Xinit & Yinit  w/ derivatives 
   IVector XY_new(dimension);
-//   IMatrix XY_deriv(dimension,dimension);
 
-//   XY_new = Phi(T,S_XY,XY_deriv); 
   int grid = 64;
   
   vector<IVector> local_trajectory = getTrajectory(S_XY, T, grid,Phi,(*solver));

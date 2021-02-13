@@ -1,8 +1,4 @@
-// INTEGRATION OF ODEs
-// This is an example of computation of time shift maps for ODEs in CAPD library
-// Below we have two applications: 
-// 1. non-rigorous computations in "NonRigorous"
-// 2. interval-rigorous computations in "IntervalRigorous"
+// Validated Computation of Conjugate Points
 
 #include <iostream>
 using namespace std;
@@ -59,7 +55,6 @@ int test(int dimension,vector < double > All_parameters)
   else{ 
     scale = 0.000001;     // n=3      
     L = interval(.000015); // cone angle
-//     L_plus = 13.55;
     L_plus = 14;
     stepsize =6;
   }
@@ -93,7 +88,6 @@ int test(int dimension,vector < double > All_parameters)
   A_u = midMatrix(  symplecticNormalization(A_u,dimension)  );                      //   Impose symplecticNormalization  
   localVField F_u(f,A_u,p_u);                                                       //   We create the local vector field object  
   localManifold localUnstable(F_u,U_flat, L, UNSTABLE,manifold_subdivision);        //   We create the local manifold object
-
   
   //   Create local Stable Manifold
   int STABLE = 1;
@@ -122,7 +116,7 @@ int test(int dimension,vector < double > All_parameters)
 //  This is chosen and rescaled so that the guess will just barely fit inside manifolds <>localUnstable<> and <>localStable<>. 
 vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);
     
-    
+//     TODO Remove this comment 
 // BEGIN    TESTING This block may be used to find better guesses for obstinant parameters. 
 
 //     // // // // //      Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
@@ -279,7 +273,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 //      END single shooting 
 
 
-
+//     TODO Remove this comment 
 // BEGIN This block may be used to find better guesses for obstinant parameters. 
 //     // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
 //     cout.precision(10);
@@ -292,12 +286,6 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 //     cout << endl;
 //     cout.precision(6);
 //  END   // // // // //    
-
-
-cout << " Done with BVP at line ~330 " << endl;
-return -20;
-
-
 
 
 
@@ -316,7 +304,11 @@ return -20;
   
   cout << endl << "Globalizing Manifold ... " << endl;
   
-  propagateManifold E_u(f_linearize, localUnstable,localStable, XY_pt,XY_nbd,order,stepsize);
+//   We upcast our manifold objects to allow for eigenfunction calculations
+  localManifold_Eig localUnstable_eig( localUnstable);
+  localManifold_Eig localStable_eig( localStable);
+  
+  propagateManifold E_u(f_linearize, localUnstable_eig,localStable_eig, XY_pt,XY_nbd,order,stepsize);
       
 //   Get the endpoint
   
@@ -339,10 +331,6 @@ return -20;
   
   
   
-  
-  
-  
-  
 //  //     (iv)     Prove no conj pts past L_+      // // // //
 //  //     (v)      Count conjugate points          // // // //
   
@@ -356,9 +344,6 @@ return -20;
   cout <<endl <<  "Runtime = " << elapsed_secs  << endl;
   
   cout << " Result " << unstable_e_values  << endl;
-  
-    if (!(INSIDE_BOX ))
-      cout << endl << " Endpoints of heteroclinic lie outside the (un)stable manifolds :( " << endl ; 
   
     
   return unstable_e_values;
@@ -401,8 +386,8 @@ vector < vector < double > > Construct_ParameterList( int subdivisions_circle,in
 {
     vector < double > Input;
     Input.push_back(1); // b1
-    Input.push_back(.98);// b2 
-    Input.push_back(.99);// b3
+    Input.push_back(.975);// b2 
+    Input.push_back(.95);// b3
     
     
     vector < vector < double > > Parameter_list;
@@ -444,15 +429,15 @@ void SampleParameters( void)
     int subdivisions_circle = 24;
     int subdivisions_radius = 4;
     
-    double radius_min = .005;
-    double radius_max = .03;
+    double radius_min = .02;
+    double radius_max = .06;
     
     vector < vector < double > > Parameter_list = Construct_ParameterList(subdivisions_circle,subdivisions_radius, radius_min, radius_max);
     
     int no_params = Parameter_list.size();
     vector < int > Unstable_EigenValues(no_params);
     
-    int dimension =4;
+    int dimension =6;
     for (int i = 0 ; i< no_params; i++)
     {
         cout <<endl<<endl<< "Trial #"<<i+1<< " of " << no_params<<endl;
@@ -461,13 +446,16 @@ void SampleParameters( void)
         
         try
         {
-            Unstable_EigenValues[i] =  test(dimension,Parameter_list[i]);
-            
+            Unstable_EigenValues[i] =  test(dimension,Parameter_list[i]);            
         }
         catch(exception& e)
         {
     		cout << "\n\nException caught: "<< e.what() << endl;
             Unstable_EigenValues[i] = -5;
+        }
+        catch(int error_int)
+        {
+            Unstable_EigenValues[i] = error_int;
         }
 //         We consolidate our error messages;
         if (Unstable_EigenValues[i] <0)
@@ -503,7 +491,7 @@ int main(int argc, char* argv[])
   	cout.precision(16);
 	try
 	{
-// 	  plotDemo();
+
 	  bool Get_Param = 0;
 	  int dimension;
 	  vector < double > Input;
@@ -511,7 +499,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6; // TESTING DIMENSION
+	    dimension=4; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
@@ -524,17 +512,14 @@ int main(int argc, char* argv[])
         {            
             Input.push_back(1); // b1
             Input.push_back(.98);// b2              0.98 previous
-            Input.push_back(.97);// b3              0.95 previous
+            Input.push_back(.96);// b3              0.96 previous
                         
-            Input.push_back(.05);// c12                         (.050,.015)                     L_+ = 13.55
-            Input.push_back(.05);// c23         0 - unstable   (-.015,.050) & (-.015,-.050)    L_+ = 14
+            Input.push_back(-.04);// c12            +/- .04 
+            Input.push_back(.02);// c23             +/- .02  
             
-            //  Finding computational parameters which get (+.015,-.050) to work is difficult / not yet successful. 
-            //   -- For this, it is probably best to perturb up from the n=2 case.   
+//             L_plus = 14; work. Maybe something smaller would work too.
+
             
-            //  -- NOTE UPDATE! This works for b = ( 1, .98, .97 ) and c = ( -0.05, 0.015 ) .   ~~~~ Not sure about this anymore. 
-            
-            // 2/2/21 ~ It also looks like a damped Newton's method will help it converge for more difficult parameters. 
             
 
             test(dimension,Input);
