@@ -197,7 +197,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         return 0;
     }  
     
-        //     TODO There is a problem with the normalization of the eigenvectors .!! 
+        
     
     localStableBig.computeEigenError_plus_infty();
     IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;
@@ -244,7 +244,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 
 localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( const IMatrix &last_Frame, IVector endPoint_LPlus)
 {
-    bool STABLE = 1;
+    
     
     
     IMatrix A_s = (*(*pStable).pF).A;
@@ -289,6 +289,7 @@ localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( const IMatrix 
     
     
     //   We create the local manifold object, which encloses our final trajectory;
+    bool STABLE = 1;
     localManifold_Eig localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            
     
     int adjust_L = 10;
@@ -310,6 +311,7 @@ localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( const IMatrix 
 
 vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMatrix & EFunction_Error )
 {
+    //     TODO There is a problem with the normalization of the eigenvectors .!! 
     IMatrix A_s = (*(*pStable).pF).A;
         
     

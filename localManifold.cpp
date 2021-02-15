@@ -686,9 +686,6 @@ void localManifold_Eig::ErrorEigenfunctionTotal_minus_infty( void){
     cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
 //     cout << "E_s = " << E_s << endl;
     
-//     abort();
-    
-//     return 0
 }
 
 void localManifold_Eig::ErrorEigenfunctionTotal_plus_infty( void){

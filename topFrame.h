@@ -69,11 +69,7 @@ public:
   void constructTimeSeries( void);
   void constructDetSeries( void);
   
-//   void constructDetSeries_Derivative( void);
-  
   void constructFrameSeries( void);
-  
-//   void improveDetBound( void);
   
   
    interval calculateDerivative( const IMatrix &A , const IMatrix &A_prime);

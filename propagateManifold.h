@@ -22,11 +22,12 @@ using namespace capd::matrixAlgorithms;
 class propagateManifold 
 {
 private:
+//   Data 
   IMap *pf;         // The system of the 1st variation
   
   int manifold_subdivision = 15; // Used in **construct_Manifold_at_LPlus**
 
-  IVector InitialConditions_local;
+  
   IVector XY_pt;
   IVector XY_nbd;
   
@@ -40,7 +41,9 @@ private:
   localManifold_Eig *pStable;
   int dimension;
   int order;
-
+  
+// // // // // // // // // // // // // 
+//   Methods 
   bool lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus);  
   bool checkL_plus( IMatrix U_coord,interval eps_0,IVector eigenvalues , interval E_norm , IMatrix U_coord_pt, IMatrix U_coord_nbd);  
   bool checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0,interval nu_1 , interval nu_n, interval EE_norm);
@@ -55,7 +58,7 @@ private:
   vector<IMatrix> projectionGammaBeta(  IMatrix& last_Frame  , const IMatrix & EFunction_Error );
   
 public:
-  propagateManifold(IMap &pf_, localManifold_Eig &pUnstable_, localManifold_Eig &pStable_, IVector XY_pt_,IVector XY_nbd_,int order_,int step_size_){pf = &pf_; pUnstable = &pUnstable_;pStable = &pStable_;XY_pt =XY_pt_; XY_nbd =XY_nbd_; order = order_; dimension = (*pUnstable).dim();InitialConditions_local = XY_pt+XY_nbd;step_size=step_size_;}
+  propagateManifold(IMap &pf_, localManifold_Eig &pUnstable_, localManifold_Eig &pStable_, IVector XY_pt_,IVector XY_nbd_,int order_,int step_size_){pf = &pf_; pUnstable = &pUnstable_;pStable = &pStable_;XY_pt =XY_pt_; XY_nbd =XY_nbd_; order = order_; dimension = (*pUnstable).dim();step_size=step_size_;}
   
   void plotting(bool MAKE_PLOT_){MAKE_PLOT = MAKE_PLOT_;};
   

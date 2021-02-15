@@ -16,8 +16,7 @@ void topFrame::initialize( void)
   
   constructTimeSeries();
   constructFrameSeries();
-  constructDetSeries(); //TODO
-//   improveDetBound();   //TODO
+  constructDetSeries();
 }
 
 
