@@ -246,6 +246,17 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
 //     T        The integration time 
 //     r_u_sqr  the squared radius for the point on the unstable manifold.
     
+//   Output
+//     kraw_image   - The image of the Krawczyk operator. 
+// 
+//   This function also modifieds the class object "SUCCESS". 
+//     SUCCESS is set to TRUE if BOTH
+//          the Krawczyk operator maps inside of itself 
+//          AND the last (velocity component) / (vector component) of Phi_T(x) and Phi_-T(y) have the SAME sign. 
+//     
+//   NOTE While for the standing waves currently of interest will easily satisfy this second condition, this is not true for standing waves in general. Should this code be modified to compute other connecting orbits, it is entirely possible that a standing wave could have a zero velocity in its component at the place where Phi_T(x) and Phi_-T(y) meet. 
+//     If so, this function should be overloaded so that another way to call is with a specification of which velocity component gets thrown away. Then this current default method of calling Newton step can just call that function. 
+    
   
 // //   We start the new things 
   vector < IVector > XY_vect_pt  = breakUpXY( XY_pt);
@@ -289,12 +300,18 @@ IVector  boundaryValueProblem::NewtonStep( IVector XY_pt, IVector XY_nbd  ,inter
     IVector new_Nbd     = - ApproxInverse*G + ( eye - ApproxInverse*DG )*XY_nbd;
     IVector kraw_image  = XY_pt + new_Nbd ;
 
-  
-//   We check to see if we have a proof of existence/uniqueness; 
-//      This is done by checking if the Krawczyk-image is in the interior of the domain
-//      Note, the centerpoint XY_pt cancel, so we only compare the neighborhoods
-  SUCCESS  = subsetInterior(new_Nbd ,XY_nbd); 
-  
+//   We check that the last velocity vector (which was thrown out because the trajectories are on the same energy level) have the same sign.
+  if ( G_y[dimension-1]*G_y[dimension-1] >0 ){  
+      //   We check to see if we have a proof of existence/uniqueness; 
+      //      This is done by checking if the Krawczyk-image is in the interior of the domain
+      //      Note, the centerpoint XY_pt cancel, so we only compare the neighborhoods
+      SUCCESS  = subsetInterior(new_Nbd ,XY_nbd); 
+  }
+  else{
+      SUCCESS =0;
+      cout << "WARNING: As a Hamiltonian system, the last velocity component of Phi_T(x) and Phi_-T(y) have differing signs, or do not have a definite sign." << endl;
+  }
+
     
   return kraw_image;
 }
