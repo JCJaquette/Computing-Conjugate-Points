@@ -129,14 +129,15 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 
 int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector endPoint_LPlus)
 {
+//  Input
+//     endPoint_LPlus -     The point phi(L_+) on the heteroclinic orbit. computed as ::  phi(L_+) = Phi_{L_+ - T }(q_1)
   
 
 //   We compute the eigenfunction error;
     (*pUnstable).computeEigenError_minus_infty();
-  
-  vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
-  
 
+//   We flow each eigen-vector (with error) forward. 
+  vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
   for (int i = 0 ; i<dimension/2;i++)
   {
     List_of_Trajectories[i] = computeTotalTrajectory(i,  T + L_plus,  grid);
@@ -146,27 +147,23 @@ int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector en
   cout << "Checking Stability ... " << endl;
   
   topFrame A_frame(List_of_Trajectories);
-//   pA_frame = &A_frame;
-
-//   (*pA_frame) = topFrame(List_of_Trajectories); 
  
   A_frame.initialize();
   
-//   A_frame.makePlot();
+  if (MAKE_PLOT){
+    A_frame.makePlot();
+  }
 
-  
+//   We check the L_+ condition
   bool L_PLUS = lastEuFrame( A_frame,endPoint_LPlus);
 
+//   We count all of the conjugate points
   vector<int> conjugate_points = A_frame.countZeros();
   
   if ( L_PLUS == 0){
 //       We could not verify the L_+ condition
       return -4;
   }      
-  
-  
-  
-
   
   if ( conjugate_points[1]>1 )
   {
@@ -178,18 +175,81 @@ int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector en
  
 }
 
-//  TODO This function is too long :-(
+
 
 bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 {
 //     TODO Somewhere in here, we need to check that, when we remove one unstable eigenfucntion and replace it with the derivative of the standing wave, this produces a system with full rank. 
-    int STABLE = 1;
-    int manifold_subdivision = 15;
+
   
     IMatrix A_s = (*(*pStable).pF).A;
-//     BEGIN We validate the stable manifold in a larger nbd
+//      We validate the stable manifold in a larger nbd
     
     IMatrix last_Frame = A_frame.getLastFrame();
+    //   cout <<endl<< "Last frame = " << last_Frame << endl; 
+    
+    localManifold_Eig localStableBig = construct_Manifold_at_LPlus(last_Frame, endPoint_LPlus);
+   
+    bool conditions_S = localStableBig.checkConditions(  ); 
+    if(! (conditions_S))
+    {
+        cout << "Failed to validate L_+ Conditions " << endl;
+        return 0;
+    }  
+    
+        //     TODO There is a problem with the normalization of the eigenvectors .!! 
+    
+    localStableBig.computeEigenError_plus_infty();
+    IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;
+    
+    vector<IMatrix> Ucoord_vects = projectionGammaBeta(  last_Frame , EFunction_Error );
+    
+    IMatrix U_coord     = Ucoord_vects[0];
+    IMatrix U_coord_pt  = Ucoord_vects[1];
+    IMatrix U_coord_nbd = Ucoord_vects[2];
+    
+
+
+    
+    cout <<" Eigenfunction_Error_plus_infty  " << EFunction_Error  << endl;
+    
+
+    interval eps_0;
+    for (int i = 0 ; i < dimension;i++){
+        eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
+    }
+    
+    interval V_inverse_norm = euclNorm(  krawczykInverse(A_s));
+    interval E_norm = V_inverse_norm.right() * eps_0.right() * sqrt( dimension )  ; 
+    E_norm = E_norm /(1-E_norm );
+    
+    
+    
+    cout << "eps0 = "<<  eps_0 << endl;
+    cout << "E_norm = "<<  E_norm << endl;
+    
+    IVector eigenvalues = localStableBig.eigenvalues;
+//     cout << " eigenvalues= " << eigenvalues<< endl;
+    
+    
+    bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues,E_norm,U_coord_pt,U_coord_nbd);
+
+    return L_PLUS;
+}
+
+
+
+
+
+
+localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( const IMatrix &last_Frame, IVector endPoint_LPlus)
+{
+    bool STABLE = 1;
+    
+    
+    IMatrix A_s = (*(*pStable).pF).A;
+//      We validate the stable manifold in a larger nbd
+    
     //   cout <<endl<< "Last frame = " << last_Frame << endl; 
     
     cout << "--Dist from stable equilibrium         = " << endPoint_LPlus << endl;
@@ -228,8 +288,8 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     interval    L_new       = L_angle_new.right();//5*euclNorm(U_flat_new).right();
     
     
-      
-    localManifold_Eig localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            //   We create the local manifold object, which encloses our final trajectory;
+    //   We create the local manifold object, which encloses our final trajectory;
+    localManifold_Eig localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            
     
     int adjust_L = 10;
     bool conditions_S;
@@ -243,20 +303,15 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 //         cout << " localStableBig.L = " << localStableBig.L << endl;
     }
     
-    if(! (conditions_S))
-    {
-        cout << "Failed to validate L_+ Conditions " << endl;
-        return 0;
-    }  
-//     TODO There is a problem with the normalization of the eigenvectors .!! 
-    
-    localStableBig.computeEigenError_plus_infty();
-    IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;
-    
-    cout <<" Eigenfunction_Error_plus_infty  " << EFunction_Error  << endl;
-    
-    
-    
+    return localStableBig;
+}
+
+
+
+vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMatrix & EFunction_Error )
+{
+    IMatrix A_s = (*(*pStable).pF).A;
+        
     
     IMatrix eye = identityMat(dimension);
 
@@ -272,11 +327,8 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 //             Kronic[i][j] = omega(V_left,V_right,dimension/2);
 //         }
 //     }
-//     cout << " omega product  = " << Kronic << endl;
-            
+//     cout << " omega product  = " << Kronic << endl;   
     
-    
-//     END
     
 //     TODO Make sure that this projection onto coordinates is up to code!!
     
@@ -293,6 +345,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         cout << " phi'  = ";
         cout << vec_in_local_coord << endl;
     }
+//     END
     
     cout << " With additional error" << endl;
     
@@ -314,7 +367,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 //     IMatrix eye_plus_Eu_inv = boundEyeInverseDefect(EFunction_Error,dimension);
 
     IMatrix U_coord_pt(dimension,dimension/2);
-    IMatrix U_coord_nbd(dimension,dimension/2);
+    IMatrix U_coord_nbd(dimension,dimension/2);  // TODO This never seems to get modified. What's going on here??
     
     IVector vec_in_local_coord_pt;
     IVector vec_in_local_coord_nbd;
@@ -360,27 +413,16 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     
 //     END 
 
-    interval eps_0;
-    for (int i = 0 ; i < dimension;i++){
-        eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
-    }
-    
-    interval V_inverse_norm = euclNorm(  krawczykInverse(A_s));
-    interval E_norm = V_inverse_norm.right() * eps_0.right() * sqrt( dimension )  ; 
-    E_norm = E_norm /(1-E_norm );
-    
-    
-    
-    cout << "eps0 = "<<  eps_0 << endl;
-    cout << "E_norm = "<<  E_norm << endl;
-    
-    IVector eigenvalues = localStableBig.eigenvalues;
-//     cout << " eigenvalues= " << eigenvalues<< endl;
 
-    bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues,E_norm,U_coord_pt,U_coord_nbd);
-
-    return L_PLUS;
+    vector < IMatrix > output;
+    output.push_back(U_coord);
+    output.push_back(U_coord_pt);
+    output.push_back(U_coord_nbd);
+    
+    return output;
 }
+
+
 
 bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues , interval E_norm , IMatrix U_coord_pt, IMatrix U_coord_nbd){
     
@@ -412,7 +454,6 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
                 VinvU_local_nbd[i][j-k_adjust] = U_coord_nbd[i][j];
                 VinvU_local_nbd[i+dimension/2][j-k_adjust] = U_coord_nbd[i+dimension/2][j];
             }
-            
         }
         
         
