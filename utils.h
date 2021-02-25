@@ -28,9 +28,6 @@ IVector getColumn(const IMatrix &A, int dimension,int column);
 
 interval omega( IVector V, IVector W, int n);
 
-
-// // // IMatrix boundEyeInverseDefect(IMatrix E,int n);
-
 IMatrix identityMat( int n);
 
 interval ml(const IMatrix &A);

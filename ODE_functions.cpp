@@ -279,6 +279,7 @@ vector < IMap > constructFunctions( int dimension, vector < double > All_paramet
 vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters, interval T ,  localManifold &localUnstable,  localManifold &localStable)
 {
 //     Returns guess near stable/unstable manifolds in eigencoordinates
+//     The guess is rescaled so that it lies just on the edge of the local stable/unstable manifolds. 
 
 //     Get the approximations at -T/+T
   IVector guess_U = initialGuessGlobal(dimension, All_parameters, T, 1);
@@ -288,24 +289,14 @@ vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters
   IVector local_guess_U = localUnstable.projectPoint(  guess_U);
   IVector local_guess_S = localStable.projectPoint(  guess_S); 
   
-//   cout << " Initial local_guess_U = " << local_guess_U << endl; 
-//   cout << " Initial local_guess_S = " << local_guess_S << endl << endl; 
-  
+//   Determines the ratio of the approximate guess relative to the stable/unstable manifolds
   IVector x_Ratios = localUnstable.containmentRatios(local_guess_U);
   IVector y_Ratios = localStable.containmentRatios(local_guess_S);
-//   cout << " x_Ratios  = " << x_Ratios  << endl;
-//   cout << " y_Ratios  = " << y_Ratios  << endl;
 
 // We then uniformly rescale the approximate point so that it is on the edge of the local stable/unstable manifold's radius of validity. 
 //   NOTE This could be improved, although for n=3, the eigenvalues are ~( .68 & .69 & .72 ), so the uniform scaling is a decent approximation. 
   local_guess_U = local_guess_U /getMax(x_Ratios);
   local_guess_S = local_guess_S /getMax(y_Ratios);
-  
-  x_Ratios = localUnstable.containmentRatios(local_guess_U);
-  y_Ratios = localStable.containmentRatios(local_guess_S);
-  
-//   cout << " x_Ratios  = " << x_Ratios  << endl;
-//   cout << " y_Ratios  = " << y_Ratios  << endl;
 
     vector < IVector > output;
     output.push_back(local_guess_U);

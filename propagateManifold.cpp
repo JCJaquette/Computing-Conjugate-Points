@@ -48,7 +48,7 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
 
     IVector Eigenfunction_Error = (*pUnstable).getEigenError_minus_infty(eigenvector_NUM);
 
-// cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
+cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
 
   
     for (int i =0;i< dimension;i++)
@@ -351,6 +351,7 @@ vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,co
     
     cout << " With additional error" << endl;
     
+    
     IMatrix U_coord(dimension,dimension/2);
     
 //     IMatrix rightMat = EFunction_Error;
@@ -389,7 +390,7 @@ vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,co
 //         cout << " New Bound = " << vec_in_local_coord + max_inverse_bound*vec_in_local_coord  << endl;        
 //         cout << " Old Bound = " << gauss(eye+EFunction_Error ,vec_in_local_coord) << endl;  // This is better than krawczykInverse 
 
-                
+//         TODO : Instead of using a Neumann series error estimate as described in the paper, we appear to be straight up inverting a fat interval matrix. Make sure this gets reflected in the paper. 
         vec_in_local_coord = gauss(eye+EFunction_Error ,vec_in_local_coord);  // EigenfunctionError
         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
         

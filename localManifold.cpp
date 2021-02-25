@@ -333,7 +333,8 @@ bool localManifold::checkRateCondition(IMatrix DFU)
 
 IVector localManifold::containmentRatios( IVector point_test){
     IVector ratios(dimension/2);
-
+// Returns, a vector which, for each coordinate, 
+//     is the ratio of the input point_test, and the neighborhood **U_flat** of the local manifold
     for (int i = 0 ; i<dimension/2;i++){
         if ( point_test[i] > 0 )
             ratios[i] = point_test[i]/(U_flat_global[i].right());
@@ -679,12 +680,13 @@ void localManifold_Eig::ErrorEigenfunctionTotal_minus_infty( void){
     
     IMatrix eye = identityMat(dimension/2);
     
+//     TODO insert a try/catch here, so that the inverse thing fails, then it just uses the normal error, without putting it all in the stable components.
+//              this will require changing the size of *Eu_m_Error_Final* and also changing at least the function *getEigenError_minus_infty*
     Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
 //         cout << "E_u = " << E_u << endl;
 //         cout << "E_s = " << E_s << endl;
      
-    cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
-//     cout << "E_s = " << E_s << endl;
+//     cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
     
 }
 
