@@ -127,10 +127,17 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
 
 
 
-int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector endPoint_LPlus)
+int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPlus)
 {
 //  Input
-//     endPoint_LPlus -     The point phi(L_+) on the heteroclinic orbit. computed as ::  phi(L_+) = Phi_{L_+ - T }(q_1)
+//     L_minus          -   The time amount of time we need to integrate the frame matrix forward.  
+//     grid             -   used in 'getTotalTrajectory'
+//     endPoint_LPlus   -   The point phi(L_+) - phi(+\infty)  on the heteroclinic orbit. 
+//  Output
+//     non-negative number -- number of validated conjugate poitns
+//     -3 ---   failed to count conjugate poitns
+//     -4 ---   failed L_+ condition
+
   
 
 //   We compute the eigenfunction error;
@@ -140,7 +147,7 @@ int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector en
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
   for (int i = 0 ; i<dimension/2;i++)
   {
-    List_of_Trajectories[i] = computeTotalTrajectory(i,  T + L_plus,  grid);
+    List_of_Trajectories[i] = computeTotalTrajectory(i,  L_minus,  grid);
   }
   
   
@@ -156,16 +163,16 @@ int propagateManifold::frameDet(interval T, interval L_plus, int grid,IVector en
 
 //   We check the L_+ condition
   bool L_PLUS = lastEuFrame( A_frame,endPoint_LPlus);
-
-//   We count all of the conjugate points
-  vector<int> conjugate_points = A_frame.countZeros();
   
   if ( L_PLUS == 0){
 //       We could not verify the L_+ condition
       return -4;
   }      
   
-  if ( conjugate_points[1]>1 )
+  //   We count all of the conjugate points
+  vector<int> conjugate_points = A_frame.countZeros();
+  
+  if ( conjugate_points[1]>0 )  
   {
 //       We could not verify the conjugate conjugate_points
       return -3;

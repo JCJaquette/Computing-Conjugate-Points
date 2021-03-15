@@ -5,9 +5,7 @@
 #include <iostream>
 using namespace std;
 
-// #ifdef _OPENMP
-#include <omp.h>
-// #endif
+
 #include "capd/capdlib.h"
 #include "utils.h"
 #include "localVField.h"
@@ -64,7 +62,7 @@ public:
   
 
   
-  int frameDet(interval T, interval L_plus, int grid,IVector endPoint_LPlus);
+  int frameDet( interval L_minus, int grid,IVector endPoint_LPlus);
   
   
 

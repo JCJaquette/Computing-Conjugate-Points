@@ -40,7 +40,9 @@ int test(int dimension,vector < double > All_parameters)
  
   int grid = 14;                //  Grid for counting conjugate points
   int stepsize = 5;             //  Fixed stepsize for counting conjugate points
-  interval L_plus = 13.55;      //  Distance to integrate forward when finding unstable eigenspace.
+//   interval L_plus = 13.55;      //  Distance to integrate forward when finding unstable eigenspace.
+  interval L_minus_percent = 0.84375;      //  Distance to integrate forward when finding unstable eigenspace.
+  L_minus_percent = 0.995;
   
   interval scale;                           //  initial size of the (un)stable manifold;
   interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'
@@ -49,13 +51,13 @@ int test(int dimension,vector < double > All_parameters)
   if (dimension ==4 ){
     scale = 0.000016;     // n=2
     L = interval(.00008); // cone angle
-    L_plus = 13;
+//     L_plus = 11;
     stepsize =5;
   }
   else{ 
     scale = 0.000001;     // n=3      
     L = interval(.000015); // cone angle
-    L_plus = 14;
+//     L_plus = 13.75;
     stepsize =6;
   }
     
@@ -322,8 +324,21 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   }
   
   
-  IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, T-L_plus,  STABLE) ;
-  
+// NOTE ON L_- & L_+
+// To impose a coordinate system on our heteroclinic orbit, as when solving the BVP, 
+//      we define the left  point on our unstable manifold to be phi(-L_-) and
+//      we define the right point on our   stable manifold to be phi(2T-L_-) 
+// However we do not need to go all the way to the right to check the 'no more conj pts' condition. 
+// For that, we only go from phi(-L_-) on the left to phi(L_+) on the right, in particular having defined L_+ := 0. 
+
+// We calculate L_minus 
+interval L_minus = sup(2*T*L_minus_percent);
+// The amount of time we need to integrate backwards from q_1 to get to L_+ = 0
+interval effective_L_plus = 2*T*(1-L_minus_percent);
+//     The point: phi(0) = Phi_{ effective_L_plus }(q_1) 
+IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, effective_L_plus,  STABLE) ;
+// IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, T-L_plus,  STABLE) ; 
+
   
   cout << " endPoint_LPlus = " << endPoint_LPlus -p_s << endl;
   cout << " endpoint eig = " << gauss(A_s,endPoint_LPlus -p_s) << endl;
@@ -334,7 +349,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 //  //     (iv)     Prove no conj pts past L_+      // // // //
 //  //     (v)      Count conjugate points          // // // //
   
-  int unstable_e_values = E_u.frameDet(T,L_plus,grid,endPoint_LPlus-p_s);
+  int unstable_e_values = E_u.frameDet(L_minus,grid,endPoint_LPlus-p_s);
     
   
   
@@ -499,7 +514,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=6; // TESTING DIMENSION
+	    dimension=4; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {
