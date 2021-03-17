@@ -468,7 +468,7 @@ interval tensorNorm( IHessian DDDG , int n){
 //     Matrix list 
     vector < IMatrix > Matrix_list;
     IMatrix A_local(n,n);
-    
+//     We construct a list of matrices, for each component k in DDDG[i,j,k]
     for (int k = 0 ; k  < n;k++){// Outer loop
         for (int i = 0 ; i  < n;i++){ 
             for (int j = 0 ; j  < n;j++){
@@ -479,19 +479,16 @@ interval tensorNorm( IHessian DDDG , int n){
     }
     
     IVector sliced_norms(n);
-    IMatrix A_combo(n,n);
+//     IMatrix A_combo(n,n);
     
+//  For each of these matrices, we take its euclidean norm, and then take the L^2 norm of all of that.   
     for (int i = 0 ; i  < n;i++){ 
         sliced_norms[i] = euclNorm(Matrix_list[i]);
-        A_combo += abs(Matrix_list[i]);
-        
+//         A_combo += abs(Matrix_list[i]);
     }
-    //     A_combo = A_combo.right();
-//     cout << " A_combo  = " << A_combo  << endl;
     
     interval out = euclNorm(sliced_norms);
-    
-    cout << " Slice estimate  = " << out << endl;
+//     cout << " Slice estimate  = " << out << endl;
 //     cout << " Combo estimate  = " << euclNorm(A_combo) << endl;
     return out;
 }

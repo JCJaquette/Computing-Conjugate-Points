@@ -92,28 +92,23 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
   ITimeMap lin_Phi(lin_solver);
 
   
-  
+//   Constructs two vectors with initial condition for the coupled heteroclinic orbit / eigenfunction system
   vector <IVector> lin_init 	= construct_InitCondU(eigenvector_NUM); 
-  IVector U_lin_init =lin_init [0];
-  
-  
-  
-  IVector lin_init_pt  = lin_init [0];
-  IVector lin_init_nbd = lin_init [1];
+ 
+  IVector lin_init_pt  = lin_init [0];  // the center of the vector
+  IVector lin_init_nbd = lin_init [1];  // the error of the approximation
   
 //   cout << "Initial Eigenvector pt  = " << lin_init_pt << endl;
 //   cout << "Initial Eigenvector nbd = " << lin_init_nbd << endl;
   
-  
+//   Creates the matrix along which our initial error is set
   IMatrix A_lin 	= construct_A_lin(); 
   
   C0Rect2Set S_X_init_0(lin_init_pt,A_lin,lin_init_nbd);  
  
     
-  // Forward image of Xinit w/ derivatives 
-  IMatrix X_lin_deriv(dimension,dimension);
-
-  
+// // //   // Forward image of Xinit w/ derivatives 
+// // //   IMatrix X_lin_deriv(dimension,dimension);
   
   vector<IMatrix> local_trajectory = getTotalTrajectory(S_X_init_0, T, grid,lin_Phi,lin_solver);
     
@@ -142,6 +137,8 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
 
 //   We compute the eigenfunction error;
     (*pUnstable).computeEigenError_minus_infty();
+    
+//     TODO Check Prop 2.5 / (2.12) that there are no conjugate points below -L_-. 
 
 //   We flow each eigen-vector (with error) forward. 
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);

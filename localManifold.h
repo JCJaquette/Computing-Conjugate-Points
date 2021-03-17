@@ -56,7 +56,7 @@ public:
   
   void printPF(void){cout << " pF = " << pF << endl;};
   
-  IVector getEigenvector( int eigen_NUM){ return getColumn( (*pF).A, dimension, eigen_NUM);};
+  IVector getEigenvector( int eigen_NUM){ return getColumn( (*pF).A, dimension, eigen_NUM);}; // Returns non-validated eigenvector.
 
 };
 
@@ -86,11 +86,9 @@ public:
         
     interval computeK( void );  
     
-    interval ErrorEigenfunction( void);  
-    void ErrorEigenfunctionTotal_minus_infty( void);
-    void ErrorEigenfunctionTotal_plus_infty( void);
-    void computeEigenError_minus_infty( void){ErrorEigenfunction( ); ErrorEigenfunctionTotal_minus_infty( );};
-    void computeEigenError_plus_infty( void){ErrorEigenfunction( ); ErrorEigenfunctionTotal_plus_infty( );};
+    void ErrorEigenfunction( void);  
+    void computeEigenError_minus_infty( void);
+    void computeEigenError_plus_infty( void);
 
     IVector getEigenError_minus_infty(int columnNumber);
 

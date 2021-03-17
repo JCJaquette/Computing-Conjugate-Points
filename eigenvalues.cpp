@@ -18,7 +18,7 @@ IVector boundEigenvalues(IMatrix B)
     return eigenvalues;
 }
 
-vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda, interval local_norm_sq)
+vector < IVector > boundSingleEigenvector(IMatrix A,const IVector V, interval lambda, interval local_norm_sq)
 {
 //     Returns an approximate eigenvector and validated enclosure 
     
@@ -87,7 +87,7 @@ vector < IVector > boundSingleEigenvector(IMatrix A, IVector V, interval lambda,
     return output;
 }
 
-vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , IVector H_vec, interval local_norm_sq)
+vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambda , IVector H_vec, interval local_norm_sq)
 {
     
 //     K = z - C F(z) + ( Id - C DF([z]) )( [z] - z )
@@ -116,7 +116,7 @@ vector < IVector > krawczykEigenvector(IMatrix A, IVector V, interval lambda , I
     moveit[dimension] = lambda;
     
 //     Get approximate inverse
-    IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DF_out)));
+    IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DF_out)));  // NOTE Sometimes this might fail. Unsure why
 //     Define identity matrix
     IMatrix eye(dimension+1,dimension+1);
     for (int i =0;i<dimension+1;i++){ eye[i][i]=1;}
@@ -187,7 +187,7 @@ vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
 //         We do not normalize the vectors;
 //     Returns enclosure of each e-vector having norm equal to that of the approximate e-vectors.     
     
-//     Currently, the output <0> will be the input Q unchanged. 
+//     Currently, the output <0> will be the input Q unchanged. (but somehow, in the act of returning the matrix, the intervals might get inflated?)
 //     Assumes Q is a matrix with columns of e-vectors of A. 
 
     

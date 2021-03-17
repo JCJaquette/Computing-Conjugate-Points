@@ -41,8 +41,8 @@ int test(int dimension,vector < double > All_parameters)
   int grid = 14;                //  Grid for counting conjugate points
   int stepsize = 5;             //  Fixed stepsize for counting conjugate points
 //   interval L_plus = 13.55;      //  Distance to integrate forward when finding unstable eigenspace.
-  interval L_minus_percent = 0.84375;      //  Distance to integrate forward when finding unstable eigenspace.
-  L_minus_percent = 0.995;
+  interval L_minus_percent = 0.84;      //  TODO Distance to integrate forward when finding unstable eigenspace.
+  
   
   interval scale;                           //  initial size of the (un)stable manifold;
   interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'
@@ -244,7 +244,8 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   cout << " Answ XY pt   = " << XY_pt<< endl;
   cout << " Answ XY nbd  = " << XY_nbd<< endl;
   
-//   BEGIN We check to see that the boundry value of our heteroclinic orbits lie inside the validated neighborhood of the manifold. 
+  
+// We check to see that the boundry value of our heteroclinic orbits lie inside the validated neighborhood of the manifold. 
   IVector X_pt_nbd(dimension/2);
   IVector Y_pt_nbd(dimension/2);
   
@@ -257,19 +258,21 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   bool Y_pt_INSIDE = subsetInterior(Y_pt_nbd,U_flat_S_new);
   bool INSIDE_BOX = X_pt_INSIDE && Y_pt_INSIDE;
   
-  if ( !(INSIDE_BOX)  ){
-    cout << " Endpoints of heteroclinic lie outside the (un)stable manifolds. " << endl ; 
-    return -1;
+  if (CHECK_CONNECTING_ORBIT ){
+    if ( !(INSIDE_BOX)  ){
+        cout << " Endpoints of heteroclinic lie outside the (un)stable manifolds. " << endl ; 
+        return -1;
+    }
+    if (BVP.checkProof())
+        cout << endl <<  "We have verified the connecting orbit!!  " << endl <<endl;
+    else
+    {
+        cout << "Cannot verify connecting orbit" << endl;
+        return -2;
+    }
   }
-//   END
-
-  if (BVP.checkProof())
-    cout << endl <<  "We have verified the connecting orbit!!  " << endl <<endl;
-  else
-  {
-    cout << "Cannot verify connecting orbit" << endl;
-    if (CHECK_CONNECTING_ORBIT )
-      return -2;
+  else{
+      cout << "Not checking if connecting orbit is verified" << endl;
   }
 
 //      END single shooting 

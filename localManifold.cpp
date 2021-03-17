@@ -499,10 +499,10 @@ interval localManifold_Eig::boundDFU_proj( IVector U)
 
 
 
-interval localManifold_Eig::ErrorEigenfunction( void)
+void localManifold_Eig::ErrorEigenfunction( void)
 {  
   
-//   We estimate A(U) -A(p) --- TODO this could be improved BY SUBDIVISION! TODO
+//   We estimate A(U) -A(p) --- NOTE this could be improved BY SUBDIVISION! 
 
   IVector U = constructU(U_flat_global);
   
@@ -517,7 +517,7 @@ interval localManifold_Eig::ErrorEigenfunction( void)
   
   IMatrix pi1_A = pi_1 * (*pF).A;
 
-  //   TODO Add DW
+  //   TODO Add DW  NOTE What does this mean??
   
   IMatrix D2G_U =  (*(*pF).f)[ (*pF).p +  pi1_A*U ]*pi_1;
   IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ]           *pi_1;
@@ -548,104 +548,91 @@ interval localManifold_Eig::ErrorEigenfunction( void)
       
   IHessian DDDG_small = compressTensor(  Hf , dimension);    
   interval tensor_norm = tensorNorm( DDDG_small , dimension/2);
+  interval C_G = right( tensor_norm);  
     
   (*(*pF).f).setDegree(1);
 //   abort();
 // // // // // // // // // // // // // // // // // // // // // // // // //   
   
-  
-  
-  
-  
-  interval C_G = euclNorm(D2G_U - D2G_p);
-  
-//   cout << " D2G_U = " << D2G_U << endl;
-  
-  cout << " U " << U << endl; 
-  cout << " U_flat_global " << U_flat_global << endl; 
-  
-  cout << " C_G  = " << C_G << endl;  
-  
-  interval C_G_new = boundDFU_proj( U);
-  
-  cout << " C_G!!  = " << C_G_new << endl;  
-  
-  cout << " C_G with D^3 G   = " << tensor_norm*euclNorm(abs(U_flat_global)) << endl;  
-  
-  C_G = right( tensor_norm*euclNorm(abs(U_flat_global)) );  // TODO  Make sure that r_u is computed correctly here! 
-  
-// //   cout << " C_G (new) = " << euclNorm(D3G_ru) << endl;  
-  
-  interval K = computeK(); 
+
+//   cout << " U             " << U << endl; 
+//   cout << " U_flat_global " << U_flat_global << endl; 
 
   
-  interval eta = xi; // This needs xi to already have been computed. TODO Get rid of this variable!
+  interval K = computeK();   
+  interval eta = xi; // This needs xi to already have been computed. 
   interval norm_A0 = euclNorm((*pF).A);
+  interval r_u = euclNorm(abs(U_flat_global)) ; 
   
+  
+  cout << " C_G  = " << C_G << endl; 
   cout << " eta  = " << eta << endl;  
   cout << " norm_A0  = " << norm_A0 << endl;  
   cout << " sqrt(1+L^2)  = " << sqrt(1 + sqr(L) ) << endl;  
   cout << "        L^2   = " << sqr(L) << endl;  
   
-  interval lambda = K* C_G * sqrt(1 + sqr(L) ) * norm_A0 /eta;
+  interval lambda = K* C_G * r_u *norm_A0 *sqrt(1 + sqr(L) )  /eta;
   
-  cout << " !lambda = " << lambda<< endl;
+  cout << " lambda = " << lambda<< endl;
   lambda = lambda.right(); // This reduces wrapping effect. 
   
   interval error = lambda/(1-lambda);
   eps_unscaled = error;
   
   
-    cout << " !error = " << error<< endl;
+    cout << " error = " << error<< endl;
   
-  return error;
+//   return error;
 }
 
 
 interval localManifold_Eig::computeK( void )
 {    
+//     Computes the constant K_-
+//     Stores validated bounds on the eigenvalues
+//     Stores error bounds on the eigenvectors. 
+    
+    
     IMatrix A_u = (*pF).A;                                  // Eigenvectors
     IMatrix A_infty = (*(*pF).f)[(*pF).p];                  // Asymptotic Matrix
     
     IMatrix Lambda = gaussInverseMatrix(A_u)*A_infty*A_u;   // Eigenvalues     
-    eigenvalues = boundEigenvalues( Lambda);
     
+//     Store class variable "eigenvalues"
+    eigenvalues = boundEigenvalues( Lambda);
     cout << " eigenvalues =" << eigenvalues << endl;
+    
+//     Develop a bound on the eigenvectors, with out put as center + error
     IVector Lambda_vec(dimension) ;
     for (int i =0;i<dimension;i++){ Lambda_vec[i]=Lambda[i][i];}
-    
-    
-    
+
     vector < IMatrix >  output= boundEigenvectors( A_infty, A_u , Lambda_vec); 
-    IMatrix Q_center = output[0];
+    
+    IMatrix Q_center = output[0];  
     IMatrix Q_error  = output[1];
     
+    IMatrix Q = Q_center +Q_error;    
     
-    IMatrix Q = Q_center +Q_error  ;
-    
-//     cout <<" Q = " << Q << endl;
-//     cout <<" Q^{-1} = " << krawczykInverse(Q) << endl;
-//     cout << " || Q || = " << euclNorm(Q) << endl;
-//     cout << " || Q^{-1} || = " << euclNorm(krawczykInverse(Q)) << endl;
-    
-    
-    interval K =euclNorm(Q)* euclNorm( krawczykInverse(Q)); 
-    
+    interval K =euclNorm(Q)* euclNorm( krawczykInverse(Q));     
     cout << " K = " << K << endl;
     
-//     K =euclNorm(Q)* euclNorm( krawczykInverse(Q)); 
-//     cout << " K!! = " << K << endl;
-    
-    Eigenvector_Error = Q_error ;
+//     Store eigenvector error
+    Eigenvector_Error = Q_error;
+//     Store K constant.
     K_store = K;
     
     return K;
- 
 }
 
 
-void localManifold_Eig::ErrorEigenfunctionTotal_minus_infty( void){
+void localManifold_Eig::computeEigenError_minus_infty( void){
 //     Computes the Eigenfunction error, and puts it all in the stable modes. 
+//     Output/Effects:
+//      -- Creates class matrix "Eu_m_Error_Final" 
+    
+    
+//     We compute the error in our eigenfunction approximation.
+    ErrorEigenfunction( );
     
     IMatrix Error_mat(dimension,dimension/2);
     
@@ -658,8 +645,7 @@ void localManifold_Eig::ErrorEigenfunctionTotal_minus_infty( void){
         
         for (int i=0;i<dimension;i++){
             Error_mat[i][j] = (Eigenvector_Error[i][j] + eps_local) * euclNorm(V_col);
-        }
-        
+        }        
     }
     
     IMatrix E_u(dimension/2,dimension/2);
@@ -675,22 +661,25 @@ void localManifold_Eig::ErrorEigenfunctionTotal_minus_infty( void){
             E_u[i][j] = V_sol[i];
             E_s[i][j] = V_sol[i+dimension/2];
         }
-        
     }
     
     IMatrix eye = identityMat(dimension/2);
     
-//     TODO insert a try/catch here, so that the inverse thing fails, then it just uses the normal error, without putting it all in the stable components.
-//              this will require changing the size of *Eu_m_Error_Final* and also changing at least the function *getEigenError_minus_infty*
     Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
 //         cout << "E_u = " << E_u << endl;
 //         cout << "E_s = " << E_s << endl;
-     
-//     cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
+//         cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
     
 }
 
-void localManifold_Eig::ErrorEigenfunctionTotal_plus_infty( void){
+void localManifold_Eig::computeEigenError_plus_infty( void){
+//     Computes the Eigenfunction error at plus infty 
+//     
+//     Output/Effects:
+//      -- Creates class matrix "Eigenfunction_Error_plus_infty" 
+    
+//     We compute the error in our eigenfunction approximation.
+    ErrorEigenfunction( );
         
     IMatrix Error_mat(dimension,dimension);     // All eigenfunction error
     
@@ -714,7 +703,7 @@ void localManifold_Eig::ErrorEigenfunctionTotal_plus_infty( void){
 
 IVector localManifold_Eig::getEigenError_minus_infty(int columnNumber){
     IVector v_out(dimension);
-    
+//     Outputs the error of the unstable eigenfunctions, all put into the stable eigendirections
     for (int i = 0 ; i<dimension/2;i++){
         v_out[i+dimension/2] = Eu_m_Error_Final[i][columnNumber];
     }
