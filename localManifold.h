@@ -48,7 +48,7 @@ public:
   IVector projectPoint( IVector XY_pt);
 
   bool checkIsolatingBlock( IMatrix DFU, const IVector &U);   
-  interval getRadius( void ){ return getMax( abs(U_flat_global));};  
+  interval getRadius( void ){ return getMax( abs(U_flat_global));};  // Previously used in "bvpMultipleShooting" class
   bool checkConditions( void );  
   
   IVector containmentRatios( IVector point_test);  
@@ -75,13 +75,15 @@ private:
     IMatrix Eu_m_Error_Final;  // Error for the unstable eigenfucntions at minus infinity 
     IMatrix Eigenfunction_Error_plus_infty;  // Error for the all eigenfucntions at plus infinity 
     
+//     interval boundDFU_proj( IVector U); // No longer used. Could be deleted
+    
     friend class propagateManifold;
     
 public:
     localManifold_Eig(localVField &pF_, IVector U_flat_global_,interval L_, bool stable_, int subdivisionNUM_);
     localManifold_Eig(const localManifold & lM_);
     
-    interval boundDFU_proj( IVector U);
+
     
         
     interval computeK( void );  

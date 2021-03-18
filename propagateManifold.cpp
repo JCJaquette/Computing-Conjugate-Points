@@ -136,6 +136,7 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
   
 
 //   We compute the eigenfunction error;
+    cout << endl<<"Computing the eigenfunction error at minus infinity ..." << endl;
     (*pUnstable).computeEigenError_minus_infty();
     
 //     TODO Check Prop 2.5 / (2.12) that there are no conjugate points below -L_-. 
@@ -148,7 +149,7 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
   }
   
   
-  cout << "Checking Stability ... " << endl;
+  cout << endl<< "Checking Stability ... " << endl << endl;
   
   topFrame A_frame(List_of_Trajectories);
  
@@ -197,12 +198,12 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     bool conditions_S = localStableBig.checkConditions(  ); 
     if(! (conditions_S))
     {
-        cout << "Failed to validate L_+ Conditions " << endl;
+        cout << "Failed to validate manifold at L_+  " << endl;
         return 0;
     }  
     
         
-    
+    cout << endl<<"Computing the eigenfunction error at plus  infinity ..." << endl;
     localStableBig.computeEigenError_plus_infty();
     IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;
     
@@ -235,7 +236,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     IVector eigenvalues = localStableBig.eigenvalues;
 //     cout << " eigenvalues= " << eigenvalues<< endl;
     
-    
+    cout << endl<<"Checking L_+ conditions ..." << endl  << endl;
     bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues,E_norm,U_coord_pt,U_coord_nbd);
 
     return L_PLUS;

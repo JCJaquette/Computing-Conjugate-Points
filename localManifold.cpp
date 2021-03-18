@@ -422,141 +422,131 @@ localManifold_Eig::localManifold_Eig(const localManifold & lM_)
     : localManifold( lM_ ){}
         
 
-interval localManifold_Eig::boundDFU_proj( IVector U)
-{
-//     spaghetti code modification of boundDFU. 
-//     Used to bound the function D F( \pi_u/s \circ \psi   U ) when determining the bound for L_-.
-    
-  int subdivision_dim = dimension/2;
-  
-  IMatrix pi_1(dimension,dimension);                    // NOTE this line is different 
-  for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}      // NOTE this line is different 
-  IMatrix pi1_A = pi_1 * (*pF).A;                       // NOTE this line is different 
-  
-  IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ] *pi_1;         // NOTE this line is different 
-  
-  
-//   We Create the index list
-  vector < int > index_list(dimension/2);
-
-//     We subdivide the stable part if we are looking at the stable manifold
-  if (stable)
-  {
-    for (int i=0;i<dimension/2;i++)
-    {
-      index_list[i] = i +dimension/2;
-    }
-  }
-//     We subdivide the unstable part if we are looking at the unstable manifold
-  else
-  {
-    for (int i=0;i<dimension/2;i++)
-    {
-      index_list[i] = i;
-    }
-  }
-
-  
-//    We get a bound on the first part
-  vector < int > part_list(dimension/2);
-  
-  IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-//   IMatrix A = (*pF)[U_part];
-  IMatrix A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;  // NOTE this line is different 
-  
-  interval MaxDiff;                                         // NOTE this line is different 
-  MaxDiff = euclNorm(A-D2G_p);                              // NOTE this line is different 
-  
-//    We make a single for loop to go through all the subdivision dimensions
-  int sum;
-  int N = subdivisionNUM;
-  int n = subdivision_dim;
-  int N_to_i;
-  for (int j = 0;j< (int_pow(N,n));j++)
-  {
-//     We index the part we want
-    sum = 0;
-    N_to_i = 1;
-    for (int i = 0 ; i<n;i++)
-    {
-      part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
-      if (i < n-1)
-      {
-        sum += part_list[i]*N_to_i;
-        N_to_i = N_to_i * N;
-      }
-    }
-//     We get the part 
-    U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-//     A = intervalHull(A,(*pF)[U_part]);
-    A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;        // NOTE this line is different 
-    MaxDiff =  intervalHull(MaxDiff , euclNorm(A-D2G_p));   // NOTE this line is different 
-
-  }
-  
-  return MaxDiff;
-}
+//         BEGIN old function
+// interval localManifold_Eig::boundDFU_proj( IVector U)
+// {
+// //     No longer used. Could be deleted.
+// //     spaghetti code modification of boundDFU. 
+// //     Used to bound the function D F( \pi_u/s \circ \psi   U ) when determining the bound for L_-.
+//     
+//   int subdivision_dim = dimension/2;
+//   
+//   IMatrix pi_1(dimension,dimension);                    // NOTE this line is different 
+//   for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}      // NOTE this line is different 
+//   IMatrix pi1_A = pi_1 * (*pF).A;                       // NOTE this line is different 
+//   
+//   IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ] *pi_1;         // NOTE this line is different 
+//   
+//   
+// //   We Create the index list
+//   vector < int > index_list(dimension/2);
+// 
+// //     We subdivide the stable part if we are looking at the stable manifold
+//   if (stable)
+//   {
+//     for (int i=0;i<dimension/2;i++)
+//     {
+//       index_list[i] = i +dimension/2;
+//     }
+//   }
+// //     We subdivide the unstable part if we are looking at the unstable manifold
+//   else
+//   {
+//     for (int i=0;i<dimension/2;i++)
+//     {
+//       index_list[i] = i;
+//     }
+//   }
+// 
+//   
+// //    We get a bound on the first part
+//   vector < int > part_list(dimension/2);
+//   
+//   IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+// //   IMatrix A = (*pF)[U_part];
+//   IMatrix A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;  // NOTE this line is different 
+//   
+//   interval MaxDiff;                                         // NOTE this line is different 
+//   MaxDiff = euclNorm(A-D2G_p);                              // NOTE this line is different 
+//   
+// //    We make a single for loop to go through all the subdivision dimensions
+//   int sum;
+//   int N = subdivisionNUM;
+//   int n = subdivision_dim;
+//   int N_to_i;
+//   for (int j = 0;j< (int_pow(N,n));j++)
+//   {
+// //     We index the part we want
+//     sum = 0;
+//     N_to_i = 1;
+//     for (int i = 0 ; i<n;i++)
+//     {
+//       part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
+//       if (i < n-1)
+//       {
+//         sum += part_list[i]*N_to_i;
+//         N_to_i = N_to_i * N;
+//       }
+//     }
+// //     We get the part 
+//     U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
+// //     A = intervalHull(A,(*pF)[U_part]);
+//     A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;        // NOTE this line is different 
+//     MaxDiff =  intervalHull(MaxDiff , euclNorm(A-D2G_p));   // NOTE this line is different 
+// 
+//   }
+//   
+//   return MaxDiff;
+// }
+// END
 
 
 
 void localManifold_Eig::ErrorEigenfunction( void)
 {  
+//     This function uses the the estimate in Section 3 of the paper to bound the constant 
+//     
+//              \lambda_{T_-} := (1/xi) * K_- * C_G * r_u * ||A_0|| * sqrt{  1+ vartheta^2 }
+//     
+//     Recall "vartheta" in the paper is "L" in the code. 
+//     Then, it defines the class variable.
+//     
+//              eps_unscaled  := lambda/(1-lambda)
+//     
+//     which, as in Proposition 2.3, is used to bound the error of the eigenfunction.  
   
-//   We estimate A(U) -A(p) --- NOTE this could be improved BY SUBDIVISION! 
+    
+// BEGIN Compute C_G 
 
   IVector U = constructU(U_flat_global);
-  
-  
-// //   for (int i = 0 ; i < dimension ; i++){
-// //       U[i] = U[i].left();
-// //   }
+
   cout << "U = " << U << endl;
     
+//   Note G(v) is a function from R^n to R^n, and does not depend on velocity, hence the need for pi_1
   IMatrix pi_1(dimension,dimension);
   for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}
   
   IMatrix pi1_A = pi_1 * (*pF).A;
-
-  //   TODO Add DW  NOTE What does this mean??
-  
-  IMatrix D2G_U =  (*(*pF).f)[ (*pF).p +  pi1_A*U ]*pi_1;
-  IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ]           *pi_1;
-  
-  
+    
 //   We compute the third derivative
-  // // // // // // // // // // // // // // // // // // // // // // // // //   
   (*(*pF).f).setDegree(2);
   
   IMatrix Df(dimension,dimension);
   IHessian Hf(dimension,dimension);
   
   // simultaneous computation of value, derivative and normalized hessian
-  // NOTE! Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
-  IVector y = (*(*pF).f)( (*pF).p +  pi1_A*U   ,Df,Hf); // TODO Right multiply by pi_1 ???
-  
-  
-    // print value and derivative of f at x
-//   cout.precision(17);
-//   cout << "y=" << y << endl;
-//   cout << "Df=" << Df << endl;
-// //   // print normalized second order derivatives
-// //   for(int fi=0;fi<dimension;++fi)
-// //     for(int dx1=0;dx1<dimension;++dx1)
-// //       for(int dx2=dx1;dx2<dimension;++dx2)
-// //         cout << "Hf(" << fi << "," << dx1 << "," << dx2 << ")=" << Hf(fi,dx1,dx2) << endl;
+  // NOTE Hf contains second order Taylor coefficients of f at x, i.e. normalized derivatives.
+  IVector y = (*(*pF).f)( (*pF).p +  pi1_A*U   ,Df,Hf); 
       
-      
-  IHessian DDDG_small = compressTensor(  Hf , dimension);    
-  interval tensor_norm = tensorNorm( DDDG_small , dimension/2);
-  interval C_G = right( tensor_norm);  
-    
   (*(*pF).f).setDegree(1);
-//   abort();
-// // // // // // // // // // // // // // // // // // // // // // // // //   
   
+  // Most of the components in the tensor are zero; this is somewhat related to precomposing with pi_1.
+  IHessian DDDG_small = compressTensor(  Hf , dimension);     
+  
+  interval tensor_norm = tensorNorm( DDDG_small , dimension/2);  
+  interval C_G = right( tensor_norm);  
 
-//   cout << " U             " << U << endl; 
-//   cout << " U_flat_global " << U_flat_global << endl; 
+//   END
 
   
   interval K = computeK();   
@@ -565,11 +555,11 @@ void localManifold_Eig::ErrorEigenfunction( void)
   interval r_u = euclNorm(abs(U_flat_global)) ; 
   
   
-  cout << " C_G  = " << C_G << endl; 
-  cout << " eta  = " << eta << endl;  
-  cout << " norm_A0  = " << norm_A0 << endl;  
-  cout << " sqrt(1+L^2)  = " << sqrt(1 + sqr(L) ) << endl;  
-  cout << "        L^2   = " << sqr(L) << endl;  
+//   cout << " C_G      = " << C_G << endl; 
+//   cout << " eta      = " << eta << endl;  
+//   cout << " norm_A0  = " << norm_A0 << endl;  
+//   cout << " sqrt(1+L^2)  = " << sqrt(1 + sqr(L) ) << endl;  
+//   cout << "        L^2   = " << sqr(L) << endl;  
   
   interval lambda = K* C_G * r_u *norm_A0 *sqrt(1 + sqr(L) )  /eta;
   
@@ -579,28 +569,25 @@ void localManifold_Eig::ErrorEigenfunction( void)
   interval error = lambda/(1-lambda);
   eps_unscaled = error;
   
+  cout << " error = " << error<< endl;
   
-    cout << " error = " << error<< endl;
-  
-//   return error;
 }
 
 
 interval localManifold_Eig::computeK( void )
 {    
 //     Computes the constant K_-
-//     Stores validated bounds on the eigenvalues
-//     Stores error bounds on the eigenvectors. 
-    
+//     Stores validated bounds on the eigenvalues   -- K_store
+//     Stores error bounds on the eigenvectors.     -- Eigenvector_Error
     
     IMatrix A_u = (*pF).A;                                  // Eigenvectors
     IMatrix A_infty = (*(*pF).f)[(*pF).p];                  // Asymptotic Matrix
     
     IMatrix Lambda = gaussInverseMatrix(A_u)*A_infty*A_u;   // Eigenvalues     
     
-//     Store class variable "eigenvalues"
+//     Store class variable "eigenvalues", a validated enclosure
     eigenvalues = boundEigenvalues( Lambda);
-    cout << " eigenvalues =" << eigenvalues << endl;
+//     cout << " eigenvalues =" << eigenvalues << endl;
     
 //     Develop a bound on the eigenvectors, with out put as center + error
     IVector Lambda_vec(dimension) ;
@@ -614,7 +601,7 @@ interval localManifold_Eig::computeK( void )
     IMatrix Q = Q_center +Q_error;    
     
     interval K =euclNorm(Q)* euclNorm( krawczykInverse(Q));     
-    cout << " K = " << K << endl;
+//     cout << " K      = " << K << endl;
     
 //     Store eigenvector error
     Eigenvector_Error = Q_error;
