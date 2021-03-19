@@ -615,30 +615,43 @@ interval localManifold_Eig::computeK( void )
 void localManifold_Eig::computeEigenError_minus_infty( void){
 //     Computes the Eigenfunction error, and puts it all in the stable modes. 
 //     Output/Effects:
-//      -- Creates class matrix "Eu_m_Error_Final" 
+//      -- Creates class matrix "Eu_m_Error_Final" , the distance W is from our approximate eigenvector basis
+//     NOTE It would have been more efficient to combine the function "computeEigenError_minus_infty" and "computeEigenError_plus_infty". Alas.
     
     
-//     We compute the error in our eigenfunction approximation.
+//     We compute the error in our eigenfunction approximation. This computes ''eps_unscaled''
     ErrorEigenfunction( );
     
     IMatrix Error_mat(dimension,dimension/2);
     
-    IMatrix A_u = (*pF).A;                                  // Eigenvectors
+    IMatrix A_u = (*pF).A;      // Approximate Eigenvectors
     
+//  We compute the error on the frame matrix W. 
+//  Suppose that \tilde{V}  is the true asymptotic eigenvector, and \bar{V} is our numerically approximate one, and \eps = eps_unscaled. Then
+//          || W - \tilde{V} || <= \eps * || \tilde{V} ||      &  ( \tilde{V}  - \bar{V} )  \in  Eigenvector_Error 
+//  Hence
+//       W - \bar{V}  \in   Eigenvector_Error + [-1,1] * ( || \bar{V} || + ||  Eigenvector_Error|| )
+//  This collected error term, we define as Error_mat, and it is in general ambient coordinates.  Later we put this into eigencoordinates.
     IVector V_col(dimension);
+    IVector Error_col(dimension);
     for (int j =0;j<dimension/2;j++){
         V_col = getColumn(A_u,dimension,j);
+        Error_col = getColumn(Eigenvector_Error,dimension,j);
+        interval asymptotic_evect_norm = euclNorm(V_col) + euclNorm(Error_col ) ;
         interval eps_local = eps_unscaled *interval(-1,1);
         
         for (int i=0;i<dimension;i++){
-            Error_mat[i][j] = (Eigenvector_Error[i][j] + eps_local) * euclNorm(V_col);
+            Error_mat[i][j] = Eigenvector_Error[i][j] + eps_local ;
         }        
     }
+//     cout << " Error_mat " << Error_mat<< endl;
     
+//  We put our error into eigen-coordinates   We define the unstable(top) and stable(bottom) part of the error in our unstable eigenvectors. 
+//     The error here goes from e-4 / e-5 in each component equally to e-3 / e-4 in the eigen-directions.
     IMatrix E_u(dimension/2,dimension/2);
     IMatrix E_s(dimension/2,dimension/2);
     IVector V_sol(dimension);
-    
+
     for (int j =0;j<dimension/2;j++){
         V_col = getColumn(Error_mat,dimension,j);
         
@@ -649,10 +662,11 @@ void localManifold_Eig::computeEigenError_minus_infty( void){
             E_s[i][j] = V_sol[i+dimension/2];
         }
     }
-    
     IMatrix eye = identityMat(dimension/2);
     
+//  We do a change of coordinates to put all the error in the stable coordinates.    
     Eu_m_Error_Final = E_s*krawczykInverse(eye+E_u);
+    
 //         cout << "E_u = " << E_u << endl;
 //         cout << "E_s = " << E_s << endl;
 //         cout << "Eu_m_Error_Final= " << Eu_m_Error_Final<< endl;
@@ -663,24 +677,33 @@ void localManifold_Eig::computeEigenError_plus_infty( void){
 //     Computes the Eigenfunction error at plus infty 
 //     
 //     Output/Effects:
-//      -- Creates class matrix "Eigenfunction_Error_plus_infty" 
+//      -- Creates class matrix "Eigenfunction_Error_plus_infty", the distance W is from our approximate eigenvector basis
+//     NOTE It would have been more efficient to combine the function "computeEigenError_minus_infty" and "computeEigenError_plus_infty". Alas.
     
 //     We compute the error in our eigenfunction approximation.
     ErrorEigenfunction( );
-        
+    
+//  We compute the error on the frame matrix W. 
+//  Suppose that \tilde{V}  is the true asymptotic eigenvector, and \bar{V} is our numerically approximate one, and \eps = eps_unscaled. Then
+//          || W - \tilde{V} || <= \eps * || \tilde{V} ||      &  ( \tilde{V}  - \bar{V} )  \in  Eigenvector_Error 
+//  Hence
+//       W - \bar{V}  \in   Eigenvector_Error + [-1,1] * ( || \bar{V} || + ||  Eigenvector_Error|| )
+//  NOTE This collected error term, we define as Error_mat, and it is in general ambient coordinates. 
     IMatrix Error_mat(dimension,dimension);     // All eigenfunction error
     
     IMatrix A_s = (*pF).A;                                  // Eigenvectors
     
     IVector V_col(dimension);
+    IVector Error_col(dimension);
     for (int j =0;j<dimension;j++){
         V_col = getColumn(A_s,dimension,j);
+        Error_col = getColumn(Eigenvector_Error,dimension,j);
+        interval asymptotic_evect_norm = euclNorm(V_col) + euclNorm(Error_col ) ;
         interval eps_local = eps_unscaled *interval(-1,1);
         
         for (int i=0;i<dimension;i++){
-            Error_mat[i][j] = (Eigenvector_Error[i][j] + eps_local) * euclNorm(V_col);
-        }
-        
+            Error_mat[i][j] = Eigenvector_Error[i][j] + eps_local ;
+        }        
     }
     
     Eigenfunction_Error_plus_infty = Error_mat;
