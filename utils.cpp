@@ -144,76 +144,85 @@ IVector getColumn(const IMatrix &A, int num_rows, int column)
 
 vector<IMatrix> getTotalTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMap,IOdeSolver &solver)
 {
-  //   The Matrix contains in its columns:
-  //   0 -- Time Interval +++++ ONLY IN ENTRY (0,0)
-  //   1 -- Left Endpoint
-  //   2 -- Right Endpoint
-  //   3 -- Bound on function Values
-  //   4 -- Bound on function Derivative  
+//  PRIMARY USES: propagateManifold::computeTotalTrajectory   
+// This function integrates the initial condition 's' forward an amount 'T' using a fixed time step. 
+// The fixed time step is used because the trajectory needs to be compared with the integration of other initial conditions. 
+// For each time step, we divide the output into 'grid' many equally spaced subdivisions, to get tigher bounds on the interval enclosure of the output.
+// Then, for each time step we output a matrix with a variety of bounds on the solution.
+//     
+// INPUT
+//  &s      --  initial condition  
+//  T       --  Total time to integrate
+//  grid    --  equal subdivision used to get tighter bounds when computing '3 function values' and '4 function derivative'.
+//  timeMap --  used to solve ode
+//  solver  --  used to solve ode
+//     
+// OUTPUT    
+//   Each MATRIX in the vector output, has rows corresponding to the ambient space, and columns corresponding to:
+//   0 -- Time Interval +++++ ONLY IN ENTRY (0,0)
+//   1 -- Left Endpoint
+//   2 -- Right Endpoint
+//   3 -- Bound on function Values
+//   4 -- Bound on function Derivative  
+//     
   
+//     See also the CAPD documentation for 
+//       'Getting Started / ODEs interval based / Long time integration / Enclosure of trajectory between time steps.
   
 //   NOTE This does not seem to work if solver has been used before
 //   (in the sense that it does not make intermediate steps, not that it gives a wrong anwer)
     timeMap.stopAfterStep(true);
     interval prevTime(0.);
     
-    
     vector<IMatrix> Matrix_List(0);
     int dim = s.dimension();
     
+//     Integrates forward step by step until complete
     do 
     {
       timeMap(T,s);
       interval stepMade = solver.getStep();
       const IOdeSolver::SolutionCurve& curve = solver.getCurve();
       interval domain = interval(0,1)*stepMade;
-
-
       
-//       We get bounds on the value and derivative      
-//       IVector value_bound(dim);// = vector_value; // TODO Write a function to do this
-//       IVector deriv_bound(dim);// = vector_value; //
+//       We make a list of subdivision points along the grid 
+      IVector gridPoints(grid+1);
+      for(int i=0;i<grid;++i){
+          gridPoints[i] = (i*stepMade/grid).left();
+      }
+      gridPoints[grid]=stepMade;
       
+      interval subsetOfDomain;
+
+//       Subdivide the timestep into 'grid' components to get bounds.
       for(int i=0;i<grid;++i)
       {
-	
-	
-	
-        interval subsetOfDomain = interval(i,i+1)*stepMade/grid;
+        subsetOfDomain = intervalHull(gridPoints[i],gridPoints[i+1]);
 
         intersection(domain,subsetOfDomain,subsetOfDomain);
-	
-	
-	
-	//       We get the left and right end points
-	IVector vector_left = curve(subsetOfDomain.left());
-	IVector vector_right = curve(subsetOfDomain.right());
-	
-	
-	
-        IVector vector_value = curve(subsetOfDomain);
-	IVector vector_deriv = curve.timeDerivative(subsetOfDomain); 
-	
-	
 
-	interval localTime = prevTime + subsetOfDomain;
-	
-	
-	  //       We output our results
-	IMatrix local_matrix(dim,5);
-  
-	
-	constructMatrix(localTime,vector_left,vector_right,vector_value,vector_deriv, local_matrix);
-	
-	Matrix_List.push_back(local_matrix);
-	
-	
+        //  We get the left and right end points
+        IVector vector_left = curve(subsetOfDomain.left());
+        IVector vector_right = curve(subsetOfDomain.right());
+        
+        //  Bound the value and derivative from grid division
+        IVector vector_value = curve(subsetOfDomain);
+        IVector vector_deriv = curve.timeDerivative(subsetOfDomain); 
+
+        interval localTime = prevTime + subsetOfDomain;
+        
+        
+        //  We output our results
+        IMatrix local_matrix(dim,5);
+        
+        //  Put all of the bounds into a matrix
+        constructMatrix(localTime,vector_left,vector_right,vector_value,vector_deriv, local_matrix);
+        
+        //  Add matrix to output list
+        Matrix_List.push_back(local_matrix);
       }      
       
-      
-//       cout << "Matrix added to list = " << local_matrix << endl;
-      
-// 	We update the time
+      // 	We update the time 
       prevTime = timeMap.getCurrentTime();
 
     }while(!timeMap.completed());
