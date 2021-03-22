@@ -5,15 +5,17 @@
 
 vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
 {
-// We get the point on the unstable manifold. Point is in global coord. 
+//     Outputs the center approximation for the eigenvector, and the error it is away from the eigenfunction.
+//     Error is in local coordinates.
+    
+    
+// We get the point on the unstable manifold and put it into global coord. 
   vector < IVector >  global_pt_nbd = (*pUnstable).getPointNbd(  XY_pt,  XY_nbd);
   IVector p_i = global_pt_nbd[0];
   IVector Uxy = global_pt_nbd[1];
   
-  
 //   We construct the point for linearized system
   IVector lin_init_pt(dimension*2);
-  
   
 //   We add the point into the larger coords.
   for(int i = 0 ; i< dimension;i++)
@@ -25,10 +27,9 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
   IVector EigenVector_component = (*pUnstable).getEigenvector( eigenvector_NUM);
   IMatrix A_i = (*(*pUnstable).pF).A;
   
-  cout << " Uxy = " << Uxy << endl;
-  
-  cout << "Eigenvector = " << EigenVector_component << endl;
-  cout << "A           = " << A_i[1] << endl;
+//   cout << " Uxy = " << Uxy << endl; // The error on the heteroclinic orbit.
+//   cout << "Eigenvector = " << EigenVector_component << endl;
+//   cout << "A           = " << A_i[1] << endl;
   
   for (int i = 0 ; i< dimension;i++)
   {
@@ -36,19 +37,17 @@ vector <IVector> propagateManifold::construct_InitCondU(int eigenvector_NUM)
   }
   
   
-//   We construct the nbd for linearized system  
-  IVector lin_init_nbd(dimension*2);
-//   We add the nbd into the larger coords.
+    //   We construct the nbd for linearized system  
+    IVector lin_init_nbd(dimension*2);
+    //   We add the nbd into the larger coords.
   for(int i = 0 ; i< dimension;i++)
   {
     lin_init_nbd[i] = Uxy[i];
   }
 
-
-
     IVector Eigenfunction_Error = (*pUnstable).getEigenError_minus_infty(eigenvector_NUM);
 
-cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
+//     cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
 
   
     for (int i =0;i< dimension;i++)
@@ -56,7 +55,7 @@ cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
     lin_init_nbd[i+dimension]  = Eigenfunction_Error[i];
   }
 
-    cout << " Error = " << lin_init_nbd  << endl;
+    cout << "E-fun error = " << lin_init_nbd  << endl;
     
   vector < IVector > output;
   output.push_back(lin_init_pt);
@@ -66,6 +65,7 @@ cout << " Eigenfunction_Error = " << Eigenfunction_Error << endl;
 
 IMatrix propagateManifold::construct_A_lin(void)
 {
+//  Used in specifying the initial condition, and the directions in which its error goes.
   IMatrix A_u = (*(*pUnstable).pF).A; 
   
   IMatrix A_u_lin(dimension*2,dimension*2);
@@ -83,6 +83,11 @@ IMatrix propagateManifold::construct_A_lin(void)
 
 vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, interval T, int grid)
 {
+// INPUT
+//  T       --  Total time to integrate
+//  grid    --  equal subdivision (1/grid) used to get tighter bounds when computing '3 function values' and '4 function derivative'.
+//  eigenvector_NUM --  which eigenfunction to integrate
+
 
   interval timeStep = interval(pow(2,-step_size)); 
     //   We Create our solvers 
@@ -105,16 +110,11 @@ vector <IMatrix> propagateManifold::computeTotalTrajectory(int eigenvector_NUM, 
   IMatrix A_lin 	= construct_A_lin(); 
   
   C0Rect2Set S_X_init_0(lin_init_pt,A_lin,lin_init_nbd);  
- 
-    
-// // //   // Forward image of Xinit w/ derivatives 
-// // //   IMatrix X_lin_deriv(dimension,dimension);
   
   vector<IMatrix> local_trajectory = getTotalTrajectory(S_X_init_0, T, grid,lin_Phi,lin_solver);
     
-  IVector out_set =S_X_init_0;
+//   IVector out_set =S_X_init_0;
 //   cout << endl << " Final Set " << out_set << endl;
-  
     
   return local_trajectory;
   

@@ -26,19 +26,19 @@ private:
   int manifold_subdivision = 15; // Used in **construct_Manifold_at_LPlus**
 
   
-  IVector XY_pt;
-  IVector XY_nbd;
+  IVector XY_pt;    // the CENTER of the unstable (X) and stable(Y) manifold coordinates of the heteroclinic connection  (in local coordinates)
+  IVector XY_nbd;   // the neighborhood enclosure of the heteroclinic connection (in local coordinates).
   
   bool MAKE_PLOT = false;
   
-  int step_size;
+  int step_size; // step size for the solver is set to 2^-step_size
   
 //   IMatrix A_lin;
   
   localManifold_Eig *pUnstable;
   localManifold_Eig *pStable;
   int dimension;
-  int order;
+  int order;    // Order of the taylor solver
   
 // // // // // // // // // // // // // 
 //   Methods 

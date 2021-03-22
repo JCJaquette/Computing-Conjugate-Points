@@ -117,21 +117,7 @@ int test(int dimension,vector < double > All_parameters)
 //  We produce a guess in the local eigen-coordinates of the boundary points of our heteroclinic orbit. 
 //  This is chosen and rescaled so that the guess will just barely fit inside manifolds <>localUnstable<> and <>localStable<>. 
 vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);
-    
-//     TODO Remove this comment 
-// BEGIN    TESTING This block may be used to find better guesses for obstinant parameters. 
 
-//     // // // // //      Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
-//     cout.precision(16);
-//     IVector Zero_n(dimension/2);
-//     vector < IVector > Unstable_Global_pt_Coord =   localUnstable.getPointNbd( Guess[0], Zero_n);
-//     vector < IVector > Stable_Global_pt_Coord   =   localStable.getPointNbd( Guess[1], Zero_n);
-//     cout << endl;
-//     cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
-//     cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
-//     cout << endl;
-// //     cout.precision(6);
-// END     // // // // //    
     
   
 // // // // // // // // // // // // // // // // //   
@@ -275,22 +261,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
       cout << "Not checking if connecting orbit is verified" << endl;
   }
 
-//      END single shooting 
-
-
-//     TODO Remove this comment 
-// BEGIN This block may be used to find better guesses for obstinant parameters. 
-//     // // // // //    NOTE  Output where the heteroclinic orbit intersects the stable/unstable manifolds. 
-//     cout.precision(10);
-
-//     Unstable_Global_pt_Coord =   localUnstable.getPointNbd( X_pt_final, Zero_n);
-//     Stable_Global_pt_Coord   =   localStable.getPointNbd( Y_pt_final, Zero_n);
-//     cout << endl;
-//     cout << " Unstable Point = " << Unstable_Global_pt_Coord[0] << endl;
-//     cout << " Stable Point = " << Stable_Global_pt_Coord[0] << endl;
-//     cout << endl;
-//     cout.precision(6);
-//  END   // // // // //    
+//      END single shooting    
 
 
 
@@ -299,13 +270,6 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 
 
 //  BEGIN globalize manifold
-//    -- We calculate the norm bounds 
-//   interval T_nn = 10;
-//   IVector XY = XY_pt + XY_nbd; // TODO Make pt + nbd version 
-//   IVector component_bounds = BVP.ComponentBound(XY,T_nn);
-//   cout << "Component Bounds = " << component_bounds << endl;
-  
-//   return -4;
   
   cout << endl << "Globalizing Manifold ... " << endl;
   
@@ -370,7 +334,6 @@ IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, effective_L_plus,  STABLE) ;
   
 }
 
-// // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
@@ -517,7 +480,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4; // TESTING DIMENSION
+	    dimension=6; // TESTING DIMENSION
 	    
         if (dimension ==4)
         {

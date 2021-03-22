@@ -3,14 +3,11 @@
 
 void topFrame::initialize( void)
 {
-  
-  
-  
-  
     int s_length = (*p_traject_list)[1].size();
     if (s_length != series_length)
     {
       cout << "FATAL ERROR: Trajectories do not have the same length!! Inspect step size! " << endl;
+//       NOTE this only checks that the first two trajectories have the same length.
       return;
     }
   
@@ -22,16 +19,10 @@ void topFrame::initialize( void)
 
 void topFrame::constructTimeSeries( void)
 {
-
-//   cout << " dimension    " << dimension << endl;
+// Makes a vector containing the 'time' intervals in the trajectories. 
   for (int j =0;j<series_length;j++)
   {
     time_series.push_back((*p_traject_list)[0][j][0][0]);
-  }
-
-  for (int j = 0 ; j < series_length;j++)
-  {
-//     cout<< "Time["<<j<<"] = " << time_series[j] << endl;
   }
   
 }
@@ -46,10 +37,7 @@ void topFrame::constructFrameSeries( void)
   //   2 -- Bound on function Values
   //   3 -- Bound on function Derivative
   
-//   The matrix then represented is the top frame
-  
-  
-  
+//   The matrix then represented is the top frame (n \times n)
   
   for (int i_time =0;i_time<series_length;i_time++)
   {
@@ -64,12 +52,11 @@ void topFrame::constructFrameSeries( void)
       
       for (int k_traj =0; k_traj <num_trajectories;k_traj++)
       {
-	for (int m_dim=0; m_dim <num_trajectories;m_dim++)
-	{
-// 	  For the dimension index - m_dim - we need to skip over the heteroclinic orbit, 
-// 	  and only include the top frame. 
-	  local_matrix[m_dim][k_traj] = (*p_traject_list)[k_traj][i_time][m_dim + 2*num_trajectories][j_type+1];
-	}
+        for (int m_dim=0; m_dim <num_trajectories;m_dim++)
+        {
+        //  For the dimension index - m_dim - we need to skip over the heteroclinic orbit, and only include the top frame. 
+            local_matrix[m_dim][k_traj] = (*p_traject_list)[k_traj][i_time][m_dim + 2*num_trajectories][j_type+1];
+        }
       }
       
       
@@ -77,8 +64,7 @@ void topFrame::constructFrameSeries( void)
     }
     frame_series.push_back(local_frame_info);    
   }
-  
-  
+
 }
   
 
@@ -106,20 +92,18 @@ void topFrame::constructDetSeries( void )
       interval det_quantity;
       if (j_type < 3)
       {
-// 	just calculate determinent
-	det_quantity = det(frame_series[i_time][j_type]);
+        // just calculate determinent
+        det_quantity = det(frame_series[i_time][j_type]);
       }
-//       else
-//       {
-// // 	Calculate the derivative
-// 	det_quantity = calculateDerivative(frame_series[i_time][2], frame_series[i_time][3]);
-//       }
+        //       else
+        //       {
+        // // 	Calculate the derivative
+        // 	det_quantity = calculateDerivative(frame_series[i_time][2], frame_series[i_time][3]);
+        //       }
       local_det_info.push_back(det_quantity);
     }
     det_series.push_back(local_det_info);
-  }
-  
-  
+  }  
   
 }
 
@@ -155,9 +139,9 @@ interval topFrame::minorDet( const IMatrix &A ,int i_hat , int j_hat )
     {
       int j_pull;
       if (j<j_hat)
-	j_pull=j;
+        j_pull = j;
       else
-	j_pull = j+1;
+        j_pull = j+1;
       
       Minor_ij[i][j] = A[i_pull][j_pull];
     }
@@ -178,9 +162,9 @@ void topFrame::adjugate( const IMatrix &A , IMatrix &matrix_out)
     {
       int sign ;
       if ((i+j)%2 == 0)
-	sign=1;
+        sign=1;
       else
-	sign = -1;
+        sign = -1;
       
       matrix_out[i][j] = sign*minorDet(A,i,j);
     }
@@ -188,11 +172,6 @@ void topFrame::adjugate( const IMatrix &A , IMatrix &matrix_out)
   matrix_out = transpose(matrix_out);
   
 }
-
-// void topFrame::improveDetBound( void)
-// {
-// //   If the determinent is bounded away from zero, then we replace the det value by the hull of the endpoints
-// }
 
 
 void topFrame::makePlot( void)
@@ -285,7 +264,7 @@ vector<int> topFrame::countZeros( void)
 
 IMatrix topFrame::getLastFrame( void)
 { 
-// For the last time recorded, we return the right-endpt num_trajectories + the derivative of \varphi
+// For the last time recorded, we return the right-endpt num_trajectories + the derivative of \varphi + \varphi
   
   IMatrix LastFrame(num_trajectories*2,num_trajectories+2);
   
@@ -310,7 +289,7 @@ IMatrix topFrame::getLastFrame( void)
   //   We add \varphi to the last column
   for (int j =0;j< num_trajectories*2;j++)
   {
-//       This is the derivative over the entire interval, and could be improved to just take the right one. 
+//       This is the value at the right endpoint  
     LastFrame[j][num_trajectories+1]=(*p_traject_list).back().back()[j][2];
   }
   

@@ -16,8 +16,7 @@ using namespace capd::matrixAlgorithms;
 class topFrame 
 {
 private:
-  int num_trajectories;
-  int dimension; // this should be num_trajectories * 4  TODO Check this calculation  TODO This is bad variable naming :(
+  int num_trajectories; // de facto variable used for defining the dimension;    num_trajectories = n (symplectic);     2*num_trajectories = dimension (as used elsewhere). 
   int series_length;
   
   vector <vector < IMatrix> > * p_traject_list;
@@ -64,7 +63,7 @@ private:
 
 
 public:
-  topFrame(vector <vector < IMatrix> >  &p_traject_list_){p_traject_list  = &p_traject_list_;num_trajectories =(*p_traject_list).size();series_length =(*p_traject_list)[0].size(); dimension = (*p_traject_list)[0][0][0].dimension();}
+  topFrame(vector <vector < IMatrix> >  &p_traject_list_){p_traject_list  = &p_traject_list_;num_trajectories =(*p_traject_list).size();series_length =(*p_traject_list)[0].size();}
   void initialize( void);
   void constructTimeSeries( void);
   void constructDetSeries( void);
@@ -81,8 +80,6 @@ public:
   
   IMatrix getLastFrame( void);
  
-  
-
 };
 
 
