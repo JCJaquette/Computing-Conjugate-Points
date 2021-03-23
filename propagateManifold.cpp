@@ -323,27 +323,12 @@ localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( IVector endPoi
 
 vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMatrix & EFunction_Error )
 {
-    //     TODO There is a problem with the normalization of the eigenvectors .!! 
     IMatrix A_s = (*(*pStable).pF).A;
         
-    //     NOTE TODO NOTE I AM HERE!!!!!!!!!!!!!!!!! NOTE TODO NOTE  
     
     IMatrix eye = identityMat(dimension);
 
-    
-    cout.precision(16);
-    IMatrix Kronic(dimension,dimension);
-    for (int i = 0 ; i< dimension;i++){
-        IVector V_left = getColumn(A_s,dimension,i);
-// //         V_left = V_left/euclNorm(V_left);
-        for (int j = 0 ; j<dimension ; j++){
-            IVector V_right = getColumn(A_s,dimension,j);
-// //             V_right = V_right/euclNorm(V_right);
-            Kronic[i][j] = omega(V_left,V_right,dimension/2);
-        }
-    }
-    cout << " omega product  = " << Kronic << endl;   
-    
+    //     NOTE TODO NOTE I AM HERE!!!!!!!!!!!!!!!!! NOTE TODO NOTE  
     
 //     TODO Make sure that this projection onto coordinates is up to code!!
     

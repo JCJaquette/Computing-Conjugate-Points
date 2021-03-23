@@ -18,9 +18,8 @@ IVector boundEigenvalues(IMatrix B)
     return eigenvalues;
 }
 
-vector < IVector > boundSingleEigenvector(IMatrix A,const IVector V, interval lambda, interval local_norm_sq)
+vector < IVector > boundSingleEigenvector(IMatrix A,const IVector V, interval lambda )
 {
-//     TODO Update
 //     Returns an approximate eigenvector and validated enclosure 
     
 //     Does not update either the approximate eigenvector or eigenvalue. 
@@ -45,7 +44,7 @@ vector < IVector > boundSingleEigenvector(IMatrix A,const IVector V, interval la
     bool verify_local;
     
     for (int it = 0;it<Newton_Steps;it++){
-        kraw_out = krawczykEigenvector(A, V, lambda , H_vec, local_norm_sq);
+        kraw_out = krawczykEigenvector(A, V, lambda , H_vec );
         
         kraw_image  = kraw_out[0];
         new_Nbd     = kraw_out[1];
@@ -88,10 +87,8 @@ vector < IVector > boundSingleEigenvector(IMatrix A,const IVector V, interval la
     return output;
 }
 
-vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambda , IVector H_vec, interval local_norm_sq)
-{
-//     TODO Update
-    
+vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambda , IVector H_vec )
+{    
 //     K = z - C F(z) + ( Id - C DF([z]) )( [z] - z )
     
 //     OUTPUTS: [ K(image), K(image)- mid ] 
@@ -108,7 +105,10 @@ vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambd
     IVector  V_nbd(dimension);
     for (int i =0;i<dimension;i++){ V_nbd[i] = V[i] + H_vec[i];}
     
-    IVector F_out  = F_eigenvector(A,  V,  lambda, local_norm_sq);
+//     NOTE I think F_out & DF_out could be improved by passing V & lambda as thin intervals 
+//          ... but I don't want to fix what ain't broke, 
+//              also, this is not the major source of error when computing eigenfunctions.
+    IVector F_out  = F_eigenvector(A,  V,  lambda);
     IMatrix DF_out = DF_eigenvector(A, V,  lambda);
     IMatrix DF_outH = DF_eigenvector(A, V_nbd,  lambda_nbd );
     
@@ -118,7 +118,7 @@ vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambd
     moveit[dimension] = lambda;
     
 //     Get approximate inverse
-    IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DF_out)));  // NOTE Sometimes this might fail. Unsure why
+    IMatrix  ApproxInverse = midMatrix(gaussInverseMatrix(midMatrix(DF_out))); 
 //     Define identity matrix
     IMatrix eye(dimension+1,dimension+1);
     for (int i =0;i<dimension+1;i++){ eye[i][i]=1;}
@@ -134,11 +134,12 @@ vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambd
     return output;
 }
 
-IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm_sq)
+IVector F_eigenvector(IMatrix A, IVector v, interval lambda )
 {
-//     TODO Update
 //     Computes in first n-components   A*v-lambda*v 
-//     Computes in n+1 component        |v|^2-local_norm_sq 
+//     Computes in n+1 component        || pi_1 (v) ||^2 - 1/( 2 * abs(lambda_i) )    cf. symplectic normalization in (2.18), (2.19). 
+    
+//     NOTE Old :: Computes in n+1 component        |v|^2-local_norm_sq  NOTE This is the old version . no longer used. 
     
     int dimension = A.numberOfRows();
     
@@ -149,9 +150,16 @@ IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm
     
     interval normalization = v*v;
     
-    normalization = normalization-local_norm_sq;
-
-    F_out[dimension] = normalization;
+    IVector pi_1_V(dimension/2); 
+    for (int i =0;i<dimension/2;i++){
+        pi_1_V[i]=v[i];
+    }
+    
+    interval symplectic_normalizer = pi_1_V*pi_1_V - 1/(2*abs(lambda)) ; 
+    
+//     cout << " ||pi_1_V||^2  -  1/(2*lambda_i)" << symplectic_normalizer<< endl; 
+    
+    F_out[dimension] = symplectic_normalizer;
 
     
     return F_out;
@@ -160,7 +168,7 @@ IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm
 
 IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
 {
-//     TODO Update
+//     Computes derivative of "F_eigenvector"
     int dimension = A.numberOfRows();
     
     IMatrix DF_out(dimension +1,dimension +1);
@@ -175,11 +183,22 @@ IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
             DF_out[i][j]=A[i][j];
       }
     }
+//     for (int i =0;i<dimension;i++){ DF_out[i][dimension]=-v[i];}     // OLD METHOD
+//     for (int j =0;j<dimension;j++){ DF_out[dimension][j]=2*v[j];}    // OLD METHOD
     
-    for (int i =0;i<dimension;i++){ DF_out[i][dimension]=2*v[i];}
-    for (int j =0;j<dimension;j++){ DF_out[dimension][j]=-lambda;}
+//     Derivative in lambda component
+    for (int i =0;i<dimension;i++){ DF_out[i][dimension]=-v[i];}
+//     Derivative for last row
+    for (int j =0;j<dimension/2;j++){ DF_out[dimension][j]=2*v[j];}
     
+//     d_lambda F_{n+1} = sgn(lambda) /( 2 lambda^2 )
+    if (lambda>0)
+        DF_out[dimension][dimension] = 1/( 2 *lambda^2 );
+    else
+        DF_out[dimension][dimension] = -1/( 2 *lambda^2 );
+
     
+//     cout << " DF_out = " << DF_out << endl;
     return DF_out;
     
     
@@ -188,13 +207,13 @@ IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
 vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
 {
 //     Returns <0> approximate e-vectors, and <1> rigorous enclosure
-//         We do not normalize the vectors;
+//         We do not normalize the vectors passed through here;
 //     Returns enclosure of each e-vector having norm equal to that of the approximate e-vectors.     
     
 //     Currently, the output <0> will be the input Q unchanged. (but somehow, in the act of returning the matrix, the intervals might get inflated?)
 //     Assumes Q is a matrix with columns of e-vectors of A. 
 
-//     TODO change this verification procedure to enfore the normalization described in the paper on equations (2.18) and (2.19).
+//     Uses the normalization condition described in the paper on equations (2.18) and (2.19).
     
     int dimension = A.numberOfRows();   
     
@@ -206,20 +225,16 @@ vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
     IMatrix Q_center(dimension,dimension);
     IMatrix Q_error(dimension,dimension);
     
-    interval local_norm_sq;
     
     for (int j = 0 ; j< dimension; j++)
     {
         //  Pull the j^th-column 
         interval lambda = Lambda[j];
         V_col = getColumn(Q, dimension, j);
-        local_norm_sq = mid( V_col*V_col );
-        
-//         cout << " local_norm_sq  = " << local_norm_sq  << endl;
         
         
         //  Feed to local function
-        vector < IVector > output  =  boundSingleEigenvector(A, V_col, lambda, local_norm_sq);
+        vector < IVector > output  =  boundSingleEigenvector(A, V_col, lambda);
         V_cen = output[0];
         V_err = output[1];
         

@@ -424,7 +424,6 @@ interval ml(const IMatrix &A)
 
 
 IMatrix symplecticNormalization(IMatrix A_s, int dimension){
-//     TODO Vet this!
   interval normalization_factor;
   
   IVector local_vec_half_p(dimension/2);
