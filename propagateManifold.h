@@ -51,7 +51,7 @@ private:
   IMatrix construct_A_lin(void);
   vector <IVector> construct_InitCondU(int eigenvector_NUM);
   
-  localManifold_Eig construct_Manifold_at_LPlus( const IMatrix &last_Frame, IVector endPoint_LPlus);
+  localManifold_Eig construct_Manifold_at_LPlus( IVector endPoint_LPlus);
   
   vector<IMatrix> projectionGammaBeta(  IMatrix& last_Frame  , const IMatrix & EFunction_Error );
   

@@ -265,6 +265,7 @@ vector<int> topFrame::countZeros( void)
 IMatrix topFrame::getLastFrame( void)
 { 
 // For the last time recorded, we return the right-endpt num_trajectories + the derivative of \varphi + \varphi
+//     NOTE I think we don't need to include \varphi in the last column any more.
   
   IMatrix LastFrame(num_trajectories*2,num_trajectories+2);
   

@@ -184,7 +184,9 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
 
 bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 {
-//     TODO Somewhere in here, we need to check that, when we remove one unstable eigenfucntion and replace it with the derivative of the standing wave, this produces a system with full rank. 
+//     Input
+//         endPoint_LPlus -- the point ( \phi(L_+) - p_s  ) 
+//     TODO We need to check that, when we remove one unstable eigenfucntion and replace it with the derivative of the standing wave, this produces a system with full rank. 
 
   
     IMatrix A_s = (*(*pStable).pF).A;
@@ -193,10 +195,10 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     IMatrix last_Frame = A_frame.getLastFrame();
     //   cout <<endl<< "Last frame = " << last_Frame << endl; 
     
-    localManifold_Eig localStableBig = construct_Manifold_at_LPlus(last_Frame, endPoint_LPlus);
+    localManifold_Eig localStableBig = construct_Manifold_at_LPlus(endPoint_LPlus);
    
     bool conditions_S = localStableBig.checkConditions(  ); 
-    if(! (conditions_S))
+    if( !(conditions_S) )
     {
         cout << "Failed to validate manifold at L_+  " << endl;
         return 0;
@@ -247,17 +249,20 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 
 
 
-localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( const IMatrix &last_Frame, IVector endPoint_LPlus)
+localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( IVector endPoint_LPlus)
 {
-    
+//     Input
+//         endPoint_LPlus  -- the point ( \phi(L_+) - p_s  )     , in global coordinates 
+//     Output
+//          localStableBig -- a stable manifold containing    \phi(L_+)  .
     
     
     IMatrix A_s = (*(*pStable).pF).A;
-//      We validate the stable manifold in a larger nbd
     
-    //   cout <<endl<< "Last frame = " << last_Frame << endl; 
     
+//     We validate the stable manifold in a larger nbd   
     cout << "--Dist from stable equilibrium         = " << endPoint_LPlus << endl;
+//     We put ourselfs into local coordinates
     endPoint_LPlus = gauss(A_s,endPoint_LPlus);
     cout << "--Dist from stable equilibrium (eigen) = " << endPoint_LPlus << endl;
     
@@ -268,35 +273,31 @@ localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( const IMatrix 
         vec_Lplus_s[i] = endPoint_LPlus[i+dimension/2];
     }
     
-//     cout << " endPoint_LPlus  = " << endPoint_LPlus  << endl;
-//     cout << " vec_Lplus_u  = " << vec_Lplus_u  << endl;
-//     cout << " vec_Lplus_s  = " << vec_Lplus_s  << endl;
-    
-  interval L_angle_new = euclNorm(vec_Lplus_u)/euclNorm(vec_Lplus_s);
-  
-//   cout << " L_angle_new  = " << L_angle_new  << endl;
-  
-  
-    
-    //    We get the last column to output the final point
-//     IVector col = getColumn(last_Frame,dimension,dimension /2 +1);
-//     IVector stable_point = (*(*pStable).pF).p ;
-//     for (int i = 0;i<dimension;i++){ stable_point[i]= col[i] - stable_point[i];}
-    
 
-    
+    cout << " vec_Lplus_u  = " << vec_Lplus_u  << endl;
+    cout << " vec_Lplus_s  = " << vec_Lplus_s  << endl;
+
+//     We set the nbd on which we validate the manifold so that it 
+//      1) includes the point vec_Lplus_s
+//      2) includes the origin, 
+//      3) has +/- 1e-10 wiggle room
     IVector U_flat_new(dimension/2);
-    for (int i =0;i<dimension/2;i++){ U_flat_new[i]=vec_Lplus_s[i]*interval(-1e-10,1+1e-10);}
+    for (int i =0;i<dimension/2;i++){ 
+        U_flat_new[i]=vec_Lplus_s[i]*interval(-1e-10,1+1e-10) ;
+    }
     
     
-    localVField F_s_new     = (*(*pStable).pF);
-    interval    L_new       = L_angle_new.right();//5*euclNorm(U_flat_new).right();
-    
+//     Recall, L here is \vartheta in the paper. 
+    interval L_new = euclNorm(vec_Lplus_u)/euclNorm(vec_Lplus_s);
+    L_new = L_new.right();
+    //   cout << " L_new  = " << L_new  << endl;
+
     
     //   We create the local manifold object, which encloses our final trajectory;
     bool STABLE = 1;
     localManifold_Eig localStableBig((*(*pStable).pF),U_flat_new, L_new, STABLE,manifold_subdivision);            
     
+//     We update/increase L until the manifold is verified.
     int adjust_L = 10;
     bool conditions_S;
     for (int i = 0 ; i< adjust_L;i++){
