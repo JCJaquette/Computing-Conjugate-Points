@@ -209,6 +209,12 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     localStableBig.computeEigenError_plus_infty();
     IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;
     
+    
+// // // // // // // // // // // // // // // // // // // // // //     
+//     NOTE TODO NOTE I AM HERE NOTE TODO NOTE  !!!!!!!!!!!!!!!!!
+// // // // // // // // // // // // // // // // // // // // // //     
+    
+//     TODO Shouldn't this use the bigger manifold?
     vector<IMatrix> Ucoord_vects = projectionGammaBeta(  last_Frame , EFunction_Error );
     
     IMatrix U_coord     = Ucoord_vects[0];
@@ -320,22 +326,23 @@ vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,co
     //     TODO There is a problem with the normalization of the eigenvectors .!! 
     IMatrix A_s = (*(*pStable).pF).A;
         
+    //     NOTE TODO NOTE I AM HERE!!!!!!!!!!!!!!!!! NOTE TODO NOTE  
     
     IMatrix eye = identityMat(dimension);
 
     
-//     cout.precision(16);
-//     IMatrix Kronic(dimension,dimension);
-//     for (int i = 0 ; i< dimension;i++){
-//         IVector V_left = getColumn(A_s,dimension,i);
-//         V_left = V_left/euclNorm(V_left);
-//         for (int j = 0 ; j<dimension ; j++){
-//             IVector V_right = getColumn(A_s,dimension,j);
-//             V_right = V_right/euclNorm(V_right);
-//             Kronic[i][j] = omega(V_left,V_right,dimension/2);
-//         }
-//     }
-//     cout << " omega product  = " << Kronic << endl;   
+    cout.precision(16);
+    IMatrix Kronic(dimension,dimension);
+    for (int i = 0 ; i< dimension;i++){
+        IVector V_left = getColumn(A_s,dimension,i);
+// //         V_left = V_left/euclNorm(V_left);
+        for (int j = 0 ; j<dimension ; j++){
+            IVector V_right = getColumn(A_s,dimension,j);
+// //             V_right = V_right/euclNorm(V_right);
+            Kronic[i][j] = omega(V_left,V_right,dimension/2);
+        }
+    }
+    cout << " omega product  = " << Kronic << endl;   
     
     
 //     TODO Make sure that this projection onto coordinates is up to code!!

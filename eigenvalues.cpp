@@ -20,6 +20,7 @@ IVector boundEigenvalues(IMatrix B)
 
 vector < IVector > boundSingleEigenvector(IMatrix A,const IVector V, interval lambda, interval local_norm_sq)
 {
+//     TODO Update
 //     Returns an approximate eigenvector and validated enclosure 
     
 //     Does not update either the approximate eigenvector or eigenvalue. 
@@ -89,6 +90,7 @@ vector < IVector > boundSingleEigenvector(IMatrix A,const IVector V, interval la
 
 vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambda , IVector H_vec, interval local_norm_sq)
 {
+//     TODO Update
     
 //     K = z - C F(z) + ( Id - C DF([z]) )( [z] - z )
     
@@ -134,6 +136,7 @@ vector < IVector > krawczykEigenvector(IMatrix A,const IVector V, interval lambd
 
 IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm_sq)
 {
+//     TODO Update
 //     Computes in first n-components   A*v-lambda*v 
 //     Computes in n+1 component        |v|^2-local_norm_sq 
     
@@ -157,6 +160,7 @@ IVector F_eigenvector(IMatrix A, IVector v, interval lambda, interval local_norm
 
 IMatrix DF_eigenvector(IMatrix A, IVector v, interval lambda)
 {
+//     TODO Update
     int dimension = A.numberOfRows();
     
     IMatrix DF_out(dimension +1,dimension +1);
@@ -190,6 +194,7 @@ vector < IMatrix > boundEigenvectors(IMatrix A, IMatrix Q, IVector Lambda)
 //     Currently, the output <0> will be the input Q unchanged. (but somehow, in the act of returning the matrix, the intervals might get inflated?)
 //     Assumes Q is a matrix with columns of e-vectors of A. 
 
+//     TODO change this verification procedure to enfore the normalization described in the paper on equations (2.18) and (2.19).
     
     int dimension = A.numberOfRows();   
     
