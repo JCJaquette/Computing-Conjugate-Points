@@ -223,6 +223,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
     }
     
+//     I think this is the Neumann series type estimate
     interval V_inverse_norm = euclNorm(  krawczykInverse(A_s));
     interval E_norm = V_inverse_norm.right() * eps_0.right() * sqrt( dimension )  ; 
     E_norm = E_norm /(1-E_norm );
@@ -391,6 +392,13 @@ IMatrix propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMat
 
 
 bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues , interval E_norm , IMatrix U_coord_pt, IMatrix U_coord_nbd){
+//   INPUT
+//      U_coord     -- The stacked Gamma / Beta matrix 
+//      eps_0       -- eps_0  from the paper 
+//      eigenvalues -- eigenvalues 
+//      E_norm      -- ??????????
+//   OUTPUT
+
     
 //     cout << "U_coord = " << U_coord << endl;
     
@@ -457,6 +465,12 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
 }
 
 bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0, interval nu_1 , interval nu_n , interval EE_norm){
+//   INPUT
+//      U_coord     -- The stacked Gamma / Beta matrix 
+//      eps_0       -- eps_0  from the paper 
+//      eigenvalues -- eigenvalues 
+//      E_norm      -- ??????????
+//   OUTPUT
     
     interval epsilon_beta = compute_epsilon_beta( Gamma, Beta, EE_norm);
     
