@@ -422,84 +422,6 @@ localManifold_Eig::localManifold_Eig(const localManifold & lM_)
     : localManifold( lM_ ){}
         
 
-//         BEGIN old function
-// interval localManifold_Eig::boundDFU_proj( IVector U)
-// {
-// //     No longer used. Could be deleted.
-// //     spaghetti code modification of boundDFU. 
-// //     Used to bound the function D F( \pi_u/s \circ \psi   U ) when determining the bound for L_-.
-//     
-//   int subdivision_dim = dimension/2;
-//   
-//   IMatrix pi_1(dimension,dimension);                    // NOTE this line is different 
-//   for (int i =0;i<dimension/2;i++){ pi_1[i][i]=1;}      // NOTE this line is different 
-//   IMatrix pi1_A = pi_1 * (*pF).A;                       // NOTE this line is different 
-//   
-//   IMatrix D2G_p =  (*(*pF).f)[ (*pF).p ] *pi_1;         // NOTE this line is different 
-//   
-//   
-// //   We Create the index list
-//   vector < int > index_list(dimension/2);
-// 
-// //     We subdivide the stable part if we are looking at the stable manifold
-//   if (stable)
-//   {
-//     for (int i=0;i<dimension/2;i++)
-//     {
-//       index_list[i] = i +dimension/2;
-//     }
-//   }
-// //     We subdivide the unstable part if we are looking at the unstable manifold
-//   else
-//   {
-//     for (int i=0;i<dimension/2;i++)
-//     {
-//       index_list[i] = i;
-//     }
-//   }
-// 
-//   
-// //    We get a bound on the first part
-//   vector < int > part_list(dimension/2);
-//   
-//   IVector U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-// //   IMatrix A = (*pF)[U_part];
-//   IMatrix A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;  // NOTE this line is different 
-//   
-//   interval MaxDiff;                                         // NOTE this line is different 
-//   MaxDiff = euclNorm(A-D2G_p);                              // NOTE this line is different 
-//   
-// //    We make a single for loop to go through all the subdivision dimensions
-//   int sum;
-//   int N = subdivisionNUM;
-//   int n = subdivision_dim;
-//   int N_to_i;
-//   for (int j = 0;j< (int_pow(N,n));j++)
-//   {
-// //     We index the part we want
-//     sum = 0;
-//     N_to_i = 1;
-//     for (int i = 0 ; i<n;i++)
-//     {
-//       part_list[i] = ( (j-sum) / N_to_i ) % subdivisionNUM;
-//       if (i < n-1)
-//       {
-//         sum += part_list[i]*N_to_i;
-//         N_to_i = N_to_i * N;
-//       }
-//     }
-// //     We get the part 
-//     U_part = getSubdivision(U, index_list , part_list , subdivisionNUM);
-// //     A = intervalHull(A,(*pF)[U_part]);
-//     A =  (*(*pF).f)[ (*pF).p +  pi1_A*U_part ]*pi_1;        // NOTE this line is different 
-//     MaxDiff =  intervalHull(MaxDiff , euclNorm(A-D2G_p));   // NOTE this line is different 
-// 
-//   }
-//   
-//   return MaxDiff;
-// }
-// END
-
 
 
 void localManifold_Eig::ErrorEigenfunction( void)
@@ -677,7 +599,7 @@ void localManifold_Eig::computeEigenError_plus_infty( void){
 //     Computes the Eigenfunction error at plus infty 
 //     
 //     Output/Effects:
-//      -- Creates class matrix "Eigenfunction_Error_plus_infty", the distance W is from our approximate eigenvector basis
+//      -- Creates class matrix "Eigenfunction_Error_plus_infty", the distance W is from our approximate eigenvector basis in global coordinates 
 //     NOTE It would have been more efficient to combine the function "computeEigenError_minus_infty" and "computeEigenError_plus_infty". Alas.
     
 //     We compute the error in our eigenfunction approximation.

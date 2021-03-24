@@ -72,10 +72,8 @@ private:
     interval K_store;   
     interval eps_unscaled;
     IMatrix Eigenvector_Error; // Error for unit norm eigenvectors;
-    IMatrix Eu_m_Error_Final;  // Error for the unstable eigenfucntions at minus infinity 
-    IMatrix Eigenfunction_Error_plus_infty;  // Error for the all eigenfucntions at plus infinity 
-    
-//     interval boundDFU_proj( IVector U); // No longer used. Could be deleted
+    IMatrix Eu_m_Error_Final;  // Error for the unstable eigenfunctions at minus infinity 
+    IMatrix Eigenfunction_Error_plus_infty;  // Error for the all eigenfunctions at plus infinity 
     
     friend class propagateManifold;
     

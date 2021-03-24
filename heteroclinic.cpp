@@ -33,31 +33,29 @@ int test(int dimension,vector < double > All_parameters)
   
   clock_t begin = clock();
   
-  int order = 20;               //  High order Taylor method of validated integration
+  int order = 20;                           //  High order Taylor method of validated integration
+  int manifold_subdivision = 15;            //  Uniform subdivision number for bounding functions when validating the (un)stable manifolds
+  int newton_steps = 20;                    //  Max iterates when applying newton's method
+  int grid = 14;                            //  Grid for counting conjugate points
+  int stepsize = 5;                         //  Fixed stepsize for counting conjugate points
   
-  int manifold_subdivision = 15;
-  int single_newton_steps = 20;
- 
-  int grid = 14;                //  Grid for counting conjugate points
-  int stepsize = 5;             //  Fixed stepsize for counting conjugate points
-//   interval L_plus = 13.55;      //  Distance to integrate forward when finding unstable eigenspace.
-  interval L_minus_percent = 0.84;      //  TODO Distance to integrate forward when finding unstable eigenspace.
+  //  When validating the heteroclinic orbit, we integrate on the time interval (-T,T) points on the (un)stable manifolds, meeting in the middle. Selection of T is automatized. 
+  //  When computing conjugate points, we integrate on (-L_-,L_+). Nominally we say L_+ is 0.
+  //  We choose L_- = L_minus_percent * 2T .
+  interval L_minus_percent = 0.854;   
   
-  
-  interval scale;                           //  initial size of the (un)stable manifold;
-  interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'
+  interval scale;                           //  initial size of the (un)stable manifold; later modified based on location of approximate heteroclinic
+  interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'; will get shrunk by newton's method
   interval L;                               //  Cone angle  --  \vartheta in the paper -- 
   
   if (dimension ==4 ){
     scale = 0.000016;     // n=2
-    L = interval(.00008); // cone angle
-//     L_plus = 11;
+    L = interval(.00008); // cone angle 
     stepsize =5;
   }
   else{ 
     scale = 0.000001;     // n=3      
-    L = interval(.000015); // cone angle
-//     L_plus = 13.75;
+    L = interval(.000015); // cone angle 
     stepsize =6;
   }
     
@@ -65,15 +63,14 @@ int test(int dimension,vector < double > All_parameters)
 //  //     (i)      Compute a standing wave \varphi // // // //
 
 
-  vector <IMap> functions = constructFunctions(  dimension,All_parameters);
-  vector <IFunction> energy_vec   = constructEnergy(dimension,  All_parameters);
+  vector <IMap> functions = constructFunctions(  dimension,All_parameters);         // NOTE for a different class of functions, this function will need to be adjusted 
   IMap f             = functions[0]; // For unstable manifold
   IMap f_minus       = functions[1]; // For stable manifold
   IMap f_linearize   = functions[2]; // For non-autonomous system
   
 //  We compute an approximate value of T, for determining the initial guess. 
 //  This is chosen so that the uncoupled standing front is a distance 'scale' from the equilibria (in global coordinates) at time +/- T . 
-  interval T = approxT(dimension, All_parameters,scale);
+  interval T = approxT(dimension, All_parameters,scale);                            // NOTE for a different class of functions, this function may need to be adjusted 
 
 
     //   BEGIN We construct the manifolds  
@@ -116,12 +113,13 @@ int test(int dimension,vector < double > All_parameters)
   
 //  We produce a guess in the local eigen-coordinates of the boundary points of our heteroclinic orbit. 
 //  This is chosen and rescaled so that the guess will just barely fit inside manifolds <>localUnstable<> and <>localStable<>. 
-vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);
+vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);       // NOTE for a different class of functions, this function may need to be adjusted 
 
     
   
 // // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
+// TODO Make Separate Function
 //   BEGIN Testing integration of guess 
   
 //     We define the XY_pt that will get used in the single-shooting newton's method. 
@@ -154,23 +152,23 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
     cout << " T old = " << T << endl; 
     cout << " T new = " << T_new << endl;     
     T = T_new;
+//   END
   
-  
+//     TODO  Make Separate Function
 //   BEGIN  Perform a single-shooting Newton-like method 
-  
-  
 //     Here, we perform a non-rigorous Newton method; we use intervals of zero-width.
   IVector XY_nbd_ZERO(dimension);
   IVector Newton_out ;
-  for (int i = 0 ; i<single_newton_steps ;i++)
+  for (int i = 0 ; i<newton_steps ;i++)
   {
     Newton_out =BVP.NewtonStep(XY_pt,XY_nbd_ZERO,T,r_u_sqr);
 //     cout << "Answ XY_pt 	= " << XY_pt << endl;
     XY_pt = midVector(Newton_out);
   }
+//   END
   
-    
-// BEGIN  We update the validity size of the neighborhoods of the manifolds
+
+// BEGIN  We update the validity size of the neighborhoods of the manifolds     
 //      This is done such that the final 'approximate' solution is just inside the neighborhood 
 //      'just inside' here being 0.1% larger than the approximate solution. 
 
@@ -186,7 +184,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   IVector U_flat_U_new(dimension/2);
   IVector U_flat_S_new(dimension/2);
   for (int i =0;i<dimension/2;i++){
-      U_flat_U_new[i]=U_flat[i]*x_Ratios[i]*1.001;
+      U_flat_U_new[i]=U_flat[i]*x_Ratios[i]*1.001; // Move parameter to top.
       U_flat_S_new[i]=U_flat[i]*y_Ratios[i]*1.001;
   }
   localUnstable.updateSize(U_flat_U_new);
@@ -205,6 +203,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   
   cout << endl<< "Validating BVP ... " << endl << endl;
   
+//   TODO Make Separate Function
 //   BEGIN We validate the solution to our BVP using the Krawczyk method. 
 
 //    First, we obtain a neighborhood about our approximate solution, which should map into itself under the Krawczyk operator. 
@@ -215,7 +214,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   }
   
 //    We map this neighborhood several times under the Krawczyk operator. This should get a near optimal nbd to be verified. 
-    for (int i = 0 ; i<single_newton_steps ;i++){
+    for (int i = 0 ; i<newton_steps ;i++){
         Newton_out =BVP.NewtonStep(XY_pt,XY_nbd,T,r_u_sqr);
         XY_pt = midVector(Newton_out);
         XY_nbd = (Newton_out - XY_pt);
@@ -274,8 +273,8 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   cout << endl << "Globalizing Manifold ... " << endl;
   
 //   We upcast our manifold objects to allow for eigenfunction calculations
-  localManifold_Eig localUnstable_eig( localUnstable);
-  localManifold_Eig localStable_eig( localStable);
+  localManifold_Eig localUnstable_eig(localUnstable);
+  localManifold_Eig localStable_eig(  localStable  );
   
   propagateManifold E_u(f_linearize, localUnstable_eig,localStable_eig, XY_pt,XY_nbd,order,stepsize);
       
@@ -304,21 +303,16 @@ interval L_minus = sup(2*T*L_minus_percent);
 interval effective_L_plus = 2*T*(1-L_minus_percent);
 //     The point: phi(0) = Phi_{ effective_L_plus }(q_1) 
 IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, effective_L_plus,  STABLE) ;
-// IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, T-L_plus,  STABLE) ; 
 
   
   cout << " endPoint_LPlus = " << endPoint_LPlus -p_s << endl;
   cout << " endpoint eig = " << gauss(A_s,endPoint_LPlus -p_s) << endl;
-  
-  
-  
   
 //  //     (iv)     Prove no conj pts past L_+      // // // //
 //  //     (v)      Count conjugate points          // // // //
   
   int unstable_e_values = E_u.frameDet(L_minus,grid,endPoint_LPlus-p_s);
     
-  
   
   clock_t end = clock();
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
@@ -480,7 +474,7 @@ int main(int argc, char* argv[])
 	  if (!Get_Param) 
 	  {
           
-	    dimension=4; // TESTING DIMENSION
+	    dimension=4; // TESTING DIMENSION  either 4 or 6. 
 	    
         if (dimension ==4)
         {
@@ -495,12 +489,8 @@ int main(int argc, char* argv[])
             Input.push_back(.98);// b2              0.98 previous
             Input.push_back(.96);// b3              0.96 previous
                         
-            Input.push_back(.04);// c12            +/- .04 
-            Input.push_back(.02);// c23             +/- .02  
-            
-//             L_plus = 14; work. Maybe something smaller would work too.
-
-            
+            Input.push_back(-.04);// c12            +/- .04 
+            Input.push_back(-.02);// c23           +/- .02  
             
 
             test(dimension,Input);

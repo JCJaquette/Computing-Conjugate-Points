@@ -53,7 +53,7 @@ private:
   
   localManifold_Eig construct_Manifold_at_LPlus( IVector endPoint_LPlus);
   
-  vector<IMatrix> projectionGammaBeta(  IMatrix& last_Frame  , const IMatrix & EFunction_Error );
+  IMatrix projectionGammaBeta(  IMatrix& last_Frame  , const IMatrix & EFunction_Error );
   
 public:
   propagateManifold(IMap &pf_, localManifold_Eig &pUnstable_, localManifold_Eig &pStable_, IVector XY_pt_,IVector XY_nbd_,int order_,int step_size_){pf = &pf_; pUnstable = &pUnstable_;pStable = &pStable_;XY_pt =XY_pt_; XY_nbd =XY_nbd_; order = order_; dimension = (*pUnstable).dim();step_size=step_size_;}

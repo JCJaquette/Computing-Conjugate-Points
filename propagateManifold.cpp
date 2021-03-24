@@ -214,19 +214,10 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 //     NOTE TODO NOTE I AM HERE NOTE TODO NOTE  !!!!!!!!!!!!!!!!!
 // // // // // // // // // // // // // // // // // // // // // //     
     
-//     TODO Shouldn't this use the bigger manifold?
-    vector<IMatrix> Ucoord_vects = projectionGammaBeta(  last_Frame , EFunction_Error );
-    
-    IMatrix U_coord     = Ucoord_vects[0];
-    IMatrix U_coord_pt  = Ucoord_vects[1];
-    IMatrix U_coord_nbd = Ucoord_vects[2];
-    
-
-
     
     cout <<" Eigenfunction_Error_plus_infty  " << EFunction_Error  << endl;
     
-
+// VET THIS 
     interval eps_0;
     for (int i = 0 ; i < dimension;i++){
         eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
@@ -243,6 +234,17 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     
     IVector eigenvalues = localStableBig.eigenvalues;
 //     cout << " eigenvalues= " << eigenvalues<< endl;
+    
+    
+    
+    
+    
+    //     TODO Shouldn't this use the bigger manifold?
+    IMatrix U_coord = projectionGammaBeta(  last_Frame , EFunction_Error );
+    
+//     IMatrix U_coord     = Ucoord_vects[0];
+    IMatrix U_coord_pt  = U_coord;
+    IMatrix U_coord_nbd = U_coord;
     
     cout << endl<<"Checking L_+ conditions ..." << endl  << endl;
     bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues,E_norm,U_coord_pt,U_coord_nbd);
@@ -321,58 +323,39 @@ localManifold_Eig propagateManifold::construct_Manifold_at_LPlus( IVector endPoi
 
 
 
-vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMatrix & EFunction_Error )
+IMatrix propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMatrix & EFunction_Error )
 {
+//   INPUT
+//      EFunction_Error -- Error of eigenfunctions at L_+, in global coordinates 
+//      last_Frame      -- the frame matrix U(x) at L_+, in global coordinates
+//   OUTPUT 
+//      U_coord         -- An enclosure of the stacked matrices Gamma and Beta.
+    
+    
     IMatrix A_s = (*(*pStable).pF).A;
-        
-    
     IMatrix eye = identityMat(dimension);
-
-    //     NOTE TODO NOTE I AM HERE!!!!!!!!!!!!!!!!! NOTE TODO NOTE  
+      
     
-//     TODO Make sure that this projection onto coordinates is up to code!!
+// Old output for the projection without error.     
+// // BEGIN We project the final endpoint into the large stable manifold coordinates 
+//     for (int i = 0 ; i < dimension /2 +1;i++)
+//     {
+//         IVector col = getColumn(last_Frame,dimension,i);
+//         IVector vec_in_local_coord = gauss(A_s,col);
+//         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
+//         
+//         if (i < dimension /2)
+//             cout << " w_" << i << "   = ";
+//         else if (i == dimension /2)
+//             cout << " phi'  = ";
+//         cout << vec_in_local_coord << endl;
+//     }
+// //     END
     
-// BEGIN We project the final endpoint into the large stable manifold coordinates 
-    for (int i = 0 ; i < dimension /2 +1;i++)
-    {
-        IVector col = getColumn(last_Frame,dimension,i);
-        IVector vec_in_local_coord = gauss(A_s,col);
-        vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
-        
-        if (i < dimension /2)
-        cout << " w_" << i << "   = ";
-        else if (i == dimension /2)
-        cout << " phi'  = ";
-        cout << vec_in_local_coord << endl;
-    }
-//     END
-    
-    cout << " With additional error" << endl;
+    cout << "Final Frame, in Gamma Beta coordinates" << endl;
     
     
     IMatrix U_coord(dimension,dimension/2);
-    
-//     IMatrix rightMat = EFunction_Error;
-//     for (int i = 0 ; i < dimension;i++){
-//         for( int j =0; j<dimension;j++){
-//             rightMat[i][j] = abs(rightMat[i][j]).right();
-//         }
-//     }
-//     IMatrix max_inverse_bound = krawczykInverse(eye-rightMat) - eye;
-//     max_inverse_bound = interval(-1,1)* max_inverse_bound;
-    
-//     IMatrix max_inverse_bound = krawczykInverse(eye + EFunction_Error) - eye;
-    
-//     cout << rightMat << endl;
-    
-//     IMatrix eye_plus_Eu_inv = boundEyeInverseDefect(EFunction_Error,dimension);
-
-    IMatrix U_coord_pt(dimension,dimension/2);
-    IMatrix U_coord_nbd(dimension,dimension/2);  // TODO This never seems to get modified. What's going on here??
-    
-    IVector vec_in_local_coord_pt;
-    IVector vec_in_local_coord_nbd;
-
 
     
     // BEGIN We project the final endpoint into the large stable manifold coordinates 
@@ -381,46 +364,28 @@ vector<IMatrix> propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,co
         IVector col = getColumn(last_Frame,dimension,j);
         IVector vec_in_local_coord = gauss(A_s,col);
         
-        vec_in_local_coord_pt = vec_in_local_coord ; // NEW 
-        
-//         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
-        
-//         cout << " New Bound = " << vec_in_local_coord + max_inverse_bound*vec_in_local_coord  << endl;        
-//         cout << " Old Bound = " << gauss(eye+EFunction_Error ,vec_in_local_coord) << endl;  // This is better than krawczykInverse 
-
-//         TODO : Instead of using a Neumann series error estimate as described in the paper, we appear to be straight up inverting a fat interval matrix. Make sure this gets reflected in the paper. 
-        vec_in_local_coord = gauss(eye+EFunction_Error ,vec_in_local_coord);  // EigenfunctionError
+//      NOTE The MAJOR source of error here is inverting "eye+krawczykInverse(A_s)*EFunction_Error " 
+//         This wouldn't be such a problem if 'EFunction_Error' wasn't so big. Maybe in the future this could be improved. 
+        vec_in_local_coord = gauss(eye+krawczykInverse(A_s)*EFunction_Error ,vec_in_local_coord);  // EigenfunctionError
         vec_in_local_coord = vec_in_local_coord/getMax(abs(vec_in_local_coord));
         
-        
+//      store and output the vector.
         if (j < dimension /2){
-            cout << " w_" << j << "   = ";
+            cout << "  U_" << j << "   = ";
             for (int i = 0 ; i  < dimension ; i++){
-                U_coord[i][j] = vec_in_local_coord[i];
-                U_coord_pt[i][j] = vec_in_local_coord[i];
+                U_coord[i][j]    = vec_in_local_coord[i];
             }
         }
         else if (j == dimension /2){
-            cout << " phi'  = ";
+            cout << "  phi'  = ";
         }
         cout << vec_in_local_coord << endl;
-    }
-    
-//     cout << " U = " << U_coord << endl;
-//     cout << " U_pt = " << U_coord_pt << endl;
-//     cout << " |U_pt| = " << euclNorm(U_coord_pt) << endl;
-    
-    
-    
+    }    
+
 //     END 
 
 
-    vector < IMatrix > output;
-    output.push_back(U_coord);
-    output.push_back(U_coord_pt);
-    output.push_back(U_coord_nbd);
-    
-    return output;
+    return U_coord;
 }
 
 
@@ -446,14 +411,14 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
         {
             if(j==k){k_adjust =1;continue;}
             for (int i = 0 ; i < dimension/2;i++){
-                Gamma_local[i][j-k_adjust] = U_coord[i][j];
-                Beta_local[i ][j-k_adjust] = U_coord[i+dimension/2][j];
+                Gamma_local[i][j-k_adjust]                  = U_coord[i][j];
+                Beta_local[i ][j-k_adjust]                  = U_coord[i+dimension/2][j];
                 
-                VinvU_local_pt[i][j-k_adjust] = U_coord_pt[i][j];
-                VinvU_local_pt[i+dimension/2][j-k_adjust] = U_coord_pt[i+dimension/2][j];
+                VinvU_local_pt[i][j-k_adjust]               = U_coord_pt[i][j];
+                VinvU_local_pt[i+dimension/2][j-k_adjust]   = U_coord_pt[i+dimension/2][j];
                 
-                VinvU_local_nbd[i][j-k_adjust] = U_coord_nbd[i][j];
-                VinvU_local_nbd[i+dimension/2][j-k_adjust] = U_coord_nbd[i+dimension/2][j];
+                VinvU_local_nbd[i][j-k_adjust]              = U_coord_nbd[i][j];
+                VinvU_local_nbd[i+dimension/2][j-k_adjust]  = U_coord_nbd[i+dimension/2][j];
             }
         }
         
@@ -496,8 +461,6 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     interval epsilon_beta = compute_epsilon_beta( Gamma, Beta, EE_norm);
     
     
-// // //     A_s = (*(*pStable).pF).A;
-// // //     krawczykInverse( A_s )*
     
     
     if (epsilon_beta < 0)
@@ -508,7 +471,6 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     
     cout << " eps_0 = " << eps_0 << endl; 
     cout << "epsilon_beta  = " << epsilon_beta  << endl;
-//     epsilon_beta =0;
     
     interval d_min =1;
     interval d_max =1;
@@ -551,7 +513,6 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     
     C_P = C_P.right();
     C_Q = C_Q.right();
-    
     
     
     
@@ -644,13 +605,6 @@ interval propagateManifold::compute_epsilon_beta( IMatrix Gamma, IMatrix Beta, i
     interval epsilon_beta = euclNorm(Beta) / sqrt(mu);
     
     
-    
-//     epsilon_beta = interval(0.0000001);
-    
-    
-    return epsilon_beta ;
-    
+    return epsilon_beta ;    
 }
-
-
 
