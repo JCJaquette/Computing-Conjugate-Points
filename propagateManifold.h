@@ -43,9 +43,9 @@ private:
 // // // // // // // // // // // // // 
 //   Methods 
   bool lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus);  
-  bool checkL_plus( IMatrix U_coord,interval eps_0,IVector eigenvalues , interval E_norm , IMatrix U_coord_pt, IMatrix U_coord_nbd);  
-  bool checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0,interval nu_1 , interval nu_n, interval EE_norm);
-  interval compute_epsilon_beta( IMatrix Gamma, IMatrix Beta, interval EE_norm);
+  bool checkL_plus( IMatrix U_coord,interval eps_0,IVector eigenvalues  );  
+  bool checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0,interval nu_1 , interval nu_n);
+  interval compute_epsilon_beta( IMatrix Gamma, IMatrix Beta );
   
   vector<IMatrix> computeTotalTrajectory(int eigenvector_NUM, interval T, int grid);  
   IMatrix construct_A_lin(void);
