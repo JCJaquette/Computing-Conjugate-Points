@@ -184,14 +184,15 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
 
 bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 {
-//     Input
+//     INPUT
 //         endPoint_LPlus -- the point ( \phi(L_+) - p_s  ) 
+//     OUTPUT
+//         true/false     -- whether the L_+ condition is satisfied.   
+    
 //     TODO We need to check that, when we remove one unstable eigenfunction and replace it with the derivative of the standing wave, this produces a system with full rank. 
 
-  
-    IMatrix A_s = (*(*pStable).pF).A;
-//      We validate the stable manifold in a larger nbd
     
+//      We validate the stable manifold in a larger nbd    
     IMatrix last_Frame = A_frame.getLastFrame();
     //   cout <<endl<< "Last frame = " << last_Frame << endl; 
     
@@ -207,26 +208,21 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
         
     cout << endl<<"Computing the eigenfunction error at plus  infinity ..." << endl;
     localStableBig.computeEigenError_plus_infty();
-    IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;
-    
-    
-// // // // // // // // // // // // // // // // // // // // // //     
-//     NOTE TODO NOTE I AM HERE NOTE TODO NOTE  !!!!!!!!!!!!!!!!!
-// // // // // // // // // // // // // // // // // // // // // //     
-    
+    IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;    
     
     cout <<" Eigenfunction_Error_plus_infty  " << EFunction_Error  << endl;
     
-// VET THIS 
+    // We compute <<epsilon_0>>     
+    // Each component of 'EFunction_Error' is already scaled by the norm of the e-vectors. Thus, we take the union of all these error bounds.
     interval eps_0;
     for (int i = 0 ; i < dimension;i++){
         eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
     }
-    
     cout << "eps0 = "<<  eps_0 << endl;
     
+    // Validated eigenvalues
     IVector eigenvalues = localStableBig.eigenvalues;
-//     cout << " eigenvalues= " << eigenvalues<< endl;
+    //     cout << " eigenvalues= " << eigenvalues<< endl;
     
     IMatrix U_coord = projectionGammaBeta(  last_Frame , EFunction_Error );
     
@@ -372,27 +368,31 @@ IMatrix propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMat
 
 
 bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues  ){
+//     Different L_+ estimates may be obtained by removing one of the unstable eigenfunctions, and doing that computation.
+//     This function creates the Gamma & Beta matrices for each possibility, and then checks whether the L_+ condition is satisfied. 
+//     
 //   INPUT
-//      U_coord     -- The stacked Gamma / Beta matrix 
+//      U_coord     -- The stacked Gamma / Beta matrix, thick interval matrices
 //      eps_0       -- eps_0  from the paper 
 //      eigenvalues -- eigenvalues 
 //   OUTPUT
+//         true/false     -- whether the L_+ condition is satisfied. 
 
 //     cout << "U_coord = " << U_coord << endl;
     
     vector < IMatrix > Gamma_List;
     vector < IMatrix > Beta_List;
-    IVector EE_norm_list(dimension/2);
+    
     IMatrix Gamma_local(dimension/2,dimension/2-1);
     IMatrix Beta_local(dimension/2,dimension/2-1);
 
-    for (int k =0;k<dimension/2;k++) //remove k
+    for (int k =0;k<dimension/2;k++)                //remove k, the hat-index
     {
         int k_adjust =0;
-        for (int j = 0 ; j<dimension/2;j++) 
+        for (int j = 0 ; j<dimension/2;j++)         // COLUMNS
         {
             if(j==k){k_adjust =1;continue;}
-            for (int i = 0 ; i < dimension/2;i++){
+            for (int i = 0 ; i < dimension/2;i++){  // ROWS
                 Gamma_local[i][j-k_adjust]  = U_coord[i][j];
                 Beta_local[i ][j-k_adjust]  = U_coord[i+dimension/2][j];
             }
@@ -419,14 +419,18 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
 
 bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0, interval nu_1 , interval nu_n ){
 //   INPUT
-//      U_coord     -- The stacked Gamma / Beta matrix 
+//      Gamma       -- A Gamma interval matrix, for a particular  hat{i} // hat{k} 
+//      Beta        -- A Beta  interval matrix, for a particular  hat{i} // hat{k} 
 //      eps_0       -- eps_0  from the paper 
-//      eigenvalues -- eigenvalues 
+//      nu_1        -- Largest  eigenvalue
+//      nu_n        -- Smallest eigenvalue
 //   OUTPUT
+//      true/false  -- for the choice of Gamma, Beta, whether the L_+ condition is satisfied, 
     
     interval epsilon_beta = compute_epsilon_beta( Gamma, Beta );
     
     
+//     If mu^* could not be bounded above 0, the L_+ condition FAILS
     if (epsilon_beta < 0)
         return 0;
     
@@ -487,8 +491,10 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     bool NEUMANN_SERIES_TEST;
     if (( C_M1 <1 ) && ( C_M2 < 1) && (sum_for_neumann_test <1))
         NEUMANN_SERIES_TEST =1;
-    else
+    else{
+        cout << " Unable to apply Neumann series " << endl << endl;
         NEUMANN_SERIES_TEST =0;
+    }
     
     
     cout << " C_P  = " << C_P << endl; 
@@ -519,38 +525,46 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
 }
 
 interval propagateManifold::compute_epsilon_beta( IMatrix Gamma, IMatrix Beta ){
+//   Uses methods in Section 3.4 to bound the constant \epsilon_{b}
+// 
+//   INPUT
+//      Gamma       -- A Gamma interval matrix, for a particular  hat{i} // hat{k} 
+//      Beta        -- A Beta  interval matrix, for a particular  hat{i} // hat{k} 
+//   OUTPUT
+//      true/false  -- for the choice of Gamma, Beta, whether the L_+ condition is satisfied, 
     
+// STEP 1: We compute a bound on \mu^* 
     
     IMatrix Gamma_center = midMatrix(Gamma);
     IMatrix Gamma_delta  = Gamma - Gamma_center;
-    
+
 //     cout << " Gamma_center = " << Gamma_center << endl;
 //     cout << " Gamma_delta = " << Gamma_delta << endl;
-    
-//     cout << " Gc^T * Gc     = " << transpose(Gamma_center)*Gamma_center <<endl;
-//     cout << " 2* Gd^T * Gc  = " << interval(2)*((transpose(Gamma_delta)*Gamma_center)) <<endl;
-//     cout << " Gd^T * Gd     = " << transpose(Gamma_delta)*Gamma_delta  <<endl;
-    
     
     IMatrix GcT_by_Gc = transpose(Gamma_center)*Gamma_center    ;
     IMatrix GdT_by_Gc = transpose(Gamma_delta)*Gamma_center     ;
     IMatrix GdT_by_Gd = transpose(Gamma_delta)*Gamma_delta      ;
+    
+//     cout << " Gc^T * Gc     = " << GcT_by_Gc <<endl;
+//     cout << " Gd^T * Gc     = " << GdT_by_Gc <<endl;
+//     cout << " Gd^T * Gd     = " << GdT_by_Gd <<endl;
         
-    interval mu_c = ml( transpose(Gamma_center)*Gamma_center );
+//      Recall logarithmic minimum is   ml(A) :=  \min \{ \lambda \in \sigma( (A^T+A)/2 \} 
+//      Note also GcT_by_Gc is symmetric     
+    interval mu_c = ml( GcT_by_Gc );
+//     cout << " mu_center  = " << mu_c << endl;
     
+    interval mu = mu_c - interval(2)*euclNorm(GdT_by_Gc) - euclNorm(GdT_by_Gd); 
+    cout << " mu^* = " << mu << endl;
+
     
-    interval mu_Rayleigh = mu_c - interval(2)*euclNorm(GdT_by_Gc) - euclNorm(GdT_by_Gd); 
-    cout << " mu_Rayleigh = " << mu_c << endl;
-    
-    
-//     cout << " Gamma = " << Gamma << endl;
-//     cout << " Gamma^t*Gamma = " << transpose(Gamma)*Gamma << endl;
-        
-    interval mu = mu_Rayleigh;
-    
-    if (mu.left() < 0)
+//  This will cause  the parent function  "checkL_plus_local" to return FAILURE
+    if (mu.left() < 0){
+        cout << " Failure: Lower bound on mu^* is negative and equals " << mu << endl << endl;
         return interval(-1);
+    }
     
+// STEP 2: We compute a bound on ||Beta|| and define \epsilon_b 
     cout << " ||B|| = " << euclNorm(Beta) << endl;
 
     interval epsilon_beta = euclNorm(Beta) / sqrt(mu);

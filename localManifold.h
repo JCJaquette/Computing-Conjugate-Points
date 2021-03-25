@@ -68,7 +68,7 @@ public:
 class localManifold_Eig : public localManifold
 {
 private:
-    IVector eigenvalues;
+    IVector eigenvalues;  // Validated eigenvalues
     interval K_store;   
     interval eps_unscaled;
     IMatrix Eigenvector_Error; // Error for unit norm eigenvectors;

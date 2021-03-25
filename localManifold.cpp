@@ -1,4 +1,3 @@
- 
 #include "localManifold.h"
 
 // BEGIN Base class: "localManifold" methods
