@@ -19,8 +19,21 @@ using namespace capd::matrixAlgorithms;
 #include <ctime>
 #include <cmath>
 
-int test(int dimension,vector < double > All_parameters)
+int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameters)
 {
+// This function attempts to construct a computer assisted proof for 
+//     -- The existence of a standing front in the PDE, specified in the ODE_functions.cpp file, and
+//     -- A rigorous count of the number of conjugate points, and hence the spectral stability of the front. 
+//     
+// INPUT
+//      dimension      -- either 4 or 6 -- the dimension of the spatial dynamics, a Hamiltonian ODE.
+//      All_parameters -- TODO   Make this an interval????? 
+//     
+// OUTPUT
+//      [non-negative int ] --   The computer assisted proof IS     successful. The output corresponds to a rigorous count of the number of conjugate points.  
+//      [    negative int ] --   The computer assisted proof IS NOT successful. The output corresponds to a particular way the proof failed. 
+
+    
 //  //  This program has 5 major parts: 
 //  //     (i)      Compute a standing wave \varphi // // // //
 //  //     (ii)     Determine L_-                   // // // //
@@ -28,16 +41,23 @@ int test(int dimension,vector < double > All_parameters)
 //  //     (iv)     Prove no conj pts past L_+      // // // //
 //  //     (v)      Count conjugate points          // // // //
     
-  bool CHECK_MANIFOLD 		    = 1;
-  bool CHECK_CONNECTING_ORBIT 	= 1;
-  
   clock_t begin = clock();
+
+// // // // // // // // // // // // // // // // //   
+//   We define our computational parameters     //
+// // // // // // // // // // // // // // // // //
   
+  bool CHECK_MANIFOLD           = 1;        //  One may choose to override the manifold validation for de-bugging purposes. 
+  bool CHECK_CONNECTING_ORBIT   = 1;        //  One may choose to override the connecting orbit validation for de-bugging purposes. 
+  
+  //  Option to plot of the determinent of the top frame. Produces file to create "plot_det.txt". Note:t this plots a rough bound of the determinent over each time interval, and does not incorporate extra information from the derivative. 
+  bool MAKE_PLOT                = 0;
+    
   int order = 20;                           //  High order Taylor method of validated integration
   int manifold_subdivision = 15;            //  Uniform subdivision number for bounding functions when validating the (un)stable manifolds
   int newton_steps = 20;                    //  Max iterates when applying newton's method
   int grid = 14;                            //  Grid for counting conjugate points
-  int stepsize = 5;                         //  Fixed stepsize for counting conjugate points
+  int stepsize = 5;                         //  Fixed step size for counting conjugate points, equal to  2^(- stepsize) 
   
   //  When validating the heteroclinic orbit, we integrate on the time interval (-T,T) points on the (un)stable manifolds, meeting in the middle. Selection of T is automatized. 
   //  When computing conjugate points, we integrate on (-L_-,L_+). Nominally we say L_+ is 0.
@@ -51,12 +71,12 @@ int test(int dimension,vector < double > All_parameters)
   if (dimension ==4 ){
     scale = 0.000016;     // n=2
     L = interval(.00008); // cone angle 
-    stepsize =5;
+    stepsize =5;                
   }
   else{ 
     scale = 0.000001;     // n=3      
     L = interval(.000015); // cone angle 
-    stepsize =6;
+    stepsize =5;
   }
     
   
@@ -114,18 +134,15 @@ int test(int dimension,vector < double > All_parameters)
 //  We produce a guess in the local eigen-coordinates of the boundary points of our heteroclinic orbit. 
 //  This is chosen and rescaled so that the guess will just barely fit inside manifolds <>localUnstable<> and <>localStable<>. 
 vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);       // NOTE for a different class of functions, this function may need to be adjusted 
-
-    
+  
   
 // // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
-// TODO Make Separate Function
 //   BEGIN Testing integration of guess 
   
 //     We define the XY_pt that will get used in the single-shooting newton's method. 
     IVector XY_pt(dimension);  
-    for (int i = 0 ; i < dimension / 2 ; i++)
-    {
+    for (int i = 0 ; i < dimension / 2 ; i++){
         XY_pt[i] = mid(Guess[0][i]);
         XY_pt[i+dimension/2] = mid( Guess.back()[i]);
     }
@@ -146,15 +163,13 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 
 //  We adjust the integration time to minimize the distance between our initial points. 
 //  This time is then fixed for the rest of the program. 
-    interval T_new = BVP.FindTime(  XY_pt,  T);
-    
-    
     cout << " T old = " << T << endl; 
-    cout << " T new = " << T_new << endl;     
-    T = T_new;
+    T = BVP.FindTime(  XY_pt,  T);
+    cout << " T new = " << T << endl;     
+    
 //   END
   
-//     TODO  Make Separate Function
+    
 //   BEGIN  Perform a single-shooting Newton-like method 
 //     Here, we perform a non-rigorous Newton method; we use intervals of zero-width.
   IVector XY_nbd_ZERO(dimension);
@@ -184,7 +199,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   IVector U_flat_U_new(dimension/2);
   IVector U_flat_S_new(dimension/2);
   for (int i =0;i<dimension/2;i++){
-      U_flat_U_new[i]=U_flat[i]*x_Ratios[i]*1.001; // Move parameter to top.
+      U_flat_U_new[i]=U_flat[i]*x_Ratios[i]*1.001; // TODO Move parameter to top.
       U_flat_S_new[i]=U_flat[i]*y_Ratios[i]*1.001;
   }
   localUnstable.updateSize(U_flat_U_new);
@@ -203,7 +218,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   
   cout << endl<< "Validating BVP ... " << endl << endl;
   
-//   TODO Make Separate Function
+  
 //   BEGIN We validate the solution to our BVP using the Krawczyk method. 
 
 //    First, we obtain a neighborhood about our approximate solution, which should map into itself under the Krawczyk operator. 
@@ -277,6 +292,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   localManifold_Eig localStable_eig(  localStable  );
   
   propagateManifold E_u(f_linearize, localUnstable_eig,localStable_eig, XY_pt,XY_nbd,order,stepsize);
+  E_u.plotting(MAKE_PLOT);
       
 //   Get the endpoint
   
@@ -421,7 +437,7 @@ void SampleParameters( void)
         
         try
         {
-            Unstable_EigenValues[i] =  test(dimension,Parameter_list[i]);            
+            Unstable_EigenValues[i] =  computeFrontAndConjugatePoints(dimension,Parameter_list[i]);            
         }
         catch(exception& e)
         {
@@ -461,7 +477,7 @@ void SampleParameters( void)
 
 int main(int argc, char* argv[])
 {
-//     SampleParameters();
+//     SampleParameters(); boundaryValueProblem
 //     return 0;
   	cout.precision(16);
 	try
@@ -481,7 +497,7 @@ int main(int argc, char* argv[])
             Input.push_back(1); // a
             Input.push_back(.97);// b 
             Input.push_back(.05);// c
-            test(dimension,Input);
+            computeFrontAndConjugatePoints(dimension,Input);
         }
         else if (dimension ==6)
         {            
@@ -493,7 +509,7 @@ int main(int argc, char* argv[])
             Input.push_back(-.02);// c23           +/- .02  
             
 
-            test(dimension,Input);
+            computeFrontAndConjugatePoints(dimension,Input);
         }
 	  }
 	  else
@@ -503,7 +519,7 @@ int main(int argc, char* argv[])
 	    dimension=dimension*2;
 	    Input = RetrieveParameters( dimension);
     
-	    test(dimension,Input);
+	    computeFrontAndConjugatePoints(dimension,Input);
 	  }
 				
 	}

@@ -412,8 +412,8 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
     for (int k = 0;k<dimension/2;k++){
         cout << endl;
         L_PLUS = checkL_plus_local( Gamma_List[k], Beta_List[k],eps_0, nu_1, nu_n );
-//         if (L_PLUS ==1)
-//             break;
+        if (L_PLUS ==1)
+            break;
     }
     
     return L_PLUS;

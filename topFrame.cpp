@@ -176,7 +176,7 @@ void topFrame::adjugate( const IMatrix &A , IMatrix &matrix_out)
 
 void topFrame::makePlot( void)
 {
-//   We Plot the derivative of the top frame
+//   We Plot the determinent of the top frame
   ofstream file;
   file.open("plot_det.txt");
   file.precision(16);
