@@ -490,7 +490,7 @@ int main(int argc, char* argv[])
             Input.push_back(.96);// b3              0.96 previous
                         
             Input.push_back(-.04);// c12            +/- .04 
-            Input.push_back(.02);// c23           +/- .02  
+            Input.push_back(-.02);// c23           +/- .02  
             
 
             test(dimension,Input);

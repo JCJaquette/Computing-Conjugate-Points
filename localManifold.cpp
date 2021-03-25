@@ -436,6 +436,7 @@ void localManifold_Eig::ErrorEigenfunction( void)
 //     
 //     which, as in Proposition 2.3, is used to bound the error of the eigenfunction.  
   
+
     
 // BEGIN Compute C_G 
 
@@ -468,10 +469,11 @@ void localManifold_Eig::ErrorEigenfunction( void)
   interval C_G = right( tensor_norm);  
 
 //   END
-
   
   interval K = computeK();   
   interval eta = xi; // This needs xi to already have been computed. 
+  
+  capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;   // Use matrix norm. 
   interval norm_A0 = euclNorm((*pF).A);
   interval r_u = euclNorm(abs(U_flat_global)) ; 
   
@@ -521,7 +523,10 @@ interval localManifold_Eig::computeK( void )
     
     IMatrix Q = Q_center +Q_error;    
     
+
+    capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;     // Use matrix norm.
     interval K =euclNorm(Q)* euclNorm( krawczykInverse(Q));     
+    
 //     cout << " K      = " << K << endl;
     
 //     Store eigenvector error

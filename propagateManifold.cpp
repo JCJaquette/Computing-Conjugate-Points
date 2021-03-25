@@ -410,8 +410,8 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
     bool L_PLUS = 0;
     for (int k = 0;k<dimension/2;k++){
         L_PLUS = checkL_plus_local( Gamma_List[k], Beta_List[k],eps_0, nu_1, nu_n );
-        if (L_PLUS ==1)
-            break;
+//         if (L_PLUS ==1)
+//             break;
     }
     
     return L_PLUS;
@@ -429,7 +429,6 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     
     interval epsilon_beta = compute_epsilon_beta( Gamma, Beta );
     
-    
 //     If mu^* could not be bounded above 0, the L_+ condition FAILS
     if (epsilon_beta < 0)
         return 0;
@@ -440,9 +439,12 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     cout << " eps_0 = " << eps_0 << endl; 
     cout << "epsilon_beta  = " << epsilon_beta  << endl;
     
+//     NOTE The example we've considered is with the diffusion matrix D equal to the identity. 
     interval d_min =1;
     interval d_max =1;
     int n = dimension/2;
+    
+
     
     
     IMatrix A_s = (*(*pStable).pF).A;
@@ -460,17 +462,22 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
             pi_2_Vs[i][j] = A_s[i+dimension/2][j+dimension/2];
         }
     }
-
+capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;
 //     
-//     cout << " pi_1_Vs  = " << pi_1_Vs << endl;
-//     cout << " pi_1_Vu  = " << pi_1_Vu << endl;
-//     cout << " pi_2_Vs  = " << pi_2_Vs << endl;
-//     cout << " pi_2_Vu  = " << pi_2_Vu << endl;
-//     
-//     cout << " |pi_1_Vs|  = " << euclNorm(pi_1_Vs) << endl;
-//     cout << " |pi_1_Vu|  = " << euclNorm(pi_1_Vu) << endl;
-//     cout << " |pi_2_Vs|  = " << euclNorm(pi_2_Vs) << endl;
-//     cout << " |pi_2_Vu|  = " << euclNorm(pi_2_Vu) << endl;
+    cout << " pi_1_Vs  = " << transpose(pi_1_Vs)*pi_1_Vs << endl;
+    cout << " pi_1_Vu  = " << transpose(pi_1_Vu)*pi_1_Vu << endl;
+    cout << " pi_2_Vs  = " << transpose(pi_2_Vs)*pi_2_Vs << endl;
+    cout << " pi_2_Vu  = " << transpose(pi_2_Vu)*pi_2_Vu << endl;
+//  
+    cout << " |pi_1_Vs|*** = " << euclNorm(transpose(pi_1_Vs)*pi_1_Vs) << endl;
+    
+    cout << " |pi_1_Vs|  = " << euclNorm(pi_1_Vs) << endl;
+    cout << " |pi_1_Vu|  = " << euclNorm(pi_1_Vu) << endl;
+    cout << " |pi_2_Vs|  = " << euclNorm(pi_2_Vs) << endl;
+    cout << " |pi_2_Vu|  = " << euclNorm(pi_2_Vu) << endl;
+    
+    cout << " |pi_1_V| bd = " << sqrt(1/(2*nu_n*d_min)) << endl;
+    cout << " |pi_2_V| bd = " << sqrt( nu_1 * d_max/2)  << endl;
     
     interval C_Q_new= sqrt(n)*( euclNorm(pi_1_Vs) + euclNorm(pi_1_Vu) + euclNorm(pi_2_Vs) + euclNorm(pi_2_Vu) + 2* eps_0*sqrt(n));
     
@@ -532,6 +539,8 @@ interval propagateManifold::compute_epsilon_beta( IMatrix Gamma, IMatrix Beta ){
 //      Beta        -- A Beta  interval matrix, for a particular  hat{i} // hat{k} 
 //   OUTPUT
 //      true/false  -- for the choice of Gamma, Beta, whether the L_+ condition is satisfied, 
+    
+    capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm; // Matrix norm
     
 // STEP 1: We compute a bound on \mu^* 
     

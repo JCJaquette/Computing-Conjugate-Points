@@ -486,19 +486,17 @@ interval tensorNorm( IHessian DDDG , int n){
         }
         Matrix_list.push_back(A_local);
     }
-    
+     
     IVector sliced_norms(n);
-//     IMatrix A_combo(n,n);
     
 //  For each of these matrices, we take its euclidean norm, and then take the L^2 norm of all of that.   
+    capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm; // Matrix norm
     for (int i = 0 ; i  < n;i++){ 
         sliced_norms[i] = euclNorm(Matrix_list[i]);
-//         A_combo += abs(Matrix_list[i]);
     }
     
     interval out = euclNorm(sliced_norms);
 //     cout << " Slice estimate  = " << out << endl;
-//     cout << " Combo estimate  = " << euclNorm(A_combo) << endl;
     return out;
 }
 

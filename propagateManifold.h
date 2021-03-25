@@ -7,6 +7,8 @@ using namespace std;
 
 
 #include "capd/capdlib.h"
+#include <capd/vectalg/Norm.h>
+
 #include "utils.h"
 #include "localVField.h"
 #include "eigenvalues.h"
@@ -16,6 +18,8 @@ using namespace std;
 using namespace capd;
 using namespace capd::alglib;
 using namespace capd::matrixAlgorithms;
+
+using namespace capd::vectalg;
 
 class propagateManifold 
 {
