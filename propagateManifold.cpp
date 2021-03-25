@@ -140,6 +140,7 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
     (*pUnstable).computeEigenError_minus_infty();
     
 //     TODO Check Prop 2.5 / (2.12) that there are no conjugate points below -L_-. 
+//     TODO Do a similar thing for L_+.
 
 //   We flow each eigen-vector (with error) forward. 
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
@@ -210,7 +211,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     localStableBig.computeEigenError_plus_infty();
     IMatrix EFunction_Error = localStableBig.Eigenfunction_Error_plus_infty ;    
     
-    cout <<" Eigenfunction_Error_plus_infty  " << EFunction_Error  << endl;
+//     cout <<" Eigenfunction_Error_plus_infty  " << EFunction_Error  << endl;
     
     // We compute <<epsilon_0>>     
     // Each component of 'EFunction_Error' is already scaled by the norm of the e-vectors. Thus, we take the union of all these error bounds.
@@ -218,7 +219,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     for (int i = 0 ; i < dimension;i++){
         eps_0 = intervalHull(eps_0,EFunction_Error[0][i]);
     }
-    cout << "eps0 = "<<  eps_0 << endl;
+//     cout << "eps0 = "<<  eps_0 << endl;
     
     // Validated eigenvalues
     IVector eigenvalues = localStableBig.eigenvalues;
@@ -226,7 +227,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     
     IMatrix U_coord = projectionGammaBeta(  last_Frame , EFunction_Error );
     
-    cout << endl<<"Checking L_+ conditions ..." << endl  << endl;
+    cout << endl<<"Checking L_+ conditions ..." << endl ;
     bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues);
 
     return L_PLUS;
@@ -409,6 +410,7 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
     
     bool L_PLUS = 0;
     for (int k = 0;k<dimension/2;k++){
+        cout << endl;
         L_PLUS = checkL_plus_local( Gamma_List[k], Beta_List[k],eps_0, nu_1, nu_n );
 //         if (L_PLUS ==1)
 //             break;
@@ -425,7 +427,7 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
 //      nu_1        -- Largest  eigenvalue
 //      nu_n        -- Smallest eigenvalue
 //   OUTPUT
-//      true/false  -- for the choice of Gamma, Beta, whether the L_+ condition is satisfied, 
+//      true/false  -- for the choice of Gamma, Beta, whether the L_+ condition is satisfied. cf. proposition 2.9
     
     interval epsilon_beta = compute_epsilon_beta( Gamma, Beta );
     
@@ -437,62 +439,23 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
     eps_0  = eps_0 .right();
     
     cout << " eps_0 = " << eps_0 << endl; 
-    cout << "epsilon_beta  = " << epsilon_beta  << endl;
+    cout << " epsilon_beta  = " << epsilon_beta  << endl;
     
 //     NOTE The example we've considered is with the diffusion matrix D equal to the identity. 
     interval d_min =1;
     interval d_max =1;
-    int n = dimension/2;
+    int n = dimension/2;   
     
-
-    
-    
-    IMatrix A_s = (*(*pStable).pF).A;
-    
-    IMatrix pi_1_Vs(dimension/2,dimension/2);
-    IMatrix pi_1_Vu(dimension/2,dimension/2);
-    IMatrix pi_2_Vs(dimension/2,dimension/2);
-    IMatrix pi_2_Vu(dimension/2,dimension/2);
-    
-    for (int i = 0 ; i < dimension/2 ; i++){
-        for (int j = 0 ; j < dimension/2 ; j ++){
-            pi_1_Vu[i][j] = A_s[i][j];
-            pi_1_Vs[i][j] = A_s[i][j+dimension/2];
-            pi_2_Vu[i][j] = A_s[i+dimension/2][j];
-            pi_2_Vs[i][j] = A_s[i+dimension/2][j+dimension/2];
-        }
-    }
-capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;
-//     
-    cout << " pi_1_Vs  = " << transpose(pi_1_Vs)*pi_1_Vs << endl;
-    cout << " pi_1_Vu  = " << transpose(pi_1_Vu)*pi_1_Vu << endl;
-    cout << " pi_2_Vs  = " << transpose(pi_2_Vs)*pi_2_Vs << endl;
-    cout << " pi_2_Vu  = " << transpose(pi_2_Vu)*pi_2_Vu << endl;
-//  
-    cout << " |pi_1_Vs|*** = " << euclNorm(transpose(pi_1_Vs)*pi_1_Vs) << endl;
-    
-    cout << " |pi_1_Vs|  = " << euclNorm(pi_1_Vs) << endl;
-    cout << " |pi_1_Vu|  = " << euclNorm(pi_1_Vu) << endl;
-    cout << " |pi_2_Vs|  = " << euclNorm(pi_2_Vs) << endl;
-    cout << " |pi_2_Vu|  = " << euclNorm(pi_2_Vu) << endl;
-    
-    cout << " |pi_1_V| bd = " << sqrt(1/(2*nu_n*d_min)) << endl;
-    cout << " |pi_2_V| bd = " << sqrt( nu_1 * d_max/2)  << endl;
-    
-    interval C_Q_new= sqrt(n)*( euclNorm(pi_1_Vs) + euclNorm(pi_1_Vu) + euclNorm(pi_2_Vs) + euclNorm(pi_2_Vu) + 2* eps_0*sqrt(n));
-    
-    interval C_P    = ( 2*sqrt(n) * sqrt( 2* nu_1 * d_max)) / ( 1 - eps_0 * sqrt(n) * sqrt( 2*nu_1*d_max )) ;
-    interval C_Q    = sqrt(n)*( sqrt(2/(nu_n*d_min))+ sqrt( 2* nu_1 * d_max) + 2* eps_0*sqrt(n));
+    interval C_P    = ( 2* sqrt( 2*n* nu_1 * d_max)) / ( 1 - eps_0 *  sqrt( 2*n*nu_1*d_max )) ;
+    interval C_Q    = sqrt(2*n/(nu_n*d_min))  +  sqrt( 2*n*nu_1 * d_max)  +  2* eps_0*n  ;
     
     C_P = C_P.right();
     C_Q = C_Q.right();
     
-    
-    
     interval C_M1   = eps_0 * C_Q * ( 2 + eps_0 * C_Q); 
     interval C_M2   = eps_0 * C_P * ( 2 + eps_0 * C_P) +  2* epsilon_beta*(1+ eps_0 *C_P)  + sqr(epsilon_beta); 
     
-    interval sum_for_neumann_test =  eps_0 * n * sqrt( 2 * nu_1 * d_max);
+    interval sum_for_neumann_test =  eps_0 * sqrt( 2 * n * nu_1 * d_max);
 //     cout << " sum_for_neumann_test = " << sum_for_neumann_test << endl; 
     
     bool NEUMANN_SERIES_TEST;
@@ -504,11 +467,10 @@ capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;
     }
     
     
-    cout << " C_P  = " << C_P << endl; 
-    cout << " C_Q  = " << C_Q << endl; 
-    cout << " C_Q!!= " << C_Q_new << endl; 
-    cout << " C_M1 = " << C_M1 << endl; 
-    cout << " C_M2 = " << C_M2 << endl << endl; 
+    cout << " C_P   = " << C_P << endl; 
+    cout << " C_Q   = " << C_Q << endl; 
+    cout << " C_M1  = " << C_M1 << endl; 
+    cout << " C_M2  = " << C_M2 << endl << endl; 
     
     interval sum_1 = 2*eps_0*(C_Q + C_P);
     interval sum_2 = sqr(eps_0)* ( sqr(C_Q) + sqr(C_P));
