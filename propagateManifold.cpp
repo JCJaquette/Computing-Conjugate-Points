@@ -140,7 +140,6 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
     (*pUnstable).computeEigenError_minus_infty();
     
 //     TODO Check Prop 2.5 / (2.12) that there are no conjugate points below -L_-. 
-//     TODO Do a similar thing for L_+.
 
 //   We flow each eigen-vector (with error) forward. 
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
@@ -190,13 +189,13 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
 //     OUTPUT
 //         true/false     -- whether the L_+ condition is satisfied.   
     
-//     TODO We need to check that, when we remove one unstable eigenfunction and replace it with the derivative of the standing wave, this produces a system with full rank. 
+
 
     
 //      We validate the stable manifold in a larger nbd    
     IMatrix last_Frame = A_frame.getLastFrame();
     //   cout <<endl<< "Last frame = " << last_Frame << endl; 
-    
+        
     localManifold_Eig localStableBig = construct_Manifold_at_LPlus(endPoint_LPlus);
    
     bool conditions_S = localStableBig.checkConditions(  ); 
@@ -228,7 +227,7 @@ bool propagateManifold::lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus)
     IMatrix U_coord = projectionGammaBeta(  last_Frame , EFunction_Error );
     
     cout << endl<<"Checking L_+ conditions ..." << endl ;
-    bool L_PLUS = checkL_plus(U_coord,eps_0,eigenvalues);
+    bool L_PLUS = checkL_plus(A_frame, U_coord,eps_0,eigenvalues);
 
     return L_PLUS;
 }
@@ -367,8 +366,7 @@ IMatrix propagateManifold::projectionGammaBeta(  IMatrix &last_Frame ,const IMat
 }
 
 
-
-bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector eigenvalues  ){
+bool propagateManifold::checkL_plus(topFrame &A_frame, IMatrix U_coord,  interval eps_0,IVector eigenvalues  ){
 //     Different L_+ estimates may be obtained by removing one of the unstable eigenfunctions, and doing that computation.
 //     This function creates the Gamma & Beta matrices for each possibility, and then checks whether the L_+ condition is satisfied. 
 //     
@@ -380,7 +378,7 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
 //         true/false     -- whether the L_+ condition is satisfied. 
 
 //     cout << "U_coord = " << U_coord << endl;
-    
+        
     vector < IMatrix > Gamma_List;
     vector < IMatrix > Beta_List;
     
@@ -411,9 +409,17 @@ bool propagateManifold::checkL_plus( IMatrix U_coord,  interval eps_0,IVector ei
     bool L_PLUS = 0;
     for (int k = 0;k<dimension/2;k++){
         cout << endl;
+        //  Check to see if we have a full rank frame matrix for E^u_- if we use (*) \varphi' and (*) all the unstable eigenfunctions except U_k . 
+        if ( false == A_frame.checkFirstFrame(k) ){
+            cout << " Frame matrix defined with U_{ hat{k} } NOT of full rank   (k=" << k <<")" << endl; 
+            continue;
+        }
+
+
+        //  We check the L_+ condition, breaking if successful. 
         L_PLUS = checkL_plus_local( Gamma_List[k], Beta_List[k],eps_0, nu_1, nu_n );
         if (L_PLUS ==1)
-            break;
+            break; 
     }
     
     return L_PLUS;

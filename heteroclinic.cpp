@@ -78,7 +78,10 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
     L = interval(.000015); // cone angle 
     stepsize =5;
   }
-    
+
+// // // // // // // // // // // // // // // // //   
+//   We begin the computation                   //
+// // // // // // // // // // // // // // // // //
   
 //  //     (i)      Compute a standing wave \varphi // // // //
 
@@ -505,8 +508,8 @@ int main(int argc, char* argv[])
             Input.push_back(.98);// b2              0.98 previous
             Input.push_back(.96);// b3              0.96 previous
                         
-            Input.push_back(.04);// c12            +/- .04 
-            Input.push_back(-.02);// c23           +/- .02  
+            Input.push_back(-.04);// c12            +/- .04 
+            Input.push_back(.02);// c23           +/- .02  
             
 
             computeFrontAndConjugatePoints(dimension,Input);

@@ -59,26 +59,31 @@ private:
 
   
     
-
-
-
-public:
-  topFrame(vector <vector < IMatrix> >  &p_traject_list_){p_traject_list  = &p_traject_list_;num_trajectories =(*p_traject_list).size();series_length =(*p_traject_list)[0].size();}
-  void initialize( void);
   void constructTimeSeries( void);
   void constructDetSeries( void);
   
   void constructFrameSeries( void);
   
   
-   interval calculateDerivative( const IMatrix &A , const IMatrix &A_prime);
-   void adjugate( const IMatrix &A , IMatrix &matrix_out);
-   interval minorDet( const IMatrix &A ,int i_hat , int j_hat );
+  interval calculateDerivative( const IMatrix &A , const IMatrix &A_prime);
+  void adjugate( const IMatrix &A , IMatrix &matrix_out);
+  interval minorDet( const IMatrix &A ,int i_hat , int j_hat );
+  
+  IMatrix getFirstFrame( int j_hat);
+
+public:
+  topFrame(vector <vector < IMatrix> >  &p_traject_list_){p_traject_list  = &p_traject_list_;num_trajectories =(*p_traject_list).size();series_length =(*p_traject_list)[0].size();}
+  void initialize( void);
+  
   
   void makePlot( void);
   vector<int> countZeros( void);
   
   IMatrix getLastFrame( void);
+  
+  bool checkFirstFrame( int j_hat);
+  
+  
  
 };
 

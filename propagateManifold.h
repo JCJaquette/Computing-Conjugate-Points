@@ -47,7 +47,7 @@ private:
 // // // // // // // // // // // // // 
 //   Methods 
   bool lastEuFrame(topFrame &A_frame , IVector endPoint_LPlus);  
-  bool checkL_plus( IMatrix U_coord,interval eps_0,IVector eigenvalues  );  
+  bool checkL_plus( topFrame &A_frame, IMatrix U_coord,interval eps_0,IVector eigenvalues  );  
   bool checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval eps_0,interval nu_1 , interval nu_n);
   interval compute_epsilon_beta( IMatrix Gamma, IMatrix Beta );
   
