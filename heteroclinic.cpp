@@ -18,16 +18,21 @@ using namespace capd::matrixAlgorithms;
 #include "topFrame.h"
 #include <ctime>
 #include <cmath>
+#include <string>
 
-int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameters)
+int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameters, vector < interval > All_parameters_interval)  // TODO parameter Interval! 
 {
 // This function attempts to construct a computer assisted proof for 
 //     -- The existence of a standing front in the PDE, specified in the ODE_functions.cpp file, and
 //     -- A rigorous count of the number of conjugate points, and hence the spectral stability of the front. 
 //     
+//     Note, we pass both a double version and an interval version of the parameters because there is no conversion from interval to double, and the function for computing eigenvalues and eigenvectors is jsut for double type matrices. 
+//     
+//     
 // INPUT
-//      dimension      -- either 4 or 6 -- the dimension of the spatial dynamics, a Hamiltonian ODE.
-//      All_parameters -- TODO   Make this an interval????? 
+//      dimension               -- either 4 or 6 -- the dimension of the spatial dynamics, a Hamiltonian ODE.
+//      All_parameters          -- type *double* - the center of the interval valued parameters. 
+//      All_parameters_interval -- interval enclosure of the parameters 
 //     
 // OUTPUT
 //      [non-negative int ] --   The computer assisted proof IS     successful. The output corresponds to a rigorous count of the number of conjugate points.  
@@ -86,8 +91,8 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   
 //  //     (i)      Compute a standing wave \varphi // // // //
 
-
-  vector <IMap> functions = constructFunctions(  dimension,All_parameters);         // NOTE for a different class of functions, this function will need to be adjusted 
+// TODO parameter Interval! 
+  vector <IMap> functions = constructFunctions(  dimension,All_parameters_interval);         // NOTE for a different class of functions, this function will need to be adjusted 
   IMap f             = functions[0]; // For unstable manifold
   IMap f_minus       = functions[1]; // For stable manifold
   IMap f_linearize   = functions[2]; // For non-autonomous system
@@ -95,8 +100,14 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
 //  We compute an approximate value of T, for determining the initial guess. 
 //  This is chosen so that the uncoupled standing front is a distance 'scale' from the equilibria (in global coordinates) at time +/- T . 
   interval T = approxT(dimension, All_parameters,scale);                            // NOTE for a different class of functions, this function may need to be adjusted 
-
-
+  
+cout.precision(20);
+    cout << interval("0","0") << endl;
+    cout << mid(interval(1)) << endl;
+    
+    
+    
+    
     //   BEGIN We construct the manifolds  
     //              -- The size of these manifolds may be adjusted after we find the approximate heteroclinic orbit, and verified again. 
   
@@ -116,7 +127,7 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   int STABLE = 1;
   
   IVector p_s=toInterval(fixedPoint(STABLE,dimension));                             //   We create the point
-  IMatrix A_s = toInterval(coordinateChange(STABLE,dimension,All_parameters));      //   We Create the approximate linearization
+  IMatrix A_s = toInterval(coordinateChange(STABLE,dimension,All_parameters));      //   We Create the approximate linearization 
   A_s = midMatrix(  symplecticNormalization(A_s,dimension)  );                      //   Impose symplecticNormalization  
   localVField F_s(f,A_s,p_s);                                                       //   We create the local vector field object  
   localManifold localStable(F_s,U_flat, L, STABLE,manifold_subdivision);            //   We create the local manifold object
@@ -138,7 +149,6 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
 //  We produce a guess in the local eigen-coordinates of the boundary points of our heteroclinic orbit. 
 //  This is chosen and rescaled so that the guess will just barely fit inside manifolds <>localUnstable<> and <>localStable<>. 
 vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUnstable,  localStable);       // NOTE for a different class of functions, this function may need to be adjusted 
-  
   
 // // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
@@ -354,11 +364,12 @@ IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, effective_L_plus,  STABLE) ;
 
 
 ////////////////////////////////////////////////////////////////
+    
 
-vector < double >  RetrieveParameters( int dimension)
+vector < string >  RetrieveParameters( int dimension)
 {
-  double param_in;
-  vector < double > vector_out  ;
+  string param_in;
+  vector < string > vector_out  ;
   cout << "\nEnter Parameters: ";
   for (int i = 1 ; i< dimension/2+1 ; i++)
   {
@@ -374,7 +385,6 @@ vector < double >  RetrieveParameters( int dimension)
   }
 
  return vector_out  ;
- 
 }
 
 vector < vector < double > > Construct_ParameterList( int subdivisions_circle,int subdivisions_radius, double radius_min, double radius_max)
@@ -441,7 +451,7 @@ void SampleParameters( void)
         
         try
         {
-            Unstable_EigenValues[i] =  computeFrontAndConjugatePoints(dimension,Parameter_list[i]);            
+            Unstable_EigenValues[i] =  computeFrontAndConjugatePoints(dimension,Parameter_list[i],vector_double2interval(Parameter_list[i]) );
         }
         catch(exception& e)
         {
@@ -471,65 +481,61 @@ void SampleParameters( void)
         file << Unstable_EigenValues[i] << endl ;
     }
     file.close();
-    
-    
       
   clock_t end = clock();
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   cout <<endl <<  "Total time for " << no_params << " runs = " << elapsed_secs  << endl;
 }
 
-int main(int argc, char* argv[])
-{
-//     SampleParameters(); boundaryValueProblem
-//     return 0;
-  	cout.precision(16);
-	try
-	{
+int main(int argc, char* argv[]){
+    //     SampleParameters(); 
+    //     return 0;
+    cout.precision(16);
+    try
+    {
 
-	  bool Get_Param = 0;
-	  int dimension;
-	  vector < double > Input;
-	  
-	  if (!Get_Param) 
-	  {
-          
-	    dimension=6; // TESTING DIMENSION  either 4 or 6. 
-	    
-        if (dimension ==4)
-        {
-            Input.push_back(1); // a
-            Input.push_back(.97);// b 
-            Input.push_back(.05);// c
-            computeFrontAndConjugatePoints(dimension,Input);
-        }
-        else if (dimension ==6)
-        {            
-            Input.push_back(1); // b1
-            Input.push_back(.98);// b2              0.98 previous
-            Input.push_back(.96);// b3              0.96 previous
-                        
-            Input.push_back(.04);// c12            +/- .04 
-            Input.push_back(.02);// c23           +/- .02  
-            
-
-            computeFrontAndConjugatePoints(dimension,Input);
-        }
-	  }
-	  else
-	  {
-	    cout << "no. of equations:  = " ;
-	    cin >> dimension;
-	    dimension=dimension*2;
-	    Input = RetrieveParameters( dimension);
+        bool Get_Param = 0;
+        int dimension;
+        vector < double > Input;
+        vector < interval > Input_interval;
+        vector < string > Input_str;
     
-	    computeFrontAndConjugatePoints(dimension,Input);
-	  }
-				
-	}
-	catch(exception& e)
-  	{
-    		cout << "\n\nException caught: "<< e.what() << endl;
-  	}
-  return 0;
+        if (!Get_Param){ 
+            // TESTING 
+            dimension = 6; // either 4 or 6. 
+            
+            if (dimension ==4)
+            {
+                Input_str.push_back("1"); // a
+                Input_str.push_back(".97");// b 
+                Input_str.push_back(".05");// c
+            }
+            else if (dimension ==6)
+            {            
+                Input_str.push_back("1"); // b1
+                Input_str.push_back(".98");// b2              0.98 previous
+                Input_str.push_back(".96");// b3              0.96 previous
+                            
+                Input_str.push_back("-.04");// c12            +/- .04 
+                Input_str.push_back("-.02");// c23           +/- .02  
+            }
+        }
+        else{
+            cout << "Enter the number of coupled equations, either 2 or 3:" << endl << "      ";
+            cin >> dimension;
+            dimension=dimension*2;
+            
+            Input_str = RetrieveParameters( dimension);
+        }
+        //  We convert the string of parameters to a validated interval enclosure, and the double midpoint. 
+        Input           = vector_string2double(Input_str);
+        Input_interval  = vector_string2interval(Input_str);
+        //  We compute the standing front and conjugate points
+        computeFrontAndConjugatePoints(dimension,Input,Input_interval);
+    }
+    catch(exception& e)
+    {
+        cout << "\n\nException caught: "<< e.what() << endl;
+    }
+    return 0;
 } 

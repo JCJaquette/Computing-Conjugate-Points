@@ -33,6 +33,36 @@ IVector toInterval(DVector x)
         return y;
 }
 
+vector < interval >  vector_double2interval( vector < double >  param_in){
+//     Converts a vector of **double** to a vector of **interval**
+    vector < interval > vector_out;
+    int paramLength = param_in.size();
+    for (int i = 0 ; i< paramLength ; i++){
+        vector_out.push_back( interval(param_in[i]));
+    }
+    return vector_out;
+}
+
+vector < double >  vector_string2double( vector < string  >  param_in){
+//     Converts a vector of **string** to a vector of **double**
+    vector < double > vector_out;
+    int paramLength = param_in.size();
+    for (int i = 0 ; i< paramLength ; i++){
+        vector_out.push_back( std::stod (param_in[i])  );
+    }
+    return vector_out;
+}
+
+vector < interval >  vector_string2interval( vector < string  >  param_in){
+//     Converts a vector of **string** to a vector of **interval**
+    vector < interval > vector_out;
+    int paramLength = param_in.size();
+    for (int i = 0 ; i< paramLength ; i++){
+        vector_out.push_back( interval(param_in[i],param_in[i]));
+    }
+    return vector_out;
+}
+
 
 void swapColumns(DMatrix &A,int i,int j)
 {
