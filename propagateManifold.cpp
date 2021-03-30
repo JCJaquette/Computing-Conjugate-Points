@@ -132,6 +132,7 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
 //     non-negative number -- number of validated conjugate poitns
 //     -3 ---   failed to count conjugate poitns
 //     -4 ---   failed L_+ condition
+//     -5 ---   failed no conjugate points below L_- condition
 
   
 
@@ -139,7 +140,13 @@ int propagateManifold::frameDet( interval L_minus, int grid,IVector endPoint_LPl
     cout << endl<<"Computing the eigenfunction error at minus infinity ..." << endl;
     (*pUnstable).computeEigenError_minus_infty();
     
-//     TODO Check Prop 2.5 / (2.12) that there are no conjugate points below -L_-. 
+    
+//  Check Prop 2.5 / (2.12) that there are no conjugate points below -L_-. 
+  bool ConjugatePointsBelowLminus = (*pUnstable).checkConjugatePointsBelowLminus();
+  if ( ConjugatePointsBelowLminus == 0){
+    cout << "We could not verify the no conjugate points below L_- condition " << endl;
+    return -5;
+  }   
 
 //   We flow each eigen-vector (with error) forward. 
   vector < vector< IMatrix> > List_of_Trajectories(dimension/2);
@@ -450,7 +457,7 @@ bool propagateManifold::checkL_plus_local( IMatrix Gamma, IMatrix Beta,interval 
 //     NOTE The example we've considered is with the diffusion matrix D equal to the identity. 
     interval d_min =1;
     interval d_max =1;
-    int n = dimension/2;   
+    interval n = dimension/2;   
     
     interval C_P    = ( 2* sqrt( 2*n* nu_1 * d_max)) / ( 1 - eps_0 *  sqrt( 2*n*nu_1*d_max )) ;
     interval C_Q    = sqrt(2*n/(nu_n*d_min))  +  sqrt( 2*n*nu_1 * d_max)  +  2* eps_0*n  ;

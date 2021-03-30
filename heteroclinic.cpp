@@ -62,7 +62,7 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   //  When validating the heteroclinic orbit, we integrate on the time interval (-T,T) points on the (un)stable manifolds, meeting in the middle. Selection of T is automatized. 
   //  When computing conjugate points, we integrate on (-L_-,L_+). Nominally we say L_+ is 0.
   //  We choose L_- = L_minus_percent * 2T .
-  interval L_minus_percent = 0.854;   
+  interval L_minus_percent = 0.84;   
   
   interval scale;                           //  initial size of the (un)stable manifold; later modified based on location of approximate heteroclinic
   interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'; will get shrunk by newton's method
@@ -79,6 +79,7 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
     stepsize =5;
   }
 
+  
 // // // // // // // // // // // // // // // // //   
 //   We begin the computation                   //
 // // // // // // // // // // // // // // // // //
@@ -508,7 +509,7 @@ int main(int argc, char* argv[])
             Input.push_back(.98);// b2              0.98 previous
             Input.push_back(.96);// b3              0.96 previous
                         
-            Input.push_back(-.04);// c12            +/- .04 
+            Input.push_back(.04);// c12            +/- .04 
             Input.push_back(.02);// c23           +/- .02  
             
 
