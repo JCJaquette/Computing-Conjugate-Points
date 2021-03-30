@@ -31,7 +31,7 @@ RetrieveParameters
     -- Provides a terminal interface for the user to select the parameters for the PDE.
     
 SampleParameters
-    -- A function which 
+    -- For the n=3 case, this function runs *computeFrontAndConjugatePoints* for a variety of the parameter *c*. 
     
 Construct_ParameterList
     -- Constructs the parameters used in the function 'SampleParameters'

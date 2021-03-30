@@ -20,7 +20,7 @@ using namespace capd::matrixAlgorithms;
 #include <cmath>
 #include <string>
 
-int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameters, vector < interval > All_parameters_interval)  // TODO parameter Interval! 
+int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameters, vector < interval > All_parameters_interval) 
 {
 // This function attempts to construct a computer assisted proof for 
 //     -- The existence of a standing front in the PDE, specified in the ODE_functions.cpp file, and
@@ -64,24 +64,24 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   int grid = 14;                            //  Grid for counting conjugate points
   int stepsize = 5;                         //  Fixed step size for counting conjugate points, equal to  2^(- stepsize) 
   
+  double inflation_ratio = 1.001;           //  After we find an approximate heteroclinic orbit, we redefine our validity region of the manifolds so it just includes the orbit, and then slightly inflate this neighborhood. 
+  
   //  When validating the heteroclinic orbit, we integrate on the time interval (-T,T) points on the (un)stable manifolds, meeting in the middle. Selection of T is automatized. 
   //  When computing conjugate points, we integrate on (-L_-,L_+). Nominally we say L_+ is 0.
   //  We choose L_- = L_minus_percent * 2T .
   interval L_minus_percent = 0.84;   
   
   interval scale;                           //  initial size of the (un)stable manifold; later modified based on location of approximate heteroclinic
-  interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'; will get shrunk by newton's method
+  interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'; will get shrunk by Newton's method
   interval L;                               //  Cone angle  --  \vartheta in the paper -- 
   
   if (dimension ==4 ){
     scale = 0.000016;     // n=2
-    L = interval(.00008); // cone angle 
-    stepsize =5;                
+    L = interval(.00008); // cone angle           
   }
   else{ 
     scale = 0.000001;     // n=3      
     L = interval(.000015); // cone angle 
-    stepsize =5;
   }
 
   
@@ -91,7 +91,6 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   
 //  //     (i)      Compute a standing wave \varphi // // // //
 
-// TODO parameter Interval! 
   vector <IMap> functions = constructFunctions(  dimension,All_parameters_interval);         // NOTE for a different class of functions, this function will need to be adjusted 
   IMap f             = functions[0]; // For unstable manifold
   IMap f_minus       = functions[1]; // For stable manifold
@@ -213,8 +212,8 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   IVector U_flat_U_new(dimension/2);
   IVector U_flat_S_new(dimension/2);
   for (int i =0;i<dimension/2;i++){
-      U_flat_U_new[i]=U_flat[i]*x_Ratios[i]*1.001; // TODO Move parameter to top.
-      U_flat_S_new[i]=U_flat[i]*y_Ratios[i]*1.001;
+      U_flat_U_new[i]=U_flat[i]*x_Ratios[i]*inflation_ratio; 
+      U_flat_S_new[i]=U_flat[i]*y_Ratios[i]*inflation_ratio;
   }
   localUnstable.updateSize(U_flat_U_new);
   localStable.updateSize(U_flat_S_new);
@@ -366,8 +365,9 @@ IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, effective_L_plus,  STABLE) ;
 ////////////////////////////////////////////////////////////////
     
 
-vector < string >  RetrieveParameters( int dimension)
-{
+vector < string >  RetrieveParameters( int dimension){
+//  Provides a terminal interface for the user to select the parameters for the PDE.
+//     The parameters are input as strings, and then later cast as doubles / intervals.
   string param_in;
   vector < string > vector_out  ;
   cout << "\nEnter Parameters: ";
@@ -387,25 +387,31 @@ vector < string >  RetrieveParameters( int dimension)
  return vector_out  ;
 }
 
-vector < vector < double > > Construct_ParameterList( int subdivisions_circle,int subdivisions_radius, double radius_min, double radius_max)
-{
+vector < vector < double > > Construct_ParameterList( int subdivisions_circle,int subdivisions_radius, double radius_min, double radius_max){
+//  For the n=3 case, and for fixed values of the 'b' vector, 
+//  This function samples different values of 'c = [ c_{12} , c_{23} ]', and returns a list of parameters (as double).
+//     
+//  We are sampling 2-dimensional vectors from the plane, using polar coordinates 
+//      --  We sample **subdivisions_radius** different radii in [ radius_min, radius_max ] 
+//      --  We sample  **subdivisions_circle**  distinct angles
+    
+//     If desired, these values of b_i can be changed 
     vector < double > Input;
-    Input.push_back(1); // b1
-    Input.push_back(.975);// b2 
-    Input.push_back(.95);// b3
+    Input.push_back(1);     // b1
+    Input.push_back(.975);  // b2 
+    Input.push_back(.95);   // b3
     
     
     vector < vector < double > > Parameter_list;
     double radius_step = (radius_max-radius_min)/(subdivisions_radius-1);
     
-    /*vector < vector < double > > Parameter_list(subdivisions_circle*subdivisions_radius)*/;
     for (int i = 0 ; i< subdivisions_circle;i++)
     {
+        // We offset the angle, so we don't end up with c_{12} or c_{23} equalling zero. 
         double theta  = (i+.5)*2*M_PI/subdivisions_circle;
         
         for (int j = 0 ; j< subdivisions_radius; j ++ ) 
         {
-            
             double radius = radius_min + radius_step*j;
             
             vector < double > Local_Input = Input;
@@ -417,8 +423,7 @@ vector < vector < double > > Construct_ParameterList( int subdivisions_circle,in
             Local_Input.push_back(c_23);            
             
             Parameter_list.push_back(Local_Input);
-            theta = theta + M_PI/(subdivisions_circle*subdivisions_radius);
-            
+            theta = theta + M_PI/(subdivisions_circle*subdivisions_radius);   
         }
     }
     
@@ -427,7 +432,9 @@ vector < vector < double > > Construct_ParameterList( int subdivisions_circle,in
 
 void SampleParameters( void)
 {
-    
+//      For the n=3 case, this function runs **computeFrontAndConjugatePoints** for a variety of the parameter *c*. 
+//      The list of parameters are defined in **Construct_ParameterList**
+//      The results of this computation are output to the file "plot_parameters.txt"
     
   clock_t begin = clock();
     
@@ -449,20 +456,20 @@ void SampleParameters( void)
         cout << "Parameters = " << Parameter_list[i][3] << " " ;
         cout << Parameter_list[i][4] << " " << endl << endl;
         
+        //  If, for whatever reason, the function *computeFrontAndConjugatePoints* throws an error, we use the try/catch block so that we can just continue with our parameter list.
         try
         {
             Unstable_EigenValues[i] =  computeFrontAndConjugatePoints(dimension,Parameter_list[i],vector_double2interval(Parameter_list[i]) );
         }
-        catch(exception& e)
-        {
-    		cout << "\n\nException caught: "<< e.what() << endl;
-            Unstable_EigenValues[i] = -5;
+        catch(exception& e){
+            cout << "\n\nException caught: "<< e.what() << endl;
+            Unstable_EigenValues[i] = -10;
         }
         catch(int error_int)
         {
             Unstable_EigenValues[i] = error_int;
         }
-//         We consolidate our error messages;
+//         We consolidate our error messages, for graphing purposes
         if (Unstable_EigenValues[i] <0)
             Unstable_EigenValues[i] = -1;
     }
@@ -488,54 +495,70 @@ void SampleParameters( void)
 }
 
 int main(int argc, char* argv[]){
-    //     SampleParameters(); 
-    //     return 0;
-    cout.precision(16);
-    try
-    {
+//  The entire program is called from this function. This function selects the mathematical parameters for the PDE of interest, and then calls **computeFrontAndConjugatePoints** to compute the standing front and compute the conjugates points. 
+//  The results of this program are printed onto the terminal screen. 
 
-        bool Get_Param = 0;
-        int dimension;
-        vector < double > Input;
-        vector < interval > Input_interval;
-        vector < string > Input_str;
+    cout.precision(16);
     
-        if (!Get_Param){ 
-            // TESTING 
-            dimension = 6; // either 4 or 6. 
-            
-            if (dimension ==4)
-            {
-                Input_str.push_back("1"); // a
-                Input_str.push_back(".97");// b 
-                Input_str.push_back(".05");// c
-            }
-            else if (dimension ==6)
-            {            
-                Input_str.push_back("1"); // b1
-                Input_str.push_back(".98");// b2              0.98 previous
-                Input_str.push_back(".96");// b3              0.96 previous
-                            
-                Input_str.push_back("-.04");// c12            +/- .04 
-                Input_str.push_back("-.02");// c23           +/- .02  
-            }
+//  NOTE If you wish to sample many parameters for the n=3 case, uncomment the two lines below
+//     SampleParameters(); 
+//     return 0;
+    
+    
+//  NOTE If you wish to enter the parameter values in the terminal, set *Get_Param = 1*. Otherwise, set *Get_Param = 1* and enter the parameters below. 
+    bool Get_Param = 0;
+    
+    
+    int dimension;
+    vector < string > Input_str;        //  The PDE parameters, as a string 
+    vector < double > Input;            //  The PDE parameters, as a double
+    vector < interval > Input_interval; //  The PDE parameters, as a interval 
+    
+    if (!Get_Param){  
+        dimension = 6; // NOTE This can be either 4 or 6. 
+        
+        if (dimension ==4)
+        {
+            Input_str.push_back("1"); // a
+            Input_str.push_back(".97");// b 
+            Input_str.push_back(".05");// c
         }
-        else{
-            cout << "Enter the number of coupled equations, either 2 or 3:" << endl << "      ";
-            cin >> dimension;
-            dimension=dimension*2;
-            
-            Input_str = RetrieveParameters( dimension);
+        else if (dimension ==6)
+        {            
+            Input_str.push_back("1");  // b1              1.00
+            Input_str.push_back(".98");// b2              0.98
+            Input_str.push_back(".96");// b3              0.96
+                        
+            Input_str.push_back("-.04");// c12            +/- .04 
+            Input_str.push_back("-.02");// c23            +/- .02  
         }
-        //  We convert the string of parameters to a validated interval enclosure, and the double midpoint. 
-        Input           = vector_string2double(Input_str);
-        Input_interval  = vector_string2interval(Input_str);
-        //  We compute the standing front and conjugate points
+    }
+    else{
+        //  The user is prompted (in the terminal) to enter the parameters of the PDE.
+        cout << "Enter the number of coupled equations, either 2 or 3:" << endl << "      ";
+        cin >> dimension;
+        if  ( ( dimension != 2) && ( dimension != 3) ) {
+            cout << "Invalid number of equations." << endl;
+            return 0;
+        }
+        dimension=dimension*2;
+        Input_str = RetrieveParameters( dimension);
+    }
+    
+    //  We convert the string of parameters to a validated interval enclosure, and the double midpoint. 
+    Input           = vector_string2double(Input_str);
+    Input_interval  = vector_string2interval(Input_str);
+    
+    
+    
+    //  We attempt to construct the Computer Assisted Proof for the existence of the standing front and the # of conjugate points. 
+    try{
         computeFrontAndConjugatePoints(dimension,Input,Input_interval);
     }
-    catch(exception& e)
-    {
+    catch(exception& e){
         cout << "\n\nException caught: "<< e.what() << endl;
     }
-    return 0;
+    
+    
+    return 0; // This return line doesn't do anything
 } 
