@@ -23,10 +23,10 @@ using namespace capd::matrixAlgorithms;
 int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameters, vector < interval > All_parameters_interval) 
 {
 // This function attempts to construct a computer assisted proof for 
-//     -- The existence of a standing front in the PDE, specified in the ODE_functions.cpp file, and
+//     -- The existence of a standing front in the PDE, the equation for which is specified in the ODE_functions.cpp file, and
 //     -- A rigorous count of the number of conjugate points, and hence the spectral stability of the front. 
 //     
-//     Note, we pass both a double version and an interval version of the parameters because there is no conversion from interval to double, and the function for computing eigenvalues and eigenvectors is jsut for double type matrices. 
+//     Note, we pass both a double version and an interval version of the parameters because there is no conversion from interval to double, and the function for computing eigenvalues and eigenvectors is just for double type matrices. 
 //     
 //     
 // INPUT
@@ -36,15 +36,17 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
 //     
 // OUTPUT
 //      [non-negative int ] --   The computer assisted proof IS     successful. The output corresponds to a rigorous count of the number of conjugate points.  
-//      [    negative int ] --   The computer assisted proof IS NOT successful. The output corresponds to a particular way the proof failed. 
+//      [    negative int ] --   The computer assisted proof IS NOT successful. The output corresponds to a particular way the proof failed. The different error codes are not standardized 
 
-    
-//  //  This program has 5 major parts: 
-//  //     (i)      Compute a standing wave \varphi // // // //
-//  //     (ii)     Determine L_-                   // // // //
-//  //     (iii)    Calculate a frame matrix        // // // //
-//  //     (iv)     Prove no conj pts past L_+      // // // //
-//  //     (v)      Count conjugate points          // // // //
+//  As described in Section 3 of the paper, this program can be roughly divided into 5 parts: 
+//     
+//     (i)      Compute a standing wave \varphi 
+//     (ii)     Determine a valid L_- 
+//     (iii)    Calculate a frame matrix 
+//     (iv)     Prove there are no conj pts past L_+ 
+//     (v)      Count conjugate points 
+//     
+//  About half of the program implements part (i), and the other half implements (ii)-(v). 
     
   clock_t begin = clock();
 
@@ -55,16 +57,14 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   bool CHECK_MANIFOLD           = 1;        //  One may choose to override the manifold validation for de-bugging purposes. 
   bool CHECK_CONNECTING_ORBIT   = 1;        //  One may choose to override the connecting orbit validation for de-bugging purposes. 
   
-  //  Option to plot of the determinent of the top frame. Produces file to create "plot_det.txt". Note:t this plots a rough bound of the determinent over each time interval, and does not incorporate extra information from the derivative. 
+  //  Option to plot the determinent of the top frame. Produces file to create "plot_det.txt". Note: this plots a rough bound of the determinent over each time interval, and does not incorporate extra information from the derivative. 
   bool MAKE_PLOT                = 0;
     
   int order = 20;                           //  High order Taylor method of validated integration
   int manifold_subdivision = 15;            //  Uniform subdivision number for bounding functions when validating the (un)stable manifolds
   int newton_steps = 20;                    //  Max iterates when applying newton's method
-  int grid = 14;                            //  Grid for counting conjugate points
+  int grid = 14;                            //  When counting conjugate points, each time step the integrator is subdivided for tighter bounds
   int stepsize = 5;                         //  Fixed step size for counting conjugate points, equal to  2^(- stepsize) 
-  
-  double inflation_ratio = 1.001;           //  After we find an approximate heteroclinic orbit, we redefine our validity region of the manifolds so it just includes the orbit, and then slightly inflate this neighborhood. 
   
   //  When validating the heteroclinic orbit, we integrate on the time interval (-T,T) points on the (un)stable manifolds, meeting in the middle. Selection of T is automatized. 
   //  When computing conjugate points, we integrate on (-L_-,L_+). Nominally we say L_+ is 0.
@@ -74,7 +74,9 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   interval scale;                           //  initial size of the (un)stable manifold; later modified based on location of approximate heteroclinic
   interval initial_box(-.000001,.000001);   //  validation nbd for BVP problem; to be multiplied by 'scale'; will get shrunk by Newton's method
   interval L;                               //  Cone angle  --  \vartheta in the paper -- 
+  double inflation_ratio = 1.001;           //  After we find an approximate heteroclinic orbit, we redefine our validity region of the manifolds so it just includes the orbit, and then slightly inflate this neighborhood. 
   
+//   We adjust some parameters based on the dimension of the system. 
   if (dimension ==4 ){
     scale = 0.000016;     // n=2
     L = interval(.00008); // cone angle           
@@ -89,8 +91,8 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
 //   We begin the computation                   //
 // // // // // // // // // // // // // // // // //
   
-//  //     (i)      Compute a standing wave \varphi // // // //
 
+  //  We create the function objects defining the spatial dynamics, and the linearized systems
   vector <IMap> functions = constructFunctions(  dimension,All_parameters_interval);         // NOTE for a different class of functions, this function will need to be adjusted 
   IMap f             = functions[0]; // For unstable manifold
   IMap f_minus       = functions[1]; // For stable manifold
@@ -98,25 +100,19 @@ int computeFrontAndConjugatePoints(int dimension,vector < double > All_parameter
   
 //  We compute an approximate value of T, for determining the initial guess. 
 //  This is chosen so that the uncoupled standing front is a distance 'scale' from the equilibria (in global coordinates) at time +/- T . 
-  interval T = approxT(dimension, All_parameters,scale);                            // NOTE for a different class of functions, this function may need to be adjusted 
-  
-cout.precision(20);
-    cout << interval("0","0") << endl;
-    cout << mid(interval(1)) << endl;
-    
-    
+  interval T = approxT(dimension, All_parameters,scale);                            // NOTE for a different class of functions, this function may need to be adjusted    
     
     
     //   BEGIN We construct the manifolds  
-    //              -- The size of these manifolds may be adjusted after we find the approximate heteroclinic orbit, and verified again. 
+    //              -- The size of these manifolds will be adjusted after we find the approximate heteroclinic orbit, and verified again. 
   
-  IVector U_flat(dimension/2);  // The size of the initial manifolds.
-  for (int i =0;i<dimension/2;i++){ U_flat[i]=scale*interval(-1,1);}
+  IVector U_flat(dimension/2);  
+  for (int i =0;i<dimension/2;i++){ U_flat[i]=scale*interval(-1,1);} // The size of the initial manifolds.
   
 //   Create local Unstable Manifold
   int UNSTABLE = 0;
 
-  IVector p_u=toInterval(fixedPoint(UNSTABLE,dimension));                           //   We create the point
+  IVector p_u=toInterval(fixedPoint(UNSTABLE,dimension));                           //   We create the equilibrium point
   IMatrix A_u = toInterval(coordinateChange(UNSTABLE,dimension,All_parameters));    //   We create the approximate linearization
   A_u = midMatrix(  symplecticNormalization(A_u,dimension)  );                      //   Impose symplecticNormalization  
   localVField F_u(f,A_u,p_u);                                                       //   We create the local vector field object  
@@ -125,7 +121,7 @@ cout.precision(20);
   //   Create local Stable Manifold
   int STABLE = 1;
   
-  IVector p_s=toInterval(fixedPoint(STABLE,dimension));                             //   We create the point
+  IVector p_s=toInterval(fixedPoint(STABLE,dimension));                             //   We create the equilibrium point
   IMatrix A_s = toInterval(coordinateChange(STABLE,dimension,All_parameters));      //   We Create the approximate linearization 
   A_s = midMatrix(  symplecticNormalization(A_s,dimension)  );                      //   Impose symplecticNormalization  
   localVField F_s(f,A_s,p_s);                                                       //   We create the local vector field object  
@@ -153,7 +149,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 // // // // // // // // // // // // // // // // //   
 //   BEGIN Testing integration of guess 
   
-//     We define the XY_pt that will get used in the single-shooting newton's method. 
+//     We define the XY_pt that will get used in the single-shooting Newton's method. 
     IVector XY_pt(dimension);  
     for (int i = 0 ; i < dimension / 2 ; i++){
         XY_pt[i] = mid(Guess[0][i]);
@@ -198,8 +194,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
 
 // BEGIN  We update the validity size of the neighborhoods of the manifolds     
 //      This is done such that the final 'approximate' solution is just inside the neighborhood 
-//      'just inside' here being 0.1% larger than the approximate solution. 
-
+//      'just inside' here being 0.1% larger than the approximate solution. (see  inflation_ratio defined earlier)
   IVector X_pt_final(dimension/2); 
   IVector Y_pt_final(dimension/2);
   for( int i = 0 ; i < dimension/2;i++){
@@ -307,9 +302,7 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   propagateManifold E_u(f_linearize, localUnstable_eig,localStable_eig, XY_pt,XY_nbd,order,stepsize);
   E_u.plotting(MAKE_PLOT);
       
-//   Get the endpoint
-  
-  
+//   Get the endpoint  
   IVector Y_pt(dimension/2); 
   IVector Y_nbd(dimension/2);
   
@@ -320,13 +313,14 @@ vector < IVector > Guess = getLocalGuess( dimension, All_parameters, T, localUns
   
   
 // NOTE ON L_- & L_+
-// To impose a coordinate system on our heteroclinic orbit, as when solving the BVP, 
-//      we define the left  point on our unstable manifold to be phi(-L_-) and
-//      we define the right point on our   stable manifold to be phi(2T-L_-) 
+// We impose a coordinate system on our heteroclinic orbit, as when solving the BVP, 
+//      we formally define the left  point on our unstable manifold to be phi(-L_-) and
+//      we formally define the right point on our   stable manifold to be phi(2T-L_-) 
 // However we do not need to go all the way to the right to check the 'no more conj pts' condition. 
 // For that, we only go from phi(-L_-) on the left to phi(L_+) on the right, in particular having defined L_+ := 0. 
+// We obtain the point phi(L_+) by integrating backwards from the right endpoint phi(2T-L_-) 
 
-// We calculate L_minus 
+// We define L_minus 
 interval L_minus = sup(2*T*L_minus_percent);
 // The amount of time we need to integrate backwards from q_1 to get to L_+ = 0
 interval effective_L_plus = 2*T*(1-L_minus_percent);
@@ -334,14 +328,13 @@ interval effective_L_plus = 2*T*(1-L_minus_percent);
 IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, effective_L_plus,  STABLE) ;
 
   
-  cout << " endPoint_LPlus = " << endPoint_LPlus -p_s << endl;
-  cout << " endpoint eig = " << gauss(A_s,endPoint_LPlus -p_s) << endl;
-  
 //  //     (iv)     Prove no conj pts past L_+      // // // //
 //  //     (v)      Count conjugate points          // // // //
   
   int unstable_e_values = E_u.frameDet(L_minus,grid,endPoint_LPlus-p_s);
-    
+//  unstable_e_values -----
+//      non-negative int -- validated # of conjugate points 
+//          negative int -- the proof failed 
   
   clock_t end = clock();
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
@@ -356,6 +349,9 @@ IVector endPoint_LPlus = BVP.Gxy( Y_pt, Y_nbd, effective_L_plus,  STABLE) ;
 //   END
   
 }
+
+    
+
 
 // // // // // // // // // // // // // // // // //   
 // // // // // // // // // // // // // // // // //   
@@ -560,5 +556,5 @@ int main(int argc, char* argv[]){
     }
     
     
-    return 0; // This return line doesn't do anything
+    return 0; // This return line doesn't do anything important
 } 
