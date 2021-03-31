@@ -1,16 +1,16 @@
 *********************************************************
-README file for Computing-Conjugate-Points Version 1.0
+README file for Computing-Conjugate-Points Version 1.0.0
 
 Date: April ## 2021
 Code Author: Jonathan Jaquette
 Contact: jaquette@math.bu.edu
 
-Summary: C++ code which calculates a standing front in a gradient reaction-diffusion PDE (a connecting orbit in a Hamiltonian ODE) and then computes its stability by counting the number of conjugate points. This code accompanies the paper "Validated spectral stability via conjugate points" by Margaret Beck and Jonathan Jaquette, submitted 2021. This code may be reused according to the MIT copyright License
+Summary: C++ code which calculates a standing front in a gradient reaction-diffusion PDE (a connecting orbit in a Hamiltonian ODE) and then computes its stability by counting the number of conjugate points. This code accompanies the paper "Validated spectral stability via conjugate points" by Margaret Beck and Jonathan Jaquette, submitted 2021. This code may be reused according to the MIT copyright license.
 
 Dependencies: This code requires the CAPD library to perform interval arithmetic, validated integration, and other functions. 
-For more information, see the following website    <<<<<    http://capd.ii.uj.edu.pl/    >>>>>
+To download and for more information, see the following website    <<<<<    http://capd.ii.uj.edu.pl/    >>>>>
 
-Getting Started: One should compile the code "heteroclinic.cpp". To that end, included is the ***makefile*** used while developing this code library, which the end user will need to modify accordingly. For example, my CAPD library was located in the folder  *** /home/jonathan/capd-5.0.59/bin/  ***. If your CAPD library is located in a different folder, or you use a different version of the library, you should change this. Furthermore during development, this code was compiled using g++ (Ubuntu 9.3.0-17ubuntu1~20.04). Compatibility with other compilers was not tested. 
+Getting Started: One should compile the code "heteroclinic.cpp". To that end, included is the ***makefile*** used while developing this code library, which the end user will need to modify as needed. For example, my CAPD library was located in the folder  *** /home/jonathan/capd-5.0.59/bin/  ***. If your CAPD library is located in a different folder, or you use a different version of the library, you should change this. Furthermore during development, this code was compiled using g++ (Ubuntu 9.3.0-17ubuntu1~20.04). Compatibility with other compilers or operating systems was not tested. 
 
 
 *************************
