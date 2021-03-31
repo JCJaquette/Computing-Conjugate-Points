@@ -1,7 +1,7 @@
 *********************************************************
 README file for Computing-Conjugate-Points Version 1.0.0
 
-Date: April ## 2021
+Date: March 31 2021
 Code Author: Jonathan Jaquette
 Contact: jaquette@math.bu.edu
 
