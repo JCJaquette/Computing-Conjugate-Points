@@ -502,7 +502,7 @@ int main(int argc, char* argv[]){
     
     
 //  NOTE If you wish to enter the parameter values in the terminal, set *Get_Param = 1*. Otherwise, set *Get_Param = 1* and enter the parameters below. 
-    bool Get_Param = 0;
+    bool Get_Param = 1;
     
     
     int dimension;
@@ -525,8 +525,8 @@ int main(int argc, char* argv[]){
             Input_str.push_back(".98");// b2              0.98
             Input_str.push_back(".96");// b3              0.96
                         
-            Input_str.push_back("-.04");// c12            +/- .04 
-            Input_str.push_back("-.02");// c23            +/- .02  
+            Input_str.push_back(".04");// c12            +/- .04 
+            Input_str.push_back(".02");// c23            +/- .02  
         }
     }
     else{
