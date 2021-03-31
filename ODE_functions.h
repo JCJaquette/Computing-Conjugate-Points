@@ -19,7 +19,7 @@ IVector knownSolution( double a, interval x);
 vector < IVector >  multipleShootingGuess( int shots, interval T ,int dimension, vector < double > All_parameters);
 IVector initialGuessGlobal(int dimension, vector <double> All_parameters, interval T, bool STABLE);
 vector <IFunction> constructEnergy(int dimension,  vector < double > All_parameters);
-vector < IMap > constructFunctions( int dimension, vector < double > All_parameters);
+vector < IMap > constructFunctions( int dimension, vector < interval > All_parameters);
 
 interval approxT( int dimension, vector < double> All_parameters,interval scale);
 vector < IVector > getLocalGuess( int dimension, vector < double> All_parameters, interval T, localManifold &localUnstable,  localManifold &localStable);

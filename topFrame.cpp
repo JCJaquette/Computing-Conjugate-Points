@@ -176,7 +176,7 @@ void topFrame::adjugate( const IMatrix &A , IMatrix &matrix_out)
 
 void topFrame::makePlot( void)
 {
-//   We Plot the derivative of the top frame
+//   We Plot the determinent of the top frame
   ofstream file;
   file.open("plot_det.txt");
   file.precision(16);
@@ -296,5 +296,57 @@ IMatrix topFrame::getLastFrame( void)
   
   return LastFrame;
   
+}
+
+IMatrix topFrame::getFirstFrame( int j_hat)
+{ 
+//     INPUT 
+//         j_hat --     range from 0-(num_trajectories-1)  
+//     OUTPUT
+//         Matrix of the eigenfunctions with j_hat column removed and replaced by the derivative of \varphi
+  
+  IMatrix firstFrame(num_trajectories*2,num_trajectories);
+  
+  int col_adjust =0;
+//   Traj / column
+  for (int i = 0 ; i < num_trajectories ; i++)
+  {
+//     cout << "traj[i] = " << (*p_traject_list)[i].back()  << endl;
+//     Row / Entry 
+    if(i==j_hat){col_adjust =1;continue;}
+    for (int j = 0 ; j < num_trajectories*2 ; j++)
+    {
+      firstFrame[j][i-col_adjust] = (*p_traject_list)[i].front()[j+num_trajectories*2][1];
+    }
+  }
+  
+//   We add \varphi' to the last column
+  for (int j =0;j< num_trajectories*2;j++)
+  {
+//       This is the derivative over the entire interval, and could be improved to just take the left one. 
+    firstFrame[j][num_trajectories-1]=(*p_traject_list).front().front()[j][4];
+  }
+  
+//   cout << " firstFrame = " << firstFrame << endl; 
+
+  return firstFrame;
+}
+
+
+bool topFrame::checkFirstFrame( int j_hat){
+//  Check to see if we have a full rank frame matrix for E^u_- if we use (*) \varphi' and (*) all the unstable eigenfunctions except U_j . 
+    
+    IMatrix firstFrame = getFirstFrame(j_hat);
+//     For this matrix F=firstFrame,  we check that it has full rank by computing the determinent of F^T*F
+//     If det( F^t*F ) is bounded away from zero, then F has full rank.
+//     NOTE With interval arithmetic, there are likely sharper ways to check whether F has full rank, but this method suffices.
+    
+    interval det_val = det( transpose( firstFrame) * firstFrame ) ;
+//     cout << " F^t F = " <<  (transpose( firstFrame)*firstFrame)  << endl; 
+//     cout << " det_val = " << det_val << endl;
+    
+    bool test_result (  abs(det_val)>0  ) ;
+    
+    return test_result;
 }
 

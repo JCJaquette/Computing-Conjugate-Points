@@ -68,12 +68,14 @@ public:
 class localManifold_Eig : public localManifold
 {
 private:
-    IVector eigenvalues;
+    IVector eigenvalues;  // Validated eigenvalues
     interval K_store;   
     interval eps_unscaled;
     IMatrix Eigenvector_Error; // Error for unit norm eigenvectors;
     IMatrix Eu_m_Error_Final;  // Error for the unstable eigenfunctions at minus infinity 
     IMatrix Eigenfunction_Error_plus_infty;  // Error for the all eigenfunctions at plus infinity 
+    
+    
     
     friend class propagateManifold;
     
@@ -89,6 +91,7 @@ public:
     void ErrorEigenfunction( void);  
     void computeEigenError_minus_infty( void);
     void computeEigenError_plus_infty( void);
+    bool checkConjugatePointsBelowLminus( void); // checks whether there are Conjugate Points Below L_- ; see Prop 2.5 / eq (2.12).
 
     IVector getEigenError_minus_infty(int columnNumber);
 

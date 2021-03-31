@@ -1,4 +1,3 @@
- 
 #include "localManifold.h"
 
 // BEGIN Base class: "localManifold" methods
@@ -437,6 +436,7 @@ void localManifold_Eig::ErrorEigenfunction( void)
 //     
 //     which, as in Proposition 2.3, is used to bound the error of the eigenfunction.  
   
+
     
 // BEGIN Compute C_G 
 
@@ -469,10 +469,11 @@ void localManifold_Eig::ErrorEigenfunction( void)
   interval C_G = right( tensor_norm);  
 
 //   END
-
   
   interval K = computeK();   
   interval eta = xi; // This needs xi to already have been computed. 
+  
+  capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;   // Use matrix norm. 
   interval norm_A0 = euclNorm((*pF).A);
   interval r_u = euclNorm(abs(U_flat_global)) ; 
   
@@ -522,7 +523,10 @@ interval localManifold_Eig::computeK( void )
     
     IMatrix Q = Q_center +Q_error;    
     
+
+    capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;     // Use matrix norm.
     interval K =euclNorm(Q)* euclNorm( krawczykInverse(Q));     
+    
 //     cout << " K      = " << K << endl;
     
 //     Store eigenvector error
@@ -531,6 +535,39 @@ interval localManifold_Eig::computeK( void )
     K_store = K;
     
     return K;
+}
+
+bool localManifold_Eig::checkConjugatePointsBelowLminus( void){
+// checks whether there are NO Conjugate Points Below L_- ; see Prop 2.5 / eq (2.12). That is, whether 
+//     \lambda_T- / (1-\lambda_T-)    <    1 /  \sqrt{ n * ( 1 + ||\mathcal{M}_-|| ) }  
+    
+//     This function has to be called AFTER computeEigenError_minus_infty.
+//     If it is called beforehand, the test automatically fails, as  *eps_unscaled* will be undefined/=0
+    
+//     OUTPUT
+//          true    ---  Everything is GOOD! There are NO Conjugate Points Below L_-
+//          false   ---  Everything is BAD!! There MAY BE Conjugate Points Below L_-
+    
+//     We compute the 2n by 2n matrix containing $\mathcal{M}_-$ in the lower left block.
+    IMatrix M_large = (*(*pF).f)[ pF -> p];
+    
+//     We get the lower left block.
+    vector < IMatrix > M_vec = blockDecompose( M_large, dimension);
+    IMatrix M_minus = M_vec[2];
+    
+//     We bound its matrix norm 
+    capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm;
+    interval M_bound = euclNorm(M_minus); 
+//     cout << " M_bound = " << M_bound << endl;
+    
+    interval n = interval(dimension/2);    
+    interval RHS_2p12 = 1/ sqrt( n*(1+ M_bound) );
+    
+//     Recall, as computed in *computeEigenError_minus_infty* that 
+//          eps_unscaled =  \lambda_T- / (1-\lambda_T-)
+    bool output = ( eps_unscaled  < RHS_2p12 );
+    
+    return output;
 }
 
 

@@ -33,6 +33,36 @@ IVector toInterval(DVector x)
         return y;
 }
 
+vector < interval >  vector_double2interval( vector < double >  param_in){
+//     Converts a vector of **double** to a vector of **interval**
+    vector < interval > vector_out;
+    int paramLength = param_in.size();
+    for (int i = 0 ; i< paramLength ; i++){
+        vector_out.push_back( interval(param_in[i]));
+    }
+    return vector_out;
+}
+
+vector < double >  vector_string2double( vector < string  >  param_in){
+//     Converts a vector of **string** to a vector of **double**
+    vector < double > vector_out;
+    int paramLength = param_in.size();
+    for (int i = 0 ; i< paramLength ; i++){
+        vector_out.push_back( std::stod (param_in[i])  );
+    }
+    return vector_out;
+}
+
+vector < interval >  vector_string2interval( vector < string  >  param_in){
+//     Converts a vector of **string** to a vector of **interval**
+    vector < interval > vector_out;
+    int paramLength = param_in.size();
+    for (int i = 0 ; i< paramLength ; i++){
+        vector_out.push_back( interval(param_in[i],param_in[i]));
+    }
+    return vector_out;
+}
+
 
 void swapColumns(DMatrix &A,int i,int j)
 {
@@ -486,19 +516,17 @@ interval tensorNorm( IHessian DDDG , int n){
         }
         Matrix_list.push_back(A_local);
     }
-    
+     
     IVector sliced_norms(n);
-//     IMatrix A_combo(n,n);
     
 //  For each of these matrices, we take its euclidean norm, and then take the L^2 norm of all of that.   
+    capd::vectalg::EuclNorm <IVector,IMatrix> euclNorm; // Matrix norm
     for (int i = 0 ; i  < n;i++){ 
         sliced_norms[i] = euclNorm(Matrix_list[i]);
-//         A_combo += abs(Matrix_list[i]);
     }
     
     interval out = euclNorm(sliced_norms);
 //     cout << " Slice estimate  = " << out << endl;
-//     cout << " Combo estimate  = " << euclNorm(A_combo) << endl;
     return out;
 }
 

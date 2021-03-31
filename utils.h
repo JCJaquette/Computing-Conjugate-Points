@@ -17,8 +17,13 @@ void 	bubbleSortEigenvectors(DVector &v, DMatrix &A);
 void 	bubbleSort(DVector &v);
 void 	swapValues(DVector &v,int i, int j);
 void 	swapColumns(DMatrix &A,int i,int j);
+
 IVector toInterval(DVector x);
 IMatrix toInterval(DMatrix A);
+vector < interval >  vector_double2interval( vector < double >  param_in);
+vector < interval >  vector_string2interval( vector < string >  param_in);
+vector < double >  vector_string2double( vector < string >  param_in);
+
 interval part( interval x, int k, int N);
 void 	plot(interval x, interval y,ofstream &file);
 vector<IVector> getTrajectory(C0Rect2Set &s,interval T,int grid,ITimeMap &timeMap,IOdeSolver &solver);

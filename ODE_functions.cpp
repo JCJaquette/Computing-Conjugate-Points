@@ -175,7 +175,7 @@ vector <IFunction> constructEnergy(int dimension,  vector < double > All_paramet
 }
 
 
-vector < IMap > constructFunctions( int dimension, vector < double > All_parameters)
+vector < IMap > constructFunctions( int dimension, vector < interval > All_parameters)
 {
  
   IMap f;
