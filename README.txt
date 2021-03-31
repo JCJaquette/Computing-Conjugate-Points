@@ -72,7 +72,8 @@ topFrame
 Miscellaneous Files
 
 plot_det.txt
-    --  The zeros of this plot correspond to conjugate points. See variable MAKE_PLOT in **heteroclinic.cpp** function **computeFrontAndConjugatePoints**.
+    --  The zeros of this plot correspond to conjugate points. See variable MAKE_PLOT in **heteroclinic.cpp** function **computeFrontAndConjugatePoints**. 
+    Note: this plots a rough bound of the determinent over each time interval, and does not incorporate extra information from the derivative. Hence, it may appear that the determinent over a time interval cannot be bounded away from zero, but in fact, by using extra information about the function value on the endpoints, and the determinent, we are able to bound the determinent away from zero.
     
 plot_parameters.txt
     --  Plot of the # of conjugate points for fronts with a variety of parameters, as produced by the **heteroclinic.cpp** function **SampleParameters**
